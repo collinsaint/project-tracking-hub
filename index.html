@@ -449,7 +449,7 @@ body.mob #hdr>div{display:none!important}
 body.mob #mob-ham{display:flex}
 
 /* stats + search */
-body.mob #topbar{padding:8px 12px 6px;flex-direction:column;min-height:auto;gap:0}
+body.mob #topbar{padding:8px 12px 6px;flex-direction:column;min-height:auto;gap:0;position:sticky;top:52px;z-index:90;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.06)}
 body.mob #stats-group{display:grid;grid-template-columns:repeat(4,1fr);gap:0;padding:0 0 8px;border-bottom:1px solid var(--border);margin-bottom:6px;width:100%}
 body.mob .sb{padding:4px 6px;margin:0;border-right:1px solid var(--border);border-bottom:1px solid var(--border);text-align:center;flex-shrink:0;gap:0}
 body.mob .sb:nth-child(4n){border-right:none}
@@ -464,14 +464,14 @@ body.mob #fpop{right:0;left:0;width:100%;max-height:72vh;overflow-y:auto;flex-di
 body.mob .msel-drop{width:100%;min-width:0}
 
 /* jump nav */
-body.mob #jnav{padding:6px 12px;overflow-x:auto;-webkit-overflow-scrolling:touch;flex-wrap:nowrap;gap:4px;scrollbar-width:none}
+body.mob #jnav{padding:6px 12px;overflow-x:auto;-webkit-overflow-scrolling:touch;flex-wrap:nowrap;gap:4px;scrollbar-width:none;position:sticky;top:var(--mob-jnav-top,52px);z-index:80;background:#fff;border-bottom:1px solid var(--border)}
 body.mob #jnav::-webkit-scrollbar{display:none}
 body.mob #jnav span{display:none}
 body.mob .jb{flex-shrink:0}
 
 /* sections */
 body.mob #main{padding:4px 0;gap:4px}
-body.mob .sh{position:relative;top:0;z-index:1;padding:10px 14px}
+body.mob .sh{position:sticky;top:var(--mob-sh-top,52px);z-index:15;padding:10px 14px}
 body.mob .sht{font-size:13px}
 body.mob .shc{font-size:10px;padding:2px 8px}
 
@@ -2129,11 +2129,20 @@ function mobileNav(v){
 }
 function toggleMobMenu(){document.getElementById('mob-menu').classList.toggle('open');}
 function closeMobMenu(){document.getElementById('mob-menu').classList.remove('open');}
+function updateMobSticky(){
+  if(!document.body.classList.contains('mob'))return;
+  const hdrH=document.getElementById('hdr').offsetHeight;
+  const topbarH=document.getElementById('topbar').offsetHeight;
+  const jnavH=document.getElementById('jnav').offsetHeight;
+  const r=document.documentElement.style;
+  r.setProperty('--mob-jnav-top',(hdrH+topbarH)+'px');
+  r.setProperty('--mob-sh-top',(hdrH+topbarH+jnavH)+'px');
+}
 function setMob(on){
   document.body.classList.toggle('mob',on);
   const btn=document.getElementById('mob-btn');
   if(btn){btn.classList.toggle('mob-on',on);btn.innerHTML=on?'&#128421; Desktop':'&#128241; Mobile';}
-  if(on)mobileNavSet('tracker');
+  if(on){mobileNavSet('tracker');requestAnimationFrame(updateMobSticky);}
 }
 function toggleMobView(){
   const on=!document.body.classList.contains('mob');
@@ -2146,6 +2155,7 @@ function initMobView(){
   else{useMob=('ontouchstart' in window)||navigator.maxTouchPoints>0||window.innerWidth<768;}
   if(useMob)setMob(true);
 }
+window.addEventListener('resize',updateMobSticky);
 </script>
 
 <div id="mob-menu" onclick="if(event.target===this)closeMobMenu()">
