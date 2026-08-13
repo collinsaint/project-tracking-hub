@@ -736,6 +736,11 @@ async function init(){
     ID.forEach(p=>{const k=nm(p.address||'');if(!m[k])m[k]=p;});
     proj=Object.values(m);
   }catch(e){proj=[...ID];}}else{proj=[...ID];}
+  proj=proj.filter(p=>{
+    if((p.jobStatus||'').toLowerCase().includes('withdrawn'))return false;
+    if((p.program||'').toLowerCase().includes('lemoine - volusia'))return false;
+    return true;
+  });
   await Promise.all([loadTasks(),initJQ(),initCOQ()]);
   SECS.forEach(s=>bh(s));
   pd();af();
@@ -782,7 +787,7 @@ function pd(){
   });
   updateProgLabel();
   // Other dropdowns
-  fs2('fst',u(proj.filter(p=>!(p.jobStatus||'').toLowerCase().includes('withdrawn')).map(p=>p.jobStatus)));
+  fs2('fst',u(proj.map(p=>p.jobStatus)));
   fs2('ft',u(proj.map(p=>p.jobType)));
   fs2('fs2',u(proj.map(p=>p.superintendent)));
   fs2('fc',u(proj.map(p=>p.city)));
@@ -802,7 +807,6 @@ function af(){
   const su=document.getElementById('fs2').value;
   const ci=document.getElementById('fc').value;
   filt=proj.filter(p=>{
-    if((p.jobStatus||'').toLowerCase().includes('withdrawn'))return false;
     if(selProgs.size>0&&!selProgs.has(p.program))return false;
     if(st&&p.jobStatus!==st)return false;
     if(ty&&p.jobType!==ty)return false;
@@ -913,15 +917,14 @@ function toggleShowAll(k){
 }
 
 function rs(){
-  const a=proj.filter(p=>!(p.jobStatus||'').toLowerCase().includes('withdrawn'));
-  document.getElementById('s0').textContent=a.length;
-  document.getElementById('s1').textContent=a.filter(p=>p.constructionStage==='PRESALE').length;
-  document.getElementById('s2').textContent=a.filter(p=>p.constructionStage==='OPEN').length;
-  document.getElementById('s3').textContent=a.filter(p=>/^2[1-9]|^30/.test(p.jobStatus||'')).length;
-  document.getElementById('s4').textContent=a.filter(p=>/^19|^20/.test(p.jobStatus||'')).length;
-  document.getElementById('s5').textContent=a.filter(p=>/^4|^99/.test(p.jobStatus||'')||(p.jobStatus||'')==='COMPLETE').length;
-  document.getElementById('s6').textContent=a.filter(p=>p.constructionStage==='WARRANTY').length;
-  document.getElementById('s7').textContent=a.filter(p=>p.constructionStage==='CLOSED').length;
+  document.getElementById('s0').textContent=proj.length;
+  document.getElementById('s1').textContent=proj.filter(p=>p.constructionStage==='PRESALE').length;
+  document.getElementById('s2').textContent=proj.filter(p=>p.constructionStage==='OPEN').length;
+  document.getElementById('s3').textContent=proj.filter(p=>/^2[1-9]|^30/.test(p.jobStatus||'')).length;
+  document.getElementById('s4').textContent=proj.filter(p=>/^19|^20/.test(p.jobStatus||'')).length;
+  document.getElementById('s5').textContent=proj.filter(p=>/^4|^99/.test(p.jobStatus||'')||(p.jobStatus||'')==='COMPLETE').length;
+  document.getElementById('s6').textContent=proj.filter(p=>p.constructionStage==='WARRANTY').length;
+  document.getElementById('s7').textContent=proj.filter(p=>p.constructionStage==='CLOSED').length;
 }
 
 function ss(k,c){
