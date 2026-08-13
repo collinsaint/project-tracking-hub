@@ -78,7 +78,7 @@ select.fs:focus,input.fi:focus{outline:none;border-color:var(--blue-mid);box-sha
 #main{padding:12px 0;display:flex;flex-direction:column;gap:10px}
 
 /* ── SECTION CARDS ──────────────────────────────── */
-.sc{background:#fff;border-radius:0;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.1);border-top:1px solid rgba(0,0,0,.08);border-bottom:1px solid rgba(0,0,0,.08)}
+.sc{background:#fff;border-radius:0;overflow:clip;box-shadow:0 1px 4px rgba(0,0,0,.1);border-top:1px solid rgba(0,0,0,.08);border-bottom:1px solid rgba(0,0,0,.08)}
 .sh{display:flex;align-items:center;justify-content:space-between;padding:13px 18px;cursor:pointer;user-select:none;transition:filter .15s}
 .sh:hover{filter:brightness(1.07)}
 .shl{display:flex;align-items:center;gap:10px}
@@ -93,7 +93,7 @@ select.fs:focus,input.fi:focus{outline:none;border-color:var(--blue-mid);box-sha
 .bgc{background:linear-gradient(135deg,#374151 0%,#4b5563 100%)}
 
 /* ── TABLE ──────────────────────────────────────── */
-.tw{overflow:hidden}
+.tw{overflow:clip}
 table{width:100%;border-collapse:collapse;font-size:12px;table-layout:auto}
 th{padding:8px 7px;text-align:center;font-weight:700;font-size:10px;white-space:normal;word-break:break-word;cursor:pointer;user-select:none;color:rgba(255,255,255,.95);letter-spacing:.4px;text-transform:uppercase;vertical-align:middle;position:sticky;top:56px;z-index:10}
 th[data-key="_identity"]{text-align:left}
@@ -753,6 +753,42 @@ async function init(){
     }
   });
   setInterval(()=>{sbSyncTasks();sbSyncJQ();sbSyncCOQ();},60000);
+  setupRealtime();
+}
+
+function setupRealtime(){
+  sb.channel('rt-jq')
+    .on('postgres_changes',{event:'*',schema:'public',table:'job_start_queue'},async()=>{
+      await initJQ();
+      if(jqView)renderJQ();
+      document.querySelectorAll('.jq-row-btn').forEach(b=>{
+        const c=b.closest('tr')?.querySelector('.ci-addr');if(!c)return;
+        const addr=c.textContent.trim();
+        b.textContent=isInJQ(addr)?'★':'☆';
+        b.className='jq-row-btn'+(isInJQ(addr)?' jq-active':'');
+        b.title=isInJQ(addr)?'Remove from Job Start Queue':'Add to Job Start Queue';
+      });
+    })
+    .subscribe();
+  sb.channel('rt-coq')
+    .on('postgres_changes',{event:'*',schema:'public',table:'change_order_queue'},async()=>{
+      await initCOQ();
+      if(coqView)renderCOQ();
+      document.querySelectorAll('.coq-row-btn').forEach(b=>{
+        const c=b.closest('tr')?.querySelector('.ci-addr');if(!c)return;
+        const addr=c.textContent.trim();
+        b.textContent=isInCOQ(addr)?'▲':'△';
+        b.className='coq-row-btn'+(isInCOQ(addr)?' coq-active':'');
+        b.title=isInCOQ(addr)?'Remove from Change Order Queue':'Add to Change Order Queue';
+      });
+    })
+    .subscribe();
+  sb.channel('rt-tasks')
+    .on('postgres_changes',{event:'*',schema:'public',table:'tasks'},async()=>{
+      await loadTasks();
+      if(taskView)renderTaskBoard();
+    })
+    .subscribe();
 }
 
 function bh(sec){
