@@ -450,11 +450,12 @@ body.mob #mob-ham{display:flex}
 
 /* stats + search */
 body.mob #topbar{padding:8px 12px 6px;flex-direction:column;min-height:auto;gap:0}
-body.mob #stats-group{overflow-x:auto;-webkit-overflow-scrolling:touch;flex-wrap:nowrap;padding:0 0 8px;gap:0;border-bottom:1px solid var(--border);margin-bottom:6px;scrollbar-width:none}
-body.mob #stats-group::-webkit-scrollbar{display:none}
-body.mob .sb{padding:3px 12px 3px 0;margin-right:12px;flex-shrink:0;gap:0}
-body.mob .sn{font-size:15px}
-body.mob .sl{font-size:9px}
+body.mob #stats-group{display:grid;grid-template-columns:repeat(4,1fr);gap:0;padding:0 0 8px;border-bottom:1px solid var(--border);margin-bottom:6px;width:100%}
+body.mob .sb{padding:4px 6px;margin:0;border-right:1px solid var(--border);border-bottom:1px solid var(--border);text-align:center;flex-shrink:0;gap:0}
+body.mob .sb:nth-child(4n){border-right:none}
+body.mob .sb:nth-last-child(-n+4){border-bottom:none}
+body.mob .sn{font-size:14px}
+body.mob .sl{font-size:8px;letter-spacing:.3px}
 body.mob .topbar-right{width:100%;border-left:none;padding:0;margin:0;flex-wrap:nowrap;gap:8px}
 body.mob #sw{flex:1;min-width:0}
 body.mob #sw input{width:100%;min-width:0}
