@@ -1194,6 +1194,11 @@ function pf(file){
         if(pm[k]!==undefined){Object.assign(proj[pm[k]],nd);up++;}
         else{proj.push(nd);pm[k]=proj.length-1;ad++;}
       });
+      proj=proj.filter(p=>{
+        if((p.jobStatus||'').toLowerCase().includes('withdrawn'))return false;
+        if((p.program||'').toLowerCase().includes('lemoine - volusia'))return false;
+        return true;
+      });
       try{localStorage.setItem('pic_fl_v3',JSON.stringify(proj));}catch(e){}
       pd();af();
       sir('success','Import complete: <strong>'+up+'</strong> updated, <strong>'+ad+'</strong> added, <strong>'+sk+'</strong> skipped.');
