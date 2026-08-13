@@ -425,6 +425,7 @@ tr.dr:hover td.tmiss,tr.dr.row-permit td.tmiss{background:#fef08a}
     <button class="btn btn-ol" onclick="openImport()">&#8679; Import Buildertrend</button>
     <button class="btn btn-ol" onclick="exportCSV()">&#8681; Export CSV</button>
     <button class="btn btn-ol" id="edit-mode-btn" onclick="toggleEditMode()">&#9998; Edit Mode</button>
+    <button class="btn btn-ol" id="mob-btn" onclick="toggleMobView()">&#128241; Mobile</button>
   </div>
 </div>
 
@@ -729,6 +730,7 @@ function es(s){if(!s)return'';return String(s).replace(/&/g,'&amp;').replace(/</
 function fd2(d){if(!d)return'';const p=d.split('-');return p.length===3?p[1]+'/'+p[2]+'/'+p[0]:d;}
 
 async function init(){
+  initMobView();
   const st=localStorage.getItem('pic_fl_v3');
   if(st){try{
     const ps=JSON.parse(st);const m={};
@@ -1998,6 +2000,25 @@ function commitEditPop(){
   renderEditBar();
   closeEditPop();
   SECS.forEach(s=>{if(filt.some(p=>p.address===addr&&p.constructionStage===s.stage))rse(s);});
+}
+
+/* ── MOBILE VIEW ─────────────────────────────────── */
+function setMob(on){
+  document.body.classList.toggle('mob',on);
+  const btn=document.getElementById('mob-btn');
+  if(btn){btn.classList.toggle('mob-on',on);btn.innerHTML=on?'&#128421; Desktop':'&#128241; Mobile';}
+}
+function toggleMobView(){
+  const on=!document.body.classList.contains('mob');
+  setMob(on);
+  localStorage.setItem('pic_mob',on?'1':'0');
+}
+function initMobView(){
+  const stored=localStorage.getItem('pic_mob');
+  let useMob;
+  if(stored!==null){useMob=stored==='1';}
+  else{useMob=('ontouchstart' in window)||navigator.maxTouchPoints>0||window.innerWidth<768;}
+  if(useMob)setMob(true);
 }
 </script>
 </body>
