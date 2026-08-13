@@ -715,7 +715,7 @@ const sb=window.supabase.createClient(SB_URL,SB_KEY);
 let proj=[],filt=[],selI=null;
 let jqView=false,jqAddrs=[];
 let coqView=false,coqAddrs=[];
-let permView=false;
+let permView=false,permSort={col:'',dir:1};
 let editMode=false,editQueue={},editPopCtx=null;
 let tasks=[],taskView=false,editTaskId=null,tbProjFilter='',tbPriFilter='',tbTagFilter='',tbSortBy='dueDate',tbSortDir=1,tbDoneOpen=false,detailAddr='';
 let col={p:false,o:false,w:false,c:false};
@@ -1432,10 +1432,28 @@ function renderPerm(){
   const all=[...CMN,...presale.ec];
   const th=document.getElementById('perm-th');th.innerHTML='';
   const tr=document.createElement('tr');
-  all.forEach(col=>{const th2=document.createElement('th');th2.className='thp';th2.textContent=col.label;tr.appendChild(th2);});
+  all.forEach(col=>{
+    const th2=document.createElement('th');th2.className='thp';th2.textContent=col.label;
+    th2.dataset.key=col.key;th2.style.cursor='pointer';
+    if(permSort.col===col.key)th2.classList.add(permSort.dir===1?'sa':'sd');
+    th2.onclick=()=>{
+      if(permSort.col===col.key)permSort.dir*=-1;else{permSort.col=col.key;permSort.dir=1;}
+      renderPerm();
+    };
+    tr.appendChild(th2);
+  });
   th.appendChild(tr);
   const tb=document.getElementById('perm-tb');tb.innerHTML='';
-  const pending=proj.filter(p=>!p.bldgPermitIssued||p.bldgPermitIssued===''||p.bldgPermitIssued==='0');
+  let pending=proj.filter(p=>!p.bldgPermitIssued||p.bldgPermitIssued===''||p.bldgPermitIssued==='0');
+  if(permSort.col){
+    const sc=permSort.col,sd=permSort.dir;
+    pending=[...pending].sort((a,b)=>{
+      let av=a[sc]||'',bv=b[sc]||'';
+      if(sc==='_identity')av=a.address||'',bv=b.address||'';
+      if(!isNaN(av)&&!isNaN(bv)&&av!==''&&bv!=='')return sd*(parseFloat(av)-parseFloat(bv));
+      return sd*String(av).localeCompare(String(bv));
+    });
+  }
   document.getElementById('perm-count').textContent=pending.length+' project'+(pending.length===1?'':'s');
   if(pending.length===0){
     const er=document.createElement('tr');er.className='erow';
