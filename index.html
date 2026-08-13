@@ -25,9 +25,9 @@ body{font-family:var(--font);background:#eef1f6;color:#1f2937;min-height:100vh;f
 #hdr{background:linear-gradient(135deg,#091e3a 0%,#0d3b6e 55%,#1248a0 100%);color:#fff;padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:56px;position:sticky;top:0;z-index:100;box-shadow:0 2px 16px rgba(0,0,0,.3)}
 #hdr h1{font-size:15px;font-weight:700;display:flex;align-items:center;gap:10px;letter-spacing:.1px}
 #hdr h1 .sub{background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.18);padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;letter-spacing:.4px}
-#save-status{font-size:11px;font-weight:500;opacity:0;transition:opacity .3s;color:rgba(255,255,255,.7);white-space:nowrap;margin-left:8px}
-#save-status.saving{opacity:1;color:rgba(255,255,255,.7)}
-#save-status.saved{opacity:1;color:#6ee7b7}
+#save-status{font-size:11px;font-weight:500;color:rgba(255,255,255,.6);white-space:nowrap;margin-left:8px;transition:color .3s}
+#save-status.saving{color:rgba(255,255,255,.5)}
+#save-status.saved{color:#6ee7b7}
 .btn{display:inline-flex;align-items:center;gap:5px;padding:6px 13px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;border:none;transition:all .18s;letter-spacing:.2px}
 .btn:hover{transform:translateY(-1px)}
 .btn-ol{background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.22)}
@@ -744,6 +744,7 @@ async function init(){
   await Promise.all([loadTasks(),initJQ(),initCOQ()]);
   SECS.forEach(s=>bh(s));
   pd();af();
+  initSyncDisplay();
   document.getElementById('ldr').style.display='none';
   document.addEventListener('click',function(e){
     const pop=document.getElementById('fpop');
@@ -760,6 +761,7 @@ function setupRealtime(){
   sb.channel('rt-jq')
     .on('postgres_changes',{event:'*',schema:'public',table:'job_start_queue'},async()=>{
       await initJQ();
+      recordSync();
       if(jqView)renderJQ();
       document.querySelectorAll('.jq-row-btn').forEach(b=>{
         const c=b.closest('tr')?.querySelector('.ci-addr');if(!c)return;
@@ -773,6 +775,7 @@ function setupRealtime(){
   sb.channel('rt-coq')
     .on('postgres_changes',{event:'*',schema:'public',table:'change_order_queue'},async()=>{
       await initCOQ();
+      recordSync();
       if(coqView)renderCOQ();
       document.querySelectorAll('.coq-row-btn').forEach(b=>{
         const c=b.closest('tr')?.querySelector('.ci-addr');if(!c)return;
@@ -786,6 +789,7 @@ function setupRealtime(){
   sb.channel('rt-tasks')
     .on('postgres_changes',{event:'*',schema:'public',table:'tasks'},async()=>{
       await loadTasks();
+      recordSync();
       if(taskView)renderTaskBoard();
     })
     .subscribe();
@@ -1278,13 +1282,20 @@ function saveTasks(){
   try{localStorage.setItem('pic_tasks_v1',JSON.stringify(tasks));}catch(e){}
   sbSyncTasks();
 }
-let _saveTimer=null;
+let _saveTimer=null,_lastSync=null;
+function _fmtSync(d){if(!d)return'never';const h=d.getHours()%12||12,m=String(d.getMinutes()).padStart(2,'0'),ap=d.getHours()<12?'AM':'PM',mo=d.getMonth()+1,dy=d.getDate();return mo+'/'+dy+' '+h+':'+m+' '+ap;}
+function _syncIdle(){const el=document.getElementById('save-status');if(!el)return;el.textContent='Synced '+_fmtSync(_lastSync);el.className='';}
+function recordSync(){_lastSync=new Date();try{localStorage.setItem('pic_sync_ts',_lastSync.toISOString());}catch(e){}_syncIdle();}
 function showSaveStatus(state){
   const el=document.getElementById('save-status');
   if(!el)return;
   clearTimeout(_saveTimer);
-  if(state==='saving'){el.textContent='⏳ Saving...';el.className='saving';}
-  else if(state==='saved'){el.textContent='✓ Saved';el.className='saved';_saveTimer=setTimeout(()=>{el.className='';},2000);}
+  if(state==='saving'){el.textContent='Saving...';el.className='saving';}
+  else if(state==='saved'){recordSync();el.textContent='✓ Saved '+_fmtSync(_lastSync);el.className='saved';_saveTimer=setTimeout(_syncIdle,2500);}
+}
+function initSyncDisplay(){
+  try{const s=localStorage.getItem('pic_sync_ts');if(s)_lastSync=new Date(s);}catch(e){}
+  _syncIdle();
 }
 
 async function sbSyncTasks(){
