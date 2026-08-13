@@ -1429,7 +1429,12 @@ function togglePermView(){
 }
 function renderPerm(){
   const presale=SECS.find(s=>s.k==='p');
-  const all=[...CMN,...presale.ec];
+  const _permDaysCol={key:'_permDays',label:'Days Waiting',t:'_permDays'};
+  const baseAll=[...CMN,...presale.ec];
+  const submIdx=baseAll.findIndex(c=>c.key==='bldgPermitSubmitted');
+  const all=[...baseAll];
+  if(submIdx>=0)all.splice(submIdx+1,0,_permDaysCol);
+  const _permDaysVal=p=>{const d=p.bldgPermitSubmitted;if(!d)return null;const diff=Math.floor((Date.now()-new Date(d))/86400000);return diff>=0?diff:null;};
   const th=document.getElementById('perm-th');th.innerHTML='';
   const tr=document.createElement('tr');
   all.forEach(col=>{
@@ -1448,7 +1453,9 @@ function renderPerm(){
   if(permSort.col){
     const sc=permSort.col,sd=permSort.dir;
     pending=[...pending].sort((a,b)=>{
-      let av=a[sc]||'',bv=b[sc]||'';
+      let av,bv;
+      if(sc==='_permDays'){av=_permDaysVal(a)??-1;bv=_permDaysVal(b)??-1;return sd*(av-bv);}
+      av=a[sc]||'';bv=b[sc]||'';
       if(sc==='_identity')av=a.address||'',bv=b.address||'';
       if(!isNaN(av)&&!isNaN(bv)&&av!==''&&bv!=='')return sd*(parseFloat(av)-parseFloat(bv));
       return sd*String(av).localeCompare(String(bv));
@@ -1469,7 +1476,12 @@ function renderPerm(){
       const k=col.key,tp=col.t;
       let v=p[k]||'';
       if(k==='ntpP'&&!v)v=p.costEstimateApproved||'';
-      if(tp==='id'){
+      if(tp==='_permDays'){
+        const days=_permDaysVal(p);
+        if(days===null){td.className='tem';td.textContent='--';}
+        else{td.className='tnu';td.style.fontWeight='700';td.style.color=days>60?'#dc2626':days>30?'#d97706':'#16a34a';td.textContent=days+'d';}
+      }
+      else if(tp==='id'){
         td.className='tc-id';td.style.whiteSpace='normal';
         const addr=p.address||'';const hm=((p.firstName||'')+' '+(p.lastName||'')).trim();const cy=p.city||'';
         td.innerHTML='<div class="ci-addr">'+(addr?es(addr):'<span class="ci-miss">No address</span>')+'</div>'+(cy?'<div class="ci-city">'+es(cy)+'</div>':'')+(hm?'<div class="ci-nm">'+es(hm)+'</div>':'');
