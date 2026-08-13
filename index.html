@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -737,8 +737,11 @@ async function init(){
     proj=Object.values(m);
   }catch(e){proj=[...ID];}}else{proj=[...ID];}
   proj=proj.filter(p=>{
-    if((p.jobStatus||'').toLowerCase().includes('withdrawn'))return false;
-    if((p.program||'').toLowerCase().includes('lemoine - volusia'))return false;
+    const js=(p.jobStatus||'').toLowerCase();
+    const pg=(p.program||'').toLowerCase();
+    if(js.includes('withdrawn'))return false;
+    if(pg.includes('(withdrawn)'))return false;
+    if(pg.includes('fl volusia'))return false;
     return true;
   });
   await Promise.all([loadTasks(),initJQ(),initCOQ()]);
@@ -1235,8 +1238,11 @@ function pf(file){
         else{proj.push(nd);pm[k]=proj.length-1;ad++;}
       });
       proj=proj.filter(p=>{
-        if((p.jobStatus||'').toLowerCase().includes('withdrawn'))return false;
-        if((p.program||'').toLowerCase().includes('lemoine - volusia'))return false;
+        const js=(p.jobStatus||'').toLowerCase();
+        const pg=(p.program||'').toLowerCase();
+        if(js.includes('withdrawn'))return false;
+        if(pg.includes('(withdrawn)'))return false;
+        if(pg.includes('fl volusia'))return false;
         return true;
       });
       try{localStorage.setItem('pic_fl_v3',JSON.stringify(proj));}catch(e){}
@@ -1955,3 +1961,4 @@ function commitEditPop(){
 </script>
 </body>
 </html>
+
