@@ -1337,6 +1337,7 @@ function genId(){return Date.now().toString(36)+Math.random().toString(36).slice
 
 function toggleJQView(){
   if(coqView)toggleCOQView();
+  if(taskView)toggleTaskView();
   jqView=!jqView;
   const btn=document.getElementById('jq-view-btn');
   document.getElementById('main').style.display=jqView?'none':'flex';
@@ -1350,6 +1351,7 @@ function toggleJQView(){
 
 function toggleCOQView(){
   if(jqView)toggleJQView();
+  if(taskView)toggleTaskView();
   coqView=!coqView;
   const btn=document.getElementById('coq-view-btn');
   document.getElementById('main').style.display=coqView?'none':'flex';
