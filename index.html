@@ -255,6 +255,11 @@ tr.dr:hover td.tmiss,tr.dr.row-permit td.tmiss{background:#fef08a}
 .coq-top-left{}
 .coq-title{font-size:17px;font-weight:700;color:var(--blue-dark)}
 .coq-sub{font-size:12px;color:var(--gray)}
+#permqueue{padding:12px 0;display:none;flex-direction:column;gap:10px}
+.perm-top{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;background:#fff;padding:14px 20px;box-shadow:var(--shadow-md);border-bottom:1px solid var(--border)}
+.perm-top-left{}
+.perm-title{font-size:17px;font-weight:700;color:#0d9488}
+.perm-sub{font-size:12px;color:var(--gray)}
 .coq-row-btn{background:none;border:none;cursor:pointer;font-size:15px;color:#9ca3af;padding:2px 5px;border-radius:var(--radius);transition:color .12s,background .12s;line-height:1}
 .coq-row-btn:hover{color:#3b82f6;background:#eff6ff}
 .coq-row-btn.coq-active{color:#3b82f6}
@@ -415,6 +420,7 @@ tr.dr:hover td.tmiss,tr.dr.row-permit td.tmiss{background:#fef08a}
     <button class="btn btn-ol" id="task-view-btn" onclick="toggleTaskView()">&#9776; Task Board</button>
     <button class="btn btn-ol" id="jq-view-btn" onclick="toggleJQView()">&#9733; Job Start Queue</button>
     <button class="btn btn-ol" id="coq-view-btn" onclick="toggleCOQView()">&#9651; Change Order Queue</button>
+    <button class="btn btn-ol" id="perm-view-btn" onclick="togglePermView()">&#9679; Permitting</button>
     <button class="btn btn-ol" onclick="openTaskModal()">&#43; Add Task</button>
     <button class="btn btn-ol" onclick="openImport()">&#8679; Import Buildertrend</button>
     <button class="btn btn-ol" onclick="exportCSV()">&#8681; Export CSV</button>
@@ -507,6 +513,17 @@ tr.dr:hover td.tmiss,tr.dr.row-permit td.tmiss{background:#fef08a}
   <div class="sc" style="border-radius:0;box-shadow:0 1px 4px rgba(0,0,0,.1)">
     <div class="sh bgo" style="cursor:default"><div class="shl"><div class="sht">Queued Projects</div><div class="shc" id="coq-count">0 projects</div></div></div>
     <div class="sbody"><div class="tw"><table><thead id="coq-th"></thead><tbody id="coq-tb"></tbody></table></div></div>
+  </div>
+</div>
+
+<div id="permqueue">
+  <div class="perm-top">
+    <div class="perm-top-left"><div class="perm-title">&#9679; Permitting</div><div class="perm-sub">Projects awaiting building permit issuance</div></div>
+    <button class="btn btn-gh" onclick="togglePermView()">&#8592; Back to Tracker</button>
+  </div>
+  <div class="sc" style="border-radius:0;box-shadow:0 1px 4px rgba(0,0,0,.1)">
+    <div class="sh" style="background:#0d9488;cursor:default"><div class="shl"><div class="sht" style="color:#fff">Pending Permit</div><div class="shc" id="perm-count" style="color:rgba(255,255,255,.75)">0 projects</div></div></div>
+    <div class="sbody"><div class="tw"><table><thead id="perm-th"></thead><tbody id="perm-tb"></tbody></table></div></div>
   </div>
 </div>
 
@@ -698,6 +715,7 @@ const sb=window.supabase.createClient(SB_URL,SB_KEY);
 let proj=[],filt=[],selI=null;
 let jqView=false,jqAddrs=[];
 let coqView=false,coqAddrs=[];
+let permView=false;
 let editMode=false,editQueue={},editPopCtx=null;
 let tasks=[],taskView=false,editTaskId=null,tbProjFilter='',tbPriFilter='',tbTagFilter='',tbSortBy='dueDate',tbSortDir=1,tbDoneOpen=false,detailAddr='';
 let col={p:false,o:false,w:false,c:false};
@@ -1335,9 +1353,63 @@ function renderJQ(){
 
 function genId(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7);}
 
+function togglePermView(){
+  if(jqView)toggleJQView();
+  if(coqView)toggleCOQView();
+  if(taskView)toggleTaskView();
+  permView=!permView;
+  const btn=document.getElementById('perm-view-btn');
+  document.getElementById('main').style.display=permView?'none':'flex';
+  document.getElementById('topbar').style.display=permView?'none':'';
+  document.getElementById('jnav').style.display=permView?'none':'';
+  document.getElementById('permqueue').style.display=permView?'block':'none';
+  if(btn)btn.textContent=permView?'◄ Back to Tracker':'● Permitting';
+  if(permView)renderPerm();
+}
+function renderPerm(){
+  const presale=SECS.find(s=>s.k==='p');
+  const all=[...CMN,...presale.ec];
+  const th=document.getElementById('perm-th');th.innerHTML='';
+  const tr=document.createElement('tr');
+  all.forEach(col=>{const th2=document.createElement('th');th2.className='thp';th2.textContent=col.label;tr.appendChild(th2);});
+  th.appendChild(tr);
+  const tb=document.getElementById('perm-tb');tb.innerHTML='';
+  const pending=proj.filter(p=>!p.bldgPermitIssued||p.bldgPermitIssued===''||p.bldgPermitIssued==='0');
+  document.getElementById('perm-count').textContent=pending.length+' project'+(pending.length===1?'':'s');
+  if(pending.length===0){
+    const er=document.createElement('tr');er.className='erow';
+    const ed=document.createElement('td');ed.colSpan=all.length;ed.textContent='All projects have a building permit issued.';
+    er.appendChild(ed);tb.appendChild(er);return;
+  }
+  pending.forEach(p=>{
+    const idx=proj.indexOf(p);
+    const tr=document.createElement('tr');tr.className='dr';
+    tr.addEventListener('click',()=>od(idx));
+    all.forEach(col=>{
+      const td=document.createElement('td');
+      const k=col.key,tp=col.t;
+      let v=p[k]||'';
+      if(k==='ntpP'&&!v)v=p.costEstimateApproved||'';
+      if(tp==='id'){
+        td.className='tc-id';td.style.whiteSpace='normal';
+        const addr=p.address||'';const hm=((p.firstName||'')+' '+(p.lastName||'')).trim();const cy=p.city||'';
+        td.innerHTML='<div class="ci-addr">'+(addr?es(addr):'<span class="ci-miss">No address</span>')+'</div>'+(cy?'<div class="ci-city">'+es(cy)+'</div>':'')+(hm?'<div class="ci-nm">'+es(hm)+'</div>':'');
+      }
+      else if(tp==='p'){td.className='tpg';td.innerHTML=pbdg(p.program);}
+      else if(tp==='st'){td.innerHTML=sbdg(p.jobStatus);}
+      else if(tp==='tx'){td.textContent=v;}
+      else if(tp==='d'){if(!v){td.className='tem';td.textContent='--';}else{td.className='tdt';td.textContent=fd2(v);}}
+      else if(tp==='n'){if(!v||v==='0'){td.className='tem';td.textContent='--';}else{td.className='tnu';td.textContent=v;}}
+      else{td.textContent=v;}
+      tr.appendChild(td);
+    });
+    tb.appendChild(tr);
+  });
+}
 function toggleJQView(){
   if(coqView)toggleCOQView();
   if(taskView)toggleTaskView();
+  if(permView)togglePermView();
   jqView=!jqView;
   const btn=document.getElementById('jq-view-btn');
   document.getElementById('main').style.display=jqView?'none':'flex';
@@ -1352,6 +1424,7 @@ function toggleJQView(){
 function toggleCOQView(){
   if(jqView)toggleJQView();
   if(taskView)toggleTaskView();
+  if(permView)togglePermView();
   coqView=!coqView;
   const btn=document.getElementById('coq-view-btn');
   document.getElementById('main').style.display=coqView?'none':'flex';
@@ -1461,6 +1534,7 @@ function renderCOQ(){
 function toggleTaskView(){
   if(jqView)toggleJQView();
   if(coqView)toggleCOQView();
+  if(permView)togglePermView();
   taskView=!taskView;
   const btn=document.getElementById('task-view-btn');
   document.getElementById('main').style.display=taskView?'none':'flex';
