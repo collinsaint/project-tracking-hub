@@ -1456,6 +1456,7 @@ function renderPerm(){
   const tb=document.getElementById('perm-tb');tb.innerHTML='';
   let pending=proj.filter(p=>{
     if(p.bldgPermitIssued&&p.bldgPermitIssued!==''&&p.bldgPermitIssued!=='0')return false;
+    const js=(p.jobStatus||'').toUpperCase();if(js==='COMPLETE')return false;
     const m=(p.jobStatus||'').match(/^(\d+)/);if(m&&parseInt(m[1],10)>=21)return false;
     return true;
   });
