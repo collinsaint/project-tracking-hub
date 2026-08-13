@@ -409,6 +409,107 @@ tr.dr:hover td.tmiss,tr.dr.row-permit td.tmiss{background:#fef08a}
 .tk-pbtn{font-size:11px;padding:3px 9px;border-radius:20px;border:1px solid var(--border);background:#fff;cursor:pointer;color:var(--gray-dark);transition:all .12s;font-weight:500}
 .tk-pbtn:hover{background:var(--blue-lighter);border-color:var(--blue-mid);color:var(--blue)}
 .tk-pdel:hover{background:var(--red-light);color:var(--red);border-color:#fca5a5}
+
+/* ── HAMBURGER BUTTON ────────────────────────────── */
+#mob-ham{display:none;align-items:center;justify-content:center;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;width:38px;height:38px;border-radius:8px;font-size:20px;cursor:pointer;flex-shrink:0;margin-left:auto;transition:background .15s;padding:0;line-height:1}
+#mob-ham:hover{background:rgba(255,255,255,.22)}
+#mob-btn.mob-on{background:rgba(255,255,255,.25);border-color:rgba(255,255,255,.6)}
+
+/* ── MOBILE SLIDE-IN MENU ────────────────────────── */
+#mob-menu{position:fixed;inset:0;background:rgba(9,30,58,.5);z-index:500;display:none;backdrop-filter:blur(3px)}
+#mob-menu.open{display:block}
+#mob-mpanel{position:absolute;top:0;right:0;width:72vw;max-width:300px;height:100%;background:#fff;box-shadow:-4px 0 24px rgba(0,0,0,.22);display:flex;flex-direction:column;overflow-y:auto;transform:translateX(100%);transition:transform .26s cubic-bezier(.4,0,.2,1)}
+#mob-menu.open #mob-mpanel{transform:translateX(0)}
+.mob-mhdr{background:linear-gradient(135deg,#091e3a 0%,#0d3b6e 100%);color:#fff;padding:20px 16px 14px;flex-shrink:0}
+.mob-mhdr-t{font-size:14px;font-weight:700;letter-spacing:.2px}
+.mob-mhdr-s{font-size:11px;opacity:.65;margin-top:2px}
+.mob-mbtn{display:flex;align-items:center;gap:12px;padding:14px 16px;border:none;background:transparent;cursor:pointer;font-size:13px;font-weight:600;color:#374151;border-bottom:1px solid #f3f4f6;width:100%;text-align:left;transition:background .12s;font-family:var(--font)}
+.mob-mbtn:hover{background:#f8fafc}
+.mob-mico{font-size:18px;width:26px;text-align:center;flex-shrink:0;line-height:1}
+.mob-msep{height:7px;background:#f3f4f6;border-top:1px solid #ebebeb;border-bottom:1px solid #ebebeb;flex-shrink:0}
+.mob-mbtn-blue{color:var(--blue)}
+
+/* ── BOTTOM NAV BAR ──────────────────────────────── */
+#mob-nav{display:none;position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #e5e7eb;box-shadow:0 -2px 14px rgba(0,0,0,.09);z-index:90;height:60px;align-items:stretch}
+body.mob #mob-nav{display:flex}
+.mnb{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;border:none;background:transparent;cursor:pointer;padding:6px 2px 5px;color:#9ca3af;transition:color .15s;position:relative;-webkit-tap-highlight-color:transparent}
+.mnb .mni{font-size:21px;line-height:1.1}
+.mnb .mnl{font-size:9px;font-weight:700;letter-spacing:.25px;white-space:nowrap;text-transform:uppercase}
+.mnb.mna{color:var(--blue)}
+.mnb.mna::after{content:'';position:absolute;top:0;left:22%;right:22%;height:2px;background:var(--blue);border-radius:0 0 2px 2px}
+
+/* ── MOBILE LAYOUT ───────────────────────────────── */
+body.mob{padding-bottom:60px}
+body.mob #hdr{height:52px;padding:0 14px;flex-wrap:nowrap;gap:0;align-items:center}
+body.mob #hdr h1{font-size:12px;gap:6px;flex:1;min-width:0;white-space:nowrap;overflow:hidden}
+body.mob #hdr h1 img{height:26px}
+body.mob #hdr h1 .sub{display:none}
+body.mob #save-status{display:none}
+body.mob #hdr>div{display:none}
+body.mob #mob-ham{display:flex}
+
+/* stats + search */
+body.mob #topbar{padding:8px 12px 6px;flex-direction:column;min-height:auto;gap:0}
+body.mob #stats-group{overflow-x:auto;-webkit-overflow-scrolling:touch;flex-wrap:nowrap;padding:0 0 8px;gap:0;border-bottom:1px solid var(--border);margin-bottom:6px;scrollbar-width:none}
+body.mob #stats-group::-webkit-scrollbar{display:none}
+body.mob .sb{padding:3px 12px 3px 0;margin-right:12px;flex-shrink:0;gap:0}
+body.mob .sn{font-size:15px}
+body.mob .sl{font-size:9px}
+body.mob .topbar-right{width:100%;border-left:none;padding:0;margin:0;flex-wrap:nowrap;gap:8px}
+body.mob #sw{flex:1;min-width:0}
+body.mob #sw input{width:100%;min-width:0}
+body.mob #filter-btn{flex-shrink:0;white-space:nowrap}
+body.mob #fpop{right:0;left:0;width:100%;max-height:72vh;overflow-y:auto;flex-direction:column}
+body.mob .msel-drop{width:100%;min-width:0}
+
+/* jump nav */
+body.mob #jnav{padding:6px 12px;overflow-x:auto;-webkit-overflow-scrolling:touch;flex-wrap:nowrap;gap:4px;scrollbar-width:none}
+body.mob #jnav::-webkit-scrollbar{display:none}
+body.mob #jnav span{display:none}
+body.mob .jb{flex-shrink:0}
+
+/* sections */
+body.mob #main{padding:4px 0;gap:4px}
+body.mob .sh{position:relative;top:0;z-index:1;padding:10px 14px}
+body.mob .sht{font-size:13px}
+body.mob .shc{font-size:10px;padding:2px 8px}
+
+/* tables: horizontal scroll + sticky first column */
+body.mob .tw{overflow-x:auto;-webkit-overflow-scrolling:touch}
+body.mob th{position:relative;white-space:nowrap;font-size:9px;padding:7px 6px}
+body.mob td{white-space:nowrap;font-size:11px;padding:5px 6px}
+body.mob th:first-child{position:sticky;left:0;z-index:11}
+body.mob td:first-child{position:sticky;left:0;z-index:5;background:#fff;box-shadow:2px 0 6px rgba(0,0,0,.07)}
+body.mob tr.dr:nth-child(even) td:first-child{background:#fafbfd}
+body.mob tr.dr:hover td:first-child{background:#f0f5ff}
+body.mob tr.dr.sel td:first-child{background:var(--blue-lighter)}
+body.mob .erow td:first-child{background:#fff;box-shadow:none}
+
+/* detail panel */
+body.mob #dpan{width:100vw;max-width:100vw}
+body.mob .dg2,body.mob .dg3{grid-template-columns:1fr}
+body.mob #dbody{padding:10px}
+body.mob #dhdr{padding:12px 14px}
+body.mob #daddr{font-size:15px}
+body.mob #dsub{font-size:11px}
+
+/* task board */
+body.mob #tboard{padding:6px 0 0}
+body.mob .tb-top{padding:12px;border-radius:0}
+body.mob .tb-title{font-size:15px}
+body.mob .tb-filter-bar{flex-wrap:wrap;padding:8px 12px;gap:6px;border-radius:0}
+body.mob .tb-main-cols{grid-template-columns:1fr}
+
+/* queues + permitting */
+body.mob .jq-top,body.mob .coq-top,body.mob .perm-top{padding:10px 12px;flex-wrap:wrap}
+body.mob .jq-title,body.mob .coq-title,body.mob .perm-title{font-size:15px}
+
+/* modals + toast */
+body.mob #ibox{width:95vw;max-width:95vw;padding:18px}
+body.mob #tbox{width:95vw;max-width:95vw}
+body.mob #tmod{padding:16px 8px 8px}
+body.mob #toast{right:12px;bottom:70px}
+body.mob .edit-bar-inner{flex-wrap:wrap;gap:6px;padding:6px 12px}
 </style>
 </head>
 <body>
@@ -427,6 +528,7 @@ tr.dr:hover td.tmiss,tr.dr.row-permit td.tmiss{background:#fef08a}
     <button class="btn btn-ol" id="edit-mode-btn" onclick="toggleEditMode()">&#9998; Edit Mode</button>
     <button class="btn btn-ol" id="mob-btn" onclick="toggleMobView()">&#128241; Mobile</button>
   </div>
+  <button id="mob-ham" onclick="toggleMobMenu()">&#9776;</button>
 </div>
 
 <div id="topbar">
@@ -2003,15 +2105,37 @@ function commitEditPop(){
 }
 
 /* ── MOBILE VIEW ─────────────────────────────────── */
+let _mobView='tracker';
+function mobileNavSet(v){
+  _mobView=v;
+  document.querySelectorAll('.mnb').forEach(b=>b.classList.remove('mna'));
+  const btn=document.getElementById('mnb-'+v);
+  if(btn)btn.classList.add('mna');
+}
+function mobileNav(v){
+  if(v===_mobView)return;
+  if(_mobView==='perm')togglePermView();
+  else if(_mobView==='jq')toggleJQView();
+  else if(_mobView==='coq')toggleCOQView();
+  else if(_mobView==='tasks')toggleTaskView();
+  if(v==='perm')togglePermView();
+  else if(v==='jq')toggleJQView();
+  else if(v==='coq')toggleCOQView();
+  else if(v==='tasks')toggleTaskView();
+  mobileNavSet(v);
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function toggleMobMenu(){document.getElementById('mob-menu').classList.toggle('open');}
+function closeMobMenu(){document.getElementById('mob-menu').classList.remove('open');}
 function setMob(on){
   document.body.classList.toggle('mob',on);
   const btn=document.getElementById('mob-btn');
   if(btn){btn.classList.toggle('mob-on',on);btn.innerHTML=on?'&#128421; Desktop':'&#128241; Mobile';}
+  if(on)mobileNavSet('tracker');
 }
 function toggleMobView(){
   const on=!document.body.classList.contains('mob');
-  setMob(on);
-  localStorage.setItem('pic_mob',on?'1':'0');
+  setMob(on);localStorage.setItem('pic_mob',on?'1':'0');
 }
 function initMobView(){
   const stored=localStorage.getItem('pic_mob');
@@ -2021,5 +2145,38 @@ function initMobView(){
   if(useMob)setMob(true);
 }
 </script>
+
+<div id="mob-menu" onclick="if(event.target===this)closeMobMenu()">
+  <div id="mob-mpanel">
+    <div class="mob-mhdr">
+      <div class="mob-mhdr-t">Partners in Construction</div>
+      <div class="mob-mhdr-s">FL Job Tracker — Actions</div>
+    </div>
+    <button class="mob-mbtn" onclick="openTaskModal();closeMobMenu()"><span class="mob-mico">&#43;</span>Add Task</button>
+    <button class="mob-mbtn" onclick="openImport();closeMobMenu()"><span class="mob-mico">&#8679;</span>Import Buildertrend</button>
+    <button class="mob-mbtn" onclick="exportCSV();closeMobMenu()"><span class="mob-mico">&#8681;</span>Export CSV</button>
+    <button class="mob-mbtn" id="mob-edit-btn" onclick="toggleEditMode();closeMobMenu()"><span class="mob-mico">&#9998;</span>Edit Mode</button>
+    <div class="mob-msep"></div>
+    <button class="mob-mbtn mob-mbtn-blue" onclick="setMob(false);localStorage.setItem('pic_mob','0');closeMobMenu()"><span class="mob-mico">&#128421;</span>Switch to Desktop</button>
+  </div>
+</div>
+
+<div id="mob-nav">
+  <button class="mnb mna" id="mnb-tracker" onclick="mobileNav('tracker')">
+    <span class="mni">&#127968;</span><span class="mnl">Home</span>
+  </button>
+  <button class="mnb" id="mnb-perm" onclick="mobileNav('perm')">
+    <span class="mni">&#9679;</span><span class="mnl">Permits</span>
+  </button>
+  <button class="mnb" id="mnb-jq" onclick="mobileNav('jq')">
+    <span class="mni">&#9733;</span><span class="mnl">Job Q</span>
+  </button>
+  <button class="mnb" id="mnb-coq" onclick="mobileNav('coq')">
+    <span class="mni">&#9651;</span><span class="mnl">CO Q</span>
+  </button>
+  <button class="mnb" id="mnb-tasks" onclick="mobileNav('tasks')">
+    <span class="mni">&#9776;</span><span class="mnl">Tasks</span>
+  </button>
+</div>
 </body>
 </html>
