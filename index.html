@@ -1434,7 +1434,12 @@ function renderPerm(){
   const submIdx=baseAll.findIndex(c=>c.key==='bldgPermitSubmitted');
   const all=[...baseAll];
   if(submIdx>=0)all.splice(submIdx+1,0,_permDaysCol);
-  const _permDaysVal=p=>{const d=p.bldgPermitSubmitted;if(!d)return null;const diff=Math.floor((Date.now()-new Date(d))/86400000);return diff>=0?diff:null;};
+  const _permDaysVal=p=>{
+    const sub=p.bldgPermitSubmitted,asgn=p.assignmentReceived;
+    const src=sub||asgn;if(!src)return null;
+    const diff=Math.floor((Date.now()-new Date(src))/86400000);
+    return diff>=0?{days:diff,fromAssignment:!sub}:null;
+  };
   const th=document.getElementById('perm-th');th.innerHTML='';
   const tr=document.createElement('tr');
   all.forEach(col=>{
@@ -1454,7 +1459,7 @@ function renderPerm(){
     const sc=permSort.col,sd=permSort.dir;
     pending=[...pending].sort((a,b)=>{
       let av,bv;
-      if(sc==='_permDays'){av=_permDaysVal(a)??-1;bv=_permDaysVal(b)??-1;return sd*(av-bv);}
+      if(sc==='_permDays'){av=(_permDaysVal(a)?.days)??-1;bv=(_permDaysVal(b)?.days)??-1;return sd*(av-bv);}
       av=a[sc]||'';bv=b[sc]||'';
       if(sc==='_identity')av=a.address||'',bv=b.address||'';
       if(!isNaN(av)&&!isNaN(bv)&&av!==''&&bv!=='')return sd*(parseFloat(av)-parseFloat(bv));
@@ -1477,9 +1482,10 @@ function renderPerm(){
       let v=p[k]||'';
       if(k==='ntpP'&&!v)v=p.costEstimateApproved||'';
       if(tp==='_permDays'){
-        const days=_permDaysVal(p);
-        if(days===null){td.className='tem';td.textContent='--';}
-        else{td.className='tnu';td.style.fontWeight='700';td.style.color=days>60?'#dc2626':days>30?'#d97706':'#16a34a';td.textContent=days+'d';}
+        const r=_permDaysVal(p);
+        if(!r){td.className='tem';td.textContent='--';}
+        else if(r.fromAssignment){td.className='tnu';td.style.fontWeight='700';td.style.background='#fef08a';td.style.color='#854d0e';td.textContent=r.days+'d';}
+        else{td.className='tnu';td.style.fontWeight='700';td.style.color=r.days>60?'#dc2626':r.days>30?'#d97706':'#16a34a';td.textContent=r.days+'d';}
       }
       else if(tp==='id'){
         td.className='tc-id';td.style.whiteSpace='normal';
