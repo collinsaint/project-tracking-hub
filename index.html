@@ -546,6 +546,37 @@ body.mob #tbox{width:95vw;max-width:95vw}
 body.mob #tmod{padding:16px 8px 8px}
 body.mob #toast{right:12px;bottom:70px}
 body.mob .edit-bar-inner{flex-wrap:wrap;gap:6px;padding:6px 12px}
+
+/* ── REPORTS ─────────────────────────────────────── */
+#reports{background:#eef1f6;min-height:calc(100vh - 52px);display:none}
+.rpt-topbar{background:#fff;border-bottom:1px solid var(--border);padding:14px 24px;display:flex;align-items:center;justify-content:space-between;gap:12px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.rpt-topbar-left{display:flex;flex-direction:column;gap:2px}
+.rpt-title{font-size:17px;font-weight:700;color:var(--gray-dark)}
+.rpt-sub{font-size:12px;color:var(--gray)}
+.rpt-topbar-right{display:flex;align-items:center;gap:10px}
+.rpt-type-sel{padding:6px 12px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-weight:600;background:#fff;color:var(--gray-dark);cursor:pointer;outline:none}
+.rpt-body{padding:24px;display:flex;flex-direction:column;gap:20px}
+.rpt-card{background:#fff;border-radius:var(--radius-lg);border:1px solid var(--border);box-shadow:var(--shadow)}
+.rpt-card-hdr{padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:8px}
+.rpt-card-title{font-size:14px;font-weight:700;color:var(--gray-dark)}
+.rpt-total-chip{background:var(--blue-lighter);color:var(--blue-mid);padding:2px 10px;border-radius:20px;font-size:11px;font-weight:600}
+.rpt-tw{overflow-x:auto}
+.rpt-table{width:100%;border-collapse:collapse;font-size:12px}
+.rpt-table thead th{padding:9px 14px;text-align:left;font-size:11px;font-weight:600;color:var(--gray);text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border);white-space:nowrap;background:var(--gray-mid)}
+.rpt-table thead th.rpt-th-prog{min-width:220px}
+.rpt-table thead th.rpt-th-num{text-align:center}
+.rpt-table thead th.rpt-th-total{text-align:center;background:#eff6ff;color:var(--blue-mid)}
+.rpt-table tbody tr{border-bottom:1px solid var(--border)}
+.rpt-table tbody tr:last-child{border-bottom:none}
+.rpt-table tbody tr:not(.rpt-totals-row):hover{background:var(--gray-light)}
+.rpt-table td{padding:9px 14px;vertical-align:middle}
+.rpt-td-prog{font-weight:500}
+.rpt-td-num{text-align:center;font-weight:600;color:var(--gray-dark)}
+.rpt-td-num.rpt-zero{color:#d1d5db;font-weight:400}
+.rpt-td-total{text-align:center;font-weight:700;color:var(--blue-mid);background:#eff6ff}
+.rpt-totals-row{background:#f0f4ff!important;border-top:2px solid var(--border-dark)!important}
+.rpt-totals-row td{font-weight:700;color:var(--gray-dark)}
+.rpt-totals-row .rpt-td-total{color:var(--blue)!important}
 </style>
 </head>
 <body>
@@ -561,6 +592,7 @@ body.mob .edit-bar-inner{flex-wrap:wrap;gap:6px;padding:6px 12px}
     <button class="btn btn-ol" id="jq-view-btn" onclick="toggleJQView()">&#9733; Job Queue</button>
     <button class="btn btn-ol" id="coq-view-btn" onclick="toggleCOQView()">&#9651; Change Orders</button>
     <button class="btn btn-ol" id="perm-view-btn" onclick="togglePermView()">&#9679; Permitting</button>
+    <button class="btn btn-ol" id="rpt-view-btn" onclick="toggleReportView()">&#128202; Reports</button>
   </div>
   <div id="hdr-sep2"></div>
   <div id="hdr-actions">
@@ -710,6 +742,22 @@ body.mob .edit-bar-inner{flex-wrap:wrap;gap:6px;padding:6px 12px}
     </div>
     <div id="tkcol-done" class="tk-done-list" style="display:none"></div>
   </div>
+</div>
+
+<div id="reports">
+  <div class="rpt-topbar">
+    <div class="rpt-topbar-left">
+      <div class="rpt-title">&#128202; Reports</div>
+      <div class="rpt-sub">Project analytics — based on currently filtered data</div>
+    </div>
+    <div class="rpt-topbar-right">
+      <select class="rpt-type-sel" id="rpt-type" onchange="renderReport()">
+        <option value="program">Program Breakdown</option>
+      </select>
+      <button class="btn btn-gh" onclick="toggleReportView()">&#8592; Back to Tracker</button>
+    </div>
+  </div>
+  <div class="rpt-body" id="rpt-body"></div>
 </div>
 
 <div id="dov" onclick="cd()"></div>
@@ -879,7 +927,7 @@ let jqView=false,jqAddrs=[];
 let coqView=false,coqAddrs=[];
 let permView=false,permSort={col:'',dir:1};
 let editMode=false,editQueue={},editPopCtx=null;
-let tasks=[],taskView=false,editTaskId=null,tbProjFilter='',tbPriFilter='',tbTagFilter='',tbSortBy='dueDate',tbSortDir=1,tbDoneOpen=false,detailAddr='';
+let tasks=[],taskView=false,reportView=false,editTaskId=null,tbProjFilter='',tbPriFilter='',tbTagFilter='',tbSortBy='dueDate',tbSortDir=1,tbDoneOpen=false,detailAddr='';
 let col={p:false,o:false,w:false,c:false};
 let srt={p:{col:'address',dir:1},o:{col:'address',dir:1},w:{col:'address',dir:1},c:{col:'address',dir:1}};
 let pgn={p:1,o:1,w:1,c:1};
@@ -1747,6 +1795,7 @@ function togglePermView(){
   if(jqView)toggleJQView();
   if(coqView)toggleCOQView();
   if(taskView)toggleTaskView();
+  if(reportView)toggleReportView();
   permView=!permView;
   const btn=document.getElementById('perm-view-btn');
   document.getElementById('main').style.display=permView?'none':'flex';
@@ -1841,6 +1890,7 @@ function toggleJQView(){
   if(coqView)toggleCOQView();
   if(taskView)toggleTaskView();
   if(permView)togglePermView();
+  if(reportView)toggleReportView();
   jqView=!jqView;
   const btn=document.getElementById('jq-view-btn');
   document.getElementById('main').style.display=jqView?'none':'flex';
@@ -1856,6 +1906,7 @@ function toggleCOQView(){
   if(jqView)toggleJQView();
   if(taskView)toggleTaskView();
   if(permView)togglePermView();
+  if(reportView)toggleReportView();
   coqView=!coqView;
   const btn=document.getElementById('coq-view-btn');
   document.getElementById('main').style.display=coqView?'none':'flex';
@@ -1966,6 +2017,7 @@ function toggleTaskView(){
   if(jqView)toggleJQView();
   if(coqView)toggleCOQView();
   if(permView)togglePermView();
+  if(reportView)toggleReportView();
   taskView=!taskView;
   const btn=document.getElementById('task-view-btn');
   document.getElementById('main').style.display=taskView?'none':'flex';
@@ -1983,6 +2035,82 @@ function toggleTaskView(){
     if(addrs.includes(cur))sel.value=cur;
     renderTaskBoard();
   }
+}
+
+function toggleReportView(){
+  if(jqView)toggleJQView();
+  if(coqView)toggleCOQView();
+  if(permView)togglePermView();
+  if(taskView)toggleTaskView();
+  reportView=!reportView;
+  const btn=document.getElementById('rpt-view-btn');
+  document.getElementById('main').style.display=reportView?'none':'flex';
+  document.getElementById('topbar').style.display=reportView?'none':'';
+  document.getElementById('jnav').style.display=reportView?'none':'';
+  document.getElementById('reports').style.display=reportView?'block':'none';
+  if(btn)btn.textContent=reportView?'◄ Back to Tracker':'📊 Reports';
+  if(reportView)renderReport();
+}
+
+function renderReport(){
+  const type=(document.getElementById('rpt-type')||{}).value||'program';
+  const body=document.getElementById('rpt-body');
+  body.innerHTML='';
+  if(type==='program')renderProgramReport(body);
+}
+
+function renderProgramReport(body){
+  const STAGES=['PRESALE','OPEN','WARRANTY','CLOSED'];
+  const STAGE_LABELS={PRESALE:'Presale',OPEN:'Open',WARRANTY:'Warranty',CLOSED:'Closed'};
+
+  const programs=[...new Set(proj.map(p=>p.program||'').filter(Boolean))].sort();
+  const types=[...new Set(proj.map(p=>p.jobType||'').filter(Boolean))].sort();
+
+  function progRows(prog){return proj.filter(p=>(p.program||'')===(prog||''));}
+
+  function buildTable(colHeaders,countFn,thClass){
+    let h='<div class="rpt-tw"><table class="rpt-table"><thead><tr>';
+    h+='<th class="rpt-th-prog">Program</th>';
+    colHeaders.forEach(c=>h+='<th class="rpt-th-num '+(thClass||'')+'">'+es(c)+'</th>');
+    h+='<th class="rpt-th-total">Total</th>';
+    h+='</tr></thead><tbody>';
+    programs.forEach(prog=>{
+      const rows=progRows(prog);
+      h+='<tr><td class="rpt-td-prog">'+pbdg(prog)+'</td>';
+      colHeaders.forEach(c=>{
+        const n=countFn(rows,c);
+        h+='<td class="rpt-td-num'+(n===0?' rpt-zero':'')+'">'+n+'</td>';
+      });
+      h+='<td class="rpt-td-total">'+rows.length+'</td></tr>';
+    });
+    h+='<tr class="rpt-totals-row"><td class="rpt-td-prog">Total</td>';
+    colHeaders.forEach(c=>{
+      const n=countFn(proj,c);
+      h+='<td class="rpt-td-num">'+n+'</td>';
+    });
+    h+='<td class="rpt-td-total">'+proj.length+'</td></tr>';
+    h+='</tbody></table></div>';
+    return h;
+  }
+
+  // Stage breakdown card
+  let html='<div class="rpt-card">';
+  html+='<div class="rpt-card-hdr"><span class="rpt-card-title">Breakdown by Stage</span><span class="rpt-total-chip">'+proj.length+' total projects</span></div>';
+  html+=buildTable(STAGES.map(s=>STAGE_LABELS[s]),(rows,label)=>{
+    const s=Object.keys(STAGE_LABELS).find(k=>STAGE_LABELS[k]===label);
+    return rows.filter(p=>p.constructionStage===s).length;
+  });
+  html+='</div>';
+
+  // Type breakdown card
+  if(types.length>0){
+    html+='<div class="rpt-card">';
+    html+='<div class="rpt-card-hdr"><span class="rpt-card-title">Breakdown by Job Type</span></div>';
+    html+=buildTable(types,(rows,t)=>rows.filter(p=>(p.jobType||'')===t).length);
+    html+='</div>';
+  }
+
+  body.innerHTML=html;
 }
 
 function openTaskModal(projAddr,taskId){
