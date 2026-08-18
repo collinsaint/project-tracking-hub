@@ -833,6 +833,13 @@ let showAll={p:false,o:false,w:false,c:false};
 let selProgs=new Set(); // empty = all programs selected
 
 function nm(s){return s.toLowerCase().replace(/[^a-z0-9]/g,'');}
+const _SFXMAP={drive:'dr',lane:'ln',road:'rd',street:'st',avenue:'ave',boulevard:'blvd',court:'ct',place:'pl',circle:'cir',terrace:'ter',trail:'trl',way:'wy'};
+function nmFuzzy(s){
+  let v=(s||'').toLowerCase().replace(/[^a-z0-9 ]/g,' ').trim().replace(/\s+/g,' ');
+  v=v.replace(/\bpointe\b/g,'point').replace(/\bclub\s+house\b/g,'clubhouse');
+  Object.entries(_SFXMAP).forEach(([l,r])=>{v=v.replace(new RegExp('\\b'+l+'$'),'_'+r);});
+  return v.replace(/[^a-z0-9]/g,'');
+}
 function es(s){if(!s)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function fd2(d){if(!d)return'';const p=d.split('-');return p.length===3?p[1]+'/'+p[2]+'/'+p[0]:d;}
 
@@ -848,7 +855,7 @@ function filterProj(arr){
 }
 function dedup(arr){
   const seen=new Set();
-  return arr.filter(p=>{const k=nm(p.address||'');if(!k||seen.has(k))return false;seen.add(k);return true;});
+  return arr.filter(p=>{const k=nmFuzzy(p.address||'');if(!k||seen.has(k))return false;seen.add(k);return true;});
 }
 async function sbLoadProjects(){
   try{
@@ -885,10 +892,8 @@ async function init(){
   initMobView();
   const sbProjs=await sbLoadProjects();
   if(sbProjs&&sbProjs.length>0){
-    const m={};
-    ID.forEach(p=>{if(p.address)m[nm(p.address)]=p;});
-    sbProjs.forEach(p=>{if(p.address)m[nm(p.address)]=p;});
-    proj=dedup(filterProj(Object.values(m)));
+    // Supabase is the source of truth — don't merge bundled JSON (avoids stale spelling variants)
+    proj=dedup(filterProj(sbProjs));
     try{localStorage.setItem('pic_fl_v3',JSON.stringify(proj));}catch(e){}
   } else {
     const st=localStorage.getItem('pic_fl_v3');
@@ -1397,12 +1402,12 @@ function pf(file){
       function g(r,n){const i=cm[n];return(i===undefined||i>=r.length)?'':(r[i]===null||r[i]===undefined)?'':String(r[i]).trim();}
       function gd3(r,n){const v=g(r,n);if(!v)return'';if(/^\d{4}-\d{2}-\d{2}/.test(v))return v.substring(0,10);const m=v.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);if(m)return m[3]+'-'+m[1].padStart(2,'0')+'-'+m[2].padStart(2,'0');return v;}
       let up=0,ad=0,sk=0;
-      // Build map from current proj
-      const pm={};proj.forEach((p,i)=>{if(p.address)pm[nm(p.address)]=i;});
+      // Build map from current proj using fuzzy matching to handle spelling variants
+      const pm={};proj.forEach((p,i)=>{if(p.address)pm[nmFuzzy(p.address)]=i;});
       rows.forEach(r=>{
         const addr=g(r,'Street Address')||g(r,'Job Name');if(!addr){sk++;return;}
         const nd={address:addr,program:g(r,'Groups'),city:g(r,'City'),jobType:g(r,'Job Type *'),permittingJurisdiction:g(r,'Permitting Jurisdiction*'),jobStatus:g(r,'Job Status*'),assignmentReceived:gd3(r,'Assignment Received*'),surveyOrdered:gd3(r,'Survey / EC Ordered*'),surveyReceived:gd3(r,'Survey / EC Received*'),plansOrdered:gd3(r,'Plans Ordered*'),plansReceived:gd3(r,'Plans Received*'),septicOrdered:gd3(r,'Septic Design Ordered*'),septicReceived:gd3(r,'Septic Design Received*'),isvCompleted:gd3(r,'ISV Completed*'),costEstimateSubmitted:gd3(r,'Cost Estimate Submitted*'),costEstimateApproved:gd3(r,'Cost Estimate Approved*'),bldgPermitSubmitted:gd3(r,'Building Permit Submitted*'),bldgPermitIssued:gd3(r,'Building Permit Issued*'),ntp:gd3(r,'NTP*'),constructionStart:gd3(r,'Actual Start'),inspection50:gd3(r,'50% Complete Date*'),inspection100:gd3(r,'100% Complete Date*'),superintendent:g(r,'Superintendent*'),constructionDeadline:gd3(r,'Construction Deadline*'),approvedConstrDelays:g(r,'Construction Delay Days*'),demoPermitIssued:gd3(r,'Demo Permit Issued*'),demoPermitNumber:g(r,'Demo Permit Number*'),demoPermitSubmitted:gd3(r,'Demo Permit Submitted*'),bldgPermitNumber:g(r,'Building Permit Number*'),ntpP:gd3(r,'NTP-P*'),approvedPreConDelays:g(r,'Pre-Con Delay Days*'),preConDeadline:gd3(r,'Pre-Construction Deadline*'),firstName:g(r,'Applicant First Name*'),lastName:g(r,'Applicant Last Name*'),projectNumber:g(r,'Prefix'),contractAmount:g(r,'Contract Price')==='0'?'':g(r,'Contract Price'),projectedStart:gd3(r,'Proj. Start'),projectedCompletion:gd3(r,'Proj. Completion'),constructionStage:g(r,'Status')};
-        const k=nm(addr);
+        const k=nmFuzzy(addr);
         if(pm[k]!==undefined){Object.assign(proj[pm[k]],nd);up++;}
         else{proj.push(nd);pm[k]=proj.length-1;ad++;}
       });
