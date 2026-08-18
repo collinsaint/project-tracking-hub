@@ -111,6 +111,8 @@ tr.dr:nth-child(even):hover td{background:#edf3ff}
 tr.dr.sel:nth-child(even) td,tr.dr.sel:nth-child(odd) td{background:var(--blue-lighter)}
 tr.dr td.tmiss{background:#fefce8}
 tr.dr:hover td.tmiss,tr.dr.row-permit td.tmiss{background:#fef08a}
+tr.dr td.tcrit-miss{background:#fee2e2;color:#dc2626}
+tr.dr:hover td.tcrit-miss,tr.dr.row-permit td.tcrit-miss{background:#fecaca}
 .ta{font-weight:600;color:var(--blue-mid);overflow:hidden;text-overflow:ellipsis}
 .tpg{white-space:nowrap;overflow:hidden}
 .tdt{color:#1d4ed8;font-variant-numeric:tabular-nums;font-size:12px}
@@ -1254,7 +1256,7 @@ function rse(sec){
         else if(tp==='p'){td.className='tpg';td.innerHTML=pbdg(p.program);miss=!p.program;}
         else if(tp==='st'){td.innerHTML=sbdg(p.jobStatus);miss=!p.jobStatus;}
         else if(tp==='tx'){td.textContent=v;miss=!v;}
-        else if(tp==='d'){if(!v){td.className='tem';td.textContent='--';miss=true;}else{td.className='tdt';td.textContent=fd2(v);if(k==='preConDeadline'&&p.constructionStage==='PRESALE'&&v<new Date().toISOString().slice(0,10))td.classList.add('toverdue');}}
+        else if(tp==='d'){if(!v){td.className='tem';td.textContent='--';miss=true;if((k==='ntp'&&['WARRANTY','CLOSED','OPEN'].includes(p.constructionStage))||(k==='inspection100'&&['WARRANTY','CLOSED'].includes(p.constructionStage)))td.classList.add('tcrit-miss');}else{td.className='tdt';td.textContent=fd2(v);if(k==='preConDeadline'&&p.constructionStage==='PRESALE'&&v<new Date().toISOString().slice(0,10))td.classList.add('toverdue');}}
         else if(tp==='n'){if(!v||v==='0'){td.className='tem';td.textContent='--';miss=true;}else{td.className='tnu';td.textContent=v;}}
         else{td.textContent=v;miss=!v;}
         if(miss)td.classList.add('tmiss');
@@ -1711,7 +1713,7 @@ function renderJQ(){
       else if(tp==='p'){td.className='tpg';td.innerHTML=pbdg(p.program);}
       else if(tp==='st'){td.innerHTML=sbdg(p.jobStatus);}
       else if(tp==='tx'){td.textContent=v;}
-      else if(tp==='d'){if(!v){td.className='tem';td.textContent='--';}else{td.className='tdt';td.textContent=fd2(v);}}
+      else if(tp==='d'){if(!v){td.className='tem';td.textContent='--';if((k==='ntp'&&['WARRANTY','CLOSED','OPEN'].includes(p.constructionStage))||(k==='inspection100'&&['WARRANTY','CLOSED'].includes(p.constructionStage)))td.classList.add('tcrit-miss');}else{td.className='tdt';td.textContent=fd2(v);}}
       else if(tp==='n'){if(!v||v==='0'){td.className='tem';td.textContent='--';}else{td.className='tnu';td.textContent=v;}}
       else{td.textContent=v;}
       tr.appendChild(td);
@@ -1815,7 +1817,7 @@ function renderPerm(){
       else if(tp==='p'){td.className='tpg';td.innerHTML=pbdg(p.program);}
       else if(tp==='st'){td.innerHTML=sbdg(p.jobStatus);}
       else if(tp==='tx'){td.textContent=v;}
-      else if(tp==='d'){if(!v){td.className='tem';td.textContent='--';}else{td.className='tdt';td.textContent=fd2(v);}}
+      else if(tp==='d'){if(!v){td.className='tem';td.textContent='--';if((k==='ntp'&&['WARRANTY','CLOSED','OPEN'].includes(p.constructionStage))||(k==='inspection100'&&['WARRANTY','CLOSED'].includes(p.constructionStage)))td.classList.add('tcrit-miss');}else{td.className='tdt';td.textContent=fd2(v);}}
       else if(tp==='n'){if(!v||v==='0'){td.className='tem';td.textContent='--';}else{td.className='tnu';td.textContent=v;}}
       else{td.textContent=v;}
       tr.appendChild(td);
@@ -1932,7 +1934,7 @@ function renderCOQ(){
       else if(tp==='p'){td.className='tpg';td.innerHTML=pbdg(p.program);}
       else if(tp==='st'){td.innerHTML=sbdg(p.jobStatus);}
       else if(tp==='tx'){td.textContent=v;}
-      else if(tp==='d'){if(!v){td.className='tem';td.textContent='--';}else{td.className='tdt';td.textContent=fd2(v);}}
+      else if(tp==='d'){if(!v){td.className='tem';td.textContent='--';if((k==='ntp'&&['WARRANTY','CLOSED','OPEN'].includes(p.constructionStage))||(k==='inspection100'&&['WARRANTY','CLOSED'].includes(p.constructionStage)))td.classList.add('tcrit-miss');}else{td.className='tdt';td.textContent=fd2(v);}}
       else if(tp==='n'){if(!v||v==='0'){td.className='tem';td.textContent='--';}else{td.className='tnu';td.textContent=v;}}
       else{td.textContent=v;}
       tr.appendChild(td);
