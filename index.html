@@ -1531,6 +1531,11 @@ function downloadChangeLog(){
 async function doImportSave(auto){
   const btn=document.getElementById('imod-save-btn');
   if(btn){btn.disabled=true;btn.textContent=auto?'Saving to cloud…':'Saving…';}
+  // Delete stale old-address rows from Supabase before upserting so renames don't re-appear
+  const renames=(window._lastChangeLog&&window._lastChangeLog.renames)||[];
+  if(renames.length){
+    try{await sb.from('projects').delete().in('address',renames.map(r=>r.oldAddr));}catch(e){}
+  }
   const ok=await sbSyncProjects();
   if(btn){
     if(ok){btn.textContent='✓ Saved to Cloud';btn.disabled=false;}
