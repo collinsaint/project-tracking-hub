@@ -1470,10 +1470,10 @@ function pf(file){
         });
         if(diffs.length)changes.push({address:p.address,diffs});
       });
-      // Collect newly added projects (not in snapshot)
+      proj=dedup(filterProj(proj));
+      // Collect newly added projects after filtering so excluded statuses don't appear as new
       const added=proj.filter(p=>p.address&&!snapshot[nmFuzzy(p.address)]).map(p=>p.address);
       window._lastChangeLog={timestamp:new Date().toISOString(),renames,added,changes};
-      proj=dedup(filterProj(proj));
       try{localStorage.setItem('pic_fl_v3',JSON.stringify(proj));}catch(e){}
       pd();af();
       const totalChanged=changes.length+renames.length+added.length;
