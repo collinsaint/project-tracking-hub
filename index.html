@@ -1492,8 +1492,8 @@ function pf(file){
       const totalChanged=changes.length+renames.length+added.length;
       let renameHtml='';
       if(renames.length){renameHtml='<div class="import-renames"><strong>&#9888; Address updates noted:</strong>'+renames.map(r=>'<div class="rename-row">&#x2192; <em>'+r.oldAddr+'</em> &rarr; <b>'+r.newAddr+'</b></div>').join('')+'</div>';}
-      sir('success','<strong>Import complete:</strong> '+up+' updated &nbsp;·&nbsp; '+ad+' added &nbsp;·&nbsp; '+sk+' skipped.'+renameHtml+'<div class="iact" style="margin-top:12px;padding:0;border:none;display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-primary" id="imod-save-btn" onclick="doImportSave()">&#128190; Save to Cloud</button><button class="btn btn-ol" id="cloud-refresh-btn" onclick="refreshFromCloud()">&#8635; Refresh from Cloud</button>'+(totalChanged?'<button class="btn btn-ol" onclick="openChangeLog()">&#128203; View Change Log ('+totalChanged+' changed)</button>':'')+'</div>');
-      st2('Imported: '+up+' updated, '+ad+' added');
+      sir('success','<strong>Import complete:</strong> '+up+' updated &nbsp;·&nbsp; '+added.length+' added &nbsp;·&nbsp; '+sk+' skipped.'+renameHtml+'<div class="iact" style="margin-top:12px;padding:0;border:none;display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-primary" id="imod-save-btn" onclick="doImportSave()">&#128190; Save to Cloud</button><button class="btn btn-ol" id="cloud-refresh-btn" onclick="refreshFromCloud()">&#8635; Refresh from Cloud</button>'+(totalChanged?'<button class="btn btn-ol" onclick="openChangeLog()">&#128203; View Change Log ('+totalChanged+' changed)</button>':'')+'</div>');
+      st2('Imported: '+up+' updated, '+added.length+' added');
       doImportSave(true);
     }catch(err){sir('error','Error: '+err.message);}
   };
