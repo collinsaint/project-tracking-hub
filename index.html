@@ -960,15 +960,14 @@ async function init(){
   setupRealtime();
 }
 
+let _importInProgress=false;
 function setupRealtime(){
   sb.channel('rt-projects')
     .on('postgres_changes',{event:'*',schema:'public',table:'projects'},async()=>{
+      if(_importInProgress)return;
       const ps=await sbLoadProjects();
       if(!ps)return;
-      const m={};
-      ID.forEach(p=>{if(p.address)m[nm(p.address)]=p;});
-      ps.forEach(p=>{if(p.address)m[nm(p.address)]=p;});
-      proj=dedup(filterProj(Object.values(m)));
+      proj=dedup(filterProj(ps));
       try{localStorage.setItem('pic_fl_v3',JSON.stringify(proj));}catch(e){}
       pd();af();
       recordSync();
@@ -1531,17 +1530,20 @@ function downloadChangeLog(){
 async function doImportSave(auto){
   const btn=document.getElementById('imod-save-btn');
   if(btn){btn.disabled=true;btn.textContent=auto?'Saving to cloud…':'Saving…';}
-  // Delete stale old-address rows from Supabase before upserting so renames don't re-appear
-  const renames=(window._lastChangeLog&&window._lastChangeLog.renames)||[];
-  if(renames.length){
-    try{await sb.from('projects').delete().in('address',renames.map(r=>r.oldAddr));}catch(e){}
-  }
-  const ok=await sbSyncProjects();
-  if(btn){
-    if(ok){btn.textContent='✓ Saved to Cloud';btn.disabled=false;}
-    else{btn.textContent='⚠ Save failed — retry';btn.disabled=false;}
-  }
-  if(ok&&!auto)st2('Saved to cloud!');
+  _importInProgress=true;
+  try{
+    // Delete stale old-address rows from Supabase before upserting so renames don't re-appear
+    const renames=(window._lastChangeLog&&window._lastChangeLog.renames)||[];
+    if(renames.length){
+      try{await sb.from('projects').delete().in('address',renames.map(r=>r.oldAddr));}catch(e){}
+    }
+    const ok=await sbSyncProjects();
+    if(btn){
+      if(ok){btn.textContent='✓ Saved to Cloud';btn.disabled=false;}
+      else{btn.textContent='⚠ Save failed — retry';btn.disabled=false;}
+    }
+    if(ok&&!auto)st2('Saved to cloud!');
+  }finally{_importInProgress=false;}
 }
 
 function sir(type,html){const el=document.getElementById('ires');el.className=type;el.innerHTML='<p>'+html+'</p>';el.style.display='block';}
