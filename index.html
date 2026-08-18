@@ -685,7 +685,10 @@ body.mob .edit-bar-inner{flex-wrap:wrap;gap:6px;padding:6px 12px}
     <div id="fdi">&#128193;</div><div id="fdt">Click to select or drag and drop</div><div id="fds">Buildertrend Excel export (.xlsx)</div>
   </div>
   <div id="ires"></div>
-  <div class="iact"><button class="btn btn-gh" onclick="ci()">Cancel</button></div>
+  <div class="iact">
+    <button class="btn btn-gh" onclick="ci()">Close</button>
+    <button class="btn btn-ol" id="cloud-refresh-btn" onclick="refreshFromCloud()">&#8635; Refresh from Cloud</button>
+  </div>
 </div></div>
 
 <div id="tmod"><div id="tbox">
@@ -833,16 +836,8 @@ function nm(s){return s.toLowerCase().replace(/[^a-z0-9]/g,'');}
 function es(s){if(!s)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function fd2(d){if(!d)return'';const p=d.split('-');return p.length===3?p[1]+'/'+p[2]+'/'+p[0]:d;}
 
-async function init(){
-  initMobView();
-  const st=localStorage.getItem('pic_fl_v3');
-  if(st){try{
-    const ps=JSON.parse(st);const m={};
-    ps.forEach(p=>{if(p.address)m[nm(p.address)]=p;});
-    ID.forEach(p=>{const k=nm(p.address||'');if(!m[k])m[k]=p;});
-    proj=Object.values(m);
-  }catch(e){proj=[...ID];}}else{proj=[...ID];}
-  proj=proj.filter(p=>{
+function filterProj(arr){
+  return arr.filter(p=>{
     const js=(p.jobStatus||'').toLowerCase();
     const pg=(p.program||'').toLowerCase();
     if(js.includes('withdrawn'))return false;
@@ -850,6 +845,60 @@ async function init(){
     if(pg.includes('fl volusia'))return false;
     return true;
   });
+}
+function dedup(arr){
+  const seen=new Set();
+  return arr.filter(p=>{const k=nm(p.address||'');if(!k||seen.has(k))return false;seen.add(k);return true;});
+}
+async function sbLoadProjects(){
+  try{
+    const {data,error}=await sb.from('projects').select('address,data,updated_at');
+    if(error||!data||data.length===0)return null;
+    return data.map(r=>({...r.data,address:r.address}));
+  }catch(e){return null;}
+}
+async function sbSyncProjects(){
+  try{
+    showSaveStatus('saving');
+    const rows=proj.map(p=>({address:p.address,data:p,updated_at:new Date().toISOString()}));
+    const {error}=await sb.from('projects').upsert(rows,{onConflict:'address'});
+    if(error)throw error;
+    showSaveStatus('saved');
+    return true;
+  }catch(e){showSaveStatus('saved');console.error('sbSyncProjects:',e);return false;}
+}
+async function refreshFromCloud(){
+  const btn=document.getElementById('cloud-refresh-btn');
+  if(btn){btn.disabled=true;btn.textContent='Refreshing...';}
+  const ps=await sbLoadProjects();
+  if(btn){btn.disabled=false;btn.textContent='↻ Refresh from Cloud';}
+  if(!ps){st2('No cloud data found.');return;}
+  const m={};
+  ID.forEach(p=>{if(p.address)m[nm(p.address)]=p;});
+  ps.forEach(p=>{if(p.address)m[nm(p.address)]=p;});
+  proj=dedup(filterProj(Object.values(m)));
+  try{localStorage.setItem('pic_fl_v3',JSON.stringify(proj));}catch(e){}
+  pd();af();
+  st2('Refreshed: '+proj.length+' projects loaded from cloud');
+}
+async function init(){
+  initMobView();
+  const sbProjs=await sbLoadProjects();
+  if(sbProjs&&sbProjs.length>0){
+    const m={};
+    ID.forEach(p=>{if(p.address)m[nm(p.address)]=p;});
+    sbProjs.forEach(p=>{if(p.address)m[nm(p.address)]=p;});
+    proj=dedup(filterProj(Object.values(m)));
+    try{localStorage.setItem('pic_fl_v3',JSON.stringify(proj));}catch(e){}
+  } else {
+    const st=localStorage.getItem('pic_fl_v3');
+    if(st){try{
+      const ps=JSON.parse(st);const m={};
+      ps.forEach(p=>{if(p.address)m[nm(p.address)]=p;});
+      ID.forEach(p=>{const k=nm(p.address||'');if(!m[k])m[k]=p;});
+      proj=dedup(filterProj(Object.values(m)));
+    }catch(e){proj=dedup(filterProj([...ID]));}}else{proj=dedup(filterProj([...ID]));}
+  }
   await Promise.all([loadTasks(),initJQ(),initCOQ()]);
   SECS.forEach(s=>bh(s));
   pd();af();
@@ -867,6 +916,19 @@ async function init(){
 }
 
 function setupRealtime(){
+  sb.channel('rt-projects')
+    .on('postgres_changes',{event:'*',schema:'public',table:'projects'},async()=>{
+      const ps=await sbLoadProjects();
+      if(!ps)return;
+      const m={};
+      ID.forEach(p=>{if(p.address)m[nm(p.address)]=p;});
+      ps.forEach(p=>{if(p.address)m[nm(p.address)]=p;});
+      proj=dedup(filterProj(Object.values(m)));
+      try{localStorage.setItem('pic_fl_v3',JSON.stringify(proj));}catch(e){}
+      pd();af();
+      recordSync();
+    })
+    .subscribe();
   sb.channel('rt-jq')
     .on('postgres_changes',{event:'*',schema:'public',table:'job_start_queue'},async()=>{
       await initJQ();
@@ -1335,6 +1397,7 @@ function pf(file){
       function g(r,n){const i=cm[n];return(i===undefined||i>=r.length)?'':(r[i]===null||r[i]===undefined)?'':String(r[i]).trim();}
       function gd3(r,n){const v=g(r,n);if(!v)return'';if(/^\d{4}-\d{2}-\d{2}/.test(v))return v.substring(0,10);const m=v.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);if(m)return m[3]+'-'+m[1].padStart(2,'0')+'-'+m[2].padStart(2,'0');return v;}
       let up=0,ad=0,sk=0;
+      // Build map from current proj
       const pm={};proj.forEach((p,i)=>{if(p.address)pm[nm(p.address)]=i;});
       rows.forEach(r=>{
         const addr=g(r,'Street Address')||g(r,'Job Name');if(!addr){sk++;return;}
@@ -1343,21 +1406,26 @@ function pf(file){
         if(pm[k]!==undefined){Object.assign(proj[pm[k]],nd);up++;}
         else{proj.push(nd);pm[k]=proj.length-1;ad++;}
       });
-      proj=proj.filter(p=>{
-        const js=(p.jobStatus||'').toLowerCase();
-        const pg=(p.program||'').toLowerCase();
-        if(js.includes('withdrawn'))return false;
-        if(pg.includes('(withdrawn)'))return false;
-        if(pg.includes('fl volusia'))return false;
-        return true;
-      });
+      proj=dedup(filterProj(proj));
       try{localStorage.setItem('pic_fl_v3',JSON.stringify(proj));}catch(e){}
       pd();af();
-      sir('success','Import complete: <strong>'+up+'</strong> updated, <strong>'+ad+'</strong> added, <strong>'+sk+'</strong> skipped.');
+      sir('success','<strong>Import complete:</strong> '+up+' updated &nbsp;·&nbsp; '+ad+' added &nbsp;·&nbsp; '+sk+' skipped.<div class="iact" style="margin-top:12px;padding:0;border:none"><button class="btn btn-primary" id="imod-save-btn" onclick="doImportSave()">&#128190; Save to Cloud</button><button class="btn btn-ol" id="cloud-refresh-btn" onclick="refreshFromCloud()">&#8635; Refresh from Cloud</button></div>');
       st2('Imported: '+up+' updated, '+ad+' added');
+      // Auto-save to cloud
+      doImportSave(true);
     }catch(err){sir('error','Error: '+err.message);}
   };
   reader.readAsArrayBuffer(file);
+}
+async function doImportSave(auto){
+  const btn=document.getElementById('imod-save-btn');
+  if(btn){btn.disabled=true;btn.textContent=auto?'Saving to cloud…':'Saving…';}
+  const ok=await sbSyncProjects();
+  if(btn){
+    if(ok){btn.textContent='✓ Saved to Cloud';btn.disabled=false;}
+    else{btn.textContent='⚠ Save failed — retry';btn.disabled=false;}
+  }
+  if(ok&&!auto)st2('Saved to cloud!');
 }
 
 function sir(type,html){const el=document.getElementById('ires');el.className=type;el.innerHTML='<p>'+html+'</p>';el.style.display='block';}
@@ -2166,6 +2234,7 @@ window.addEventListener('resize',updateMobSticky);
     </div>
     <button class="mob-mbtn" onclick="openTaskModal();closeMobMenu()"><span class="mob-mico">&#43;</span>Add Task</button>
     <button class="mob-mbtn" onclick="openImport();closeMobMenu()"><span class="mob-mico">&#8679;</span>Import Buildertrend</button>
+    <button class="mob-mbtn" onclick="refreshFromCloud();closeMobMenu()"><span class="mob-mico">&#8635;</span>Refresh from Cloud</button>
     <button class="mob-mbtn" onclick="exportCSV();closeMobMenu()"><span class="mob-mico">&#8681;</span>Export CSV</button>
     <button class="mob-mbtn" id="mob-edit-btn" onclick="toggleEditMode();closeMobMenu()"><span class="mob-mico">&#9998;</span>Edit Mode</button>
     <div class="mob-msep"></div>
