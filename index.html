@@ -547,6 +547,47 @@ body.mob #tmod{padding:16px 8px 8px}
 body.mob #toast{right:12px;bottom:70px}
 body.mob .edit-bar-inner{flex-wrap:wrap;gap:6px;padding:6px 12px}
 
+/* ── WEEKLY UPDATES ─────────────────────────────── */
+#wuview{background:#eef1f6;min-height:calc(100vh - 52px);display:none}
+.wu-topbar{background:#fff;border-bottom:1px solid var(--border);padding:14px 24px;display:flex;align-items:center;justify-content:space-between;gap:12px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.wu-topbar-left{display:flex;flex-direction:column;gap:2px}
+.wu-topbar-title{font-size:17px;font-weight:700;color:var(--gray-dark)}
+.wu-topbar-sub{font-size:12px;color:var(--gray)}
+.wu-topbar-right{display:flex;align-items:center;gap:10px}
+.wu-week-badge{background:var(--blue-lighter);color:var(--blue-mid);padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600}
+.wu-summary-bar{background:#fff;border-bottom:1px solid var(--border);padding:10px 24px;display:flex;align-items:center;gap:16px}
+.wu-summary-pill{display:flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600}
+.wu-summary-pill.idle{background:#f3f4f6;color:var(--gray)}
+.wu-summary-pill.progress{background:#fef9c3;color:#854d0e}
+.wu-summary-pill.done{background:#dcfce7;color:#15803d}
+.wu-body{padding:24px;display:flex;flex-direction:column;gap:28px}
+.wu-day-section{}
+.wu-day-hdr{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.wu-day-label{font-size:13px;font-weight:700;color:var(--gray-dark);text-transform:uppercase;letter-spacing:.6px;white-space:nowrap}
+.wu-day-line{flex:1;height:1px;background:var(--border)}
+.wu-time-block{margin-bottom:16px}
+.wu-time-label{font-size:11px;font-weight:600;color:var(--gray);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;padding-left:2px}
+.wu-cards{display:flex;flex-wrap:wrap;gap:14px}
+.wu-card{background:#fff;border-radius:var(--radius-lg);border:1px solid var(--border);box-shadow:var(--shadow);padding:18px 20px;min-width:260px;flex:1;max-width:380px;transition:box-shadow .15s}
+.wu-card:hover{box-shadow:var(--shadow-md)}
+.wu-card.wu-done{border-color:#86efac;background:#f0fdf4}
+.wu-card.wu-progress{border-color:#fde68a;background:#fffbeb}
+.wu-card-name{font-size:14px;font-weight:700;color:var(--gray-dark);margin-bottom:2px}
+.wu-card-due{font-size:11px;color:var(--gray);margin-bottom:16px}
+.wu-steps{display:flex;align-items:center;gap:0}
+.wu-step{display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;background:none;border:none;padding:4px 8px;border-radius:var(--radius-sm);transition:background .15s;flex:1}
+.wu-step:hover{background:var(--gray-light)}
+.wu-step-dot{width:22px;height:22px;border-radius:50%;border:2px solid var(--border-dark);background:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;transition:all .2s}
+.wu-step.wu-s-done .wu-step-dot{background:#15803d;border-color:#15803d;color:#fff}
+.wu-step.wu-s-done .wu-step-dot::after{content:'✓'}
+.wu-step.wu-s-active .wu-step-dot{background:#1a5fa8;border-color:#1a5fa8;color:#fff}
+.wu-step.wu-s-active .wu-step-dot::after{content:'●';font-size:8px}
+.wu-step-lbl{font-size:10px;font-weight:600;text-align:center;white-space:nowrap;color:var(--gray);letter-spacing:.2px;line-height:1.2}
+.wu-step.wu-s-done .wu-step-lbl{color:#15803d}
+.wu-step.wu-s-active .wu-step-lbl{color:#1a5fa8}
+.wu-connector{flex:1;height:2px;background:var(--border);margin:0 -2px;margin-bottom:18px;transition:background .2s;max-width:36px}
+.wu-connector.wu-conn-done{background:#15803d}
+
 /* ── REPORTS ─────────────────────────────────────── */
 #reports{background:#eef1f6;min-height:calc(100vh - 52px);display:none}
 .rpt-topbar{background:#fff;border-bottom:1px solid var(--border);padding:14px 24px;display:flex;align-items:center;justify-content:space-between;gap:12px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
@@ -593,6 +634,7 @@ body.mob .edit-bar-inner{flex-wrap:wrap;gap:6px;padding:6px 12px}
     <button class="btn btn-ol" id="coq-view-btn" onclick="toggleCOQView()">&#9651; Change Orders</button>
     <button class="btn btn-ol" id="perm-view-btn" onclick="togglePermView()">&#9679; Permitting</button>
     <button class="btn btn-ol" id="rpt-view-btn" onclick="toggleReportView()">&#128202; Reports</button>
+    <button class="btn btn-ol" id="wu-view-btn" onclick="toggleWUView()">&#128197; Weekly Updates</button>
   </div>
   <div id="hdr-sep2"></div>
   <div id="hdr-actions">
@@ -758,6 +800,21 @@ body.mob .edit-bar-inner{flex-wrap:wrap;gap:6px;padding:6px 12px}
     </div>
   </div>
   <div class="rpt-body" id="rpt-body"></div>
+</div>
+
+<div id="wuview">
+  <div class="wu-topbar">
+    <div class="wu-topbar-left">
+      <div class="wu-topbar-title">&#128197; Weekly Updates</div>
+      <div class="wu-topbar-sub">Track weekly reporting completion by program</div>
+    </div>
+    <div class="wu-topbar-right">
+      <span class="wu-week-badge" id="wu-week-label"></span>
+      <button class="btn btn-gh" onclick="toggleWUView()">&#8592; Back to Tracker</button>
+    </div>
+  </div>
+  <div class="wu-summary-bar" id="wu-summary-bar"></div>
+  <div class="wu-body" id="wu-body"></div>
 </div>
 
 <div id="dov" onclick="cd()"></div>
@@ -927,6 +984,17 @@ let jqView=false,jqAddrs=[];
 let coqView=false,coqAddrs=[];
 let permView=false,permSort={col:'',dir:1};
 let editMode=false,editQueue={},editPopCtx=null;
+const WU_PROGRAMS=[
+  {key:'pasco',label:'Pasco Better Futures',day:'Tuesday',time:'Morning'},
+  {key:'pinellas',label:'Pinellas Recovers',day:'Tuesday',time:'Morning'},
+  {key:'leecares',label:'Lee Cares',day:'Tuesday',time:'Afternoon'},
+  {key:'orangecounty',label:'Orange County',day:'Tuesday',time:'Afternoon'},
+  {key:'rebuildfl',label:'Rebuild Florida',day:'Wednesday',time:'Morning'},
+  {key:'georgiahrrp',label:'Georgia HRRP',day:'Wednesday',time:'Morning'},
+  {key:'resilientsrq',label:'ResilientSRQ',day:'Wednesday',time:'Afternoon'},
+];
+const WU_STEP_LABELS=['Incomplete','Tracker Done','Submitted'];
+let wuView=false,wuData={weekOf:'',state:{}};
 let tasks=[],taskView=false,reportView=false,editTaskId=null,tbProjFilter='',tbPriFilter='',tbTagFilter='',tbSortBy='dueDate',tbSortDir=1,tbDoneOpen=false,detailAddr='';
 let col={p:false,o:false,w:false,c:false};
 let srt={p:{col:'address',dir:1},o:{col:'address',dir:1},w:{col:'address',dir:1},c:{col:'address',dir:1}};
@@ -1796,6 +1864,7 @@ function togglePermView(){
   if(coqView)toggleCOQView();
   if(taskView)toggleTaskView();
   if(reportView)toggleReportView();
+  if(wuView)toggleWUView();
   permView=!permView;
   const btn=document.getElementById('perm-view-btn');
   document.getElementById('main').style.display=permView?'none':'flex';
@@ -1891,6 +1960,7 @@ function toggleJQView(){
   if(taskView)toggleTaskView();
   if(permView)togglePermView();
   if(reportView)toggleReportView();
+  if(wuView)toggleWUView();
   jqView=!jqView;
   const btn=document.getElementById('jq-view-btn');
   document.getElementById('main').style.display=jqView?'none':'flex';
@@ -1907,6 +1977,7 @@ function toggleCOQView(){
   if(taskView)toggleTaskView();
   if(permView)togglePermView();
   if(reportView)toggleReportView();
+  if(wuView)toggleWUView();
   coqView=!coqView;
   const btn=document.getElementById('coq-view-btn');
   document.getElementById('main').style.display=coqView?'none':'flex';
@@ -2018,6 +2089,7 @@ function toggleTaskView(){
   if(coqView)toggleCOQView();
   if(permView)togglePermView();
   if(reportView)toggleReportView();
+  if(wuView)toggleWUView();
   taskView=!taskView;
   const btn=document.getElementById('task-view-btn');
   document.getElementById('main').style.display=taskView?'none':'flex';
@@ -2037,11 +2109,110 @@ function toggleTaskView(){
   }
 }
 
+/* ── WEEKLY UPDATES ─────────────────────────────── */
+function wuGetWeekOf(){
+  const d=new Date(),day=d.getDay();
+  const sun=new Date(d);sun.setDate(d.getDate()-day);sun.setHours(0,0,0,0);
+  return sun.toISOString().slice(0,10);
+}
+function wuFormatRange(weekOf){
+  const sun=new Date(weekOf+'T00:00:00');
+  const sat=new Date(sun);sat.setDate(sun.getDate()+6);
+  const f=d=>d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+  return'Week of '+f(sun)+' – '+f(sat);
+}
+async function wuLoad(){
+  const weekOf=wuGetWeekOf();
+  try{
+    const {data,error}=await sb.from('weekly_updates').select('*').eq('week_of',weekOf).single();
+    if(!error&&data){wuData={weekOf,state:data.state||{}};localStorage.setItem('pic_wu_v1',JSON.stringify(wuData));return;}
+  }catch(e){}
+  try{
+    const s=localStorage.getItem('pic_wu_v1');
+    if(s){const p=JSON.parse(s);if(p.weekOf===weekOf){wuData=p;return;}}
+  }catch(e){}
+  wuData={weekOf,state:{}};
+}
+async function wuSave(){
+  localStorage.setItem('pic_wu_v1',JSON.stringify(wuData));
+  try{await sb.from('weekly_updates').upsert({week_of:wuData.weekOf,state:wuData.state,updated_at:new Date().toISOString()},{onConflict:'week_of'});}catch(e){}
+}
+function wuSetStatus(key,val){
+  const cur=wuData.state[key]||0;
+  wuData.state[key]=cur===val&&val>0?val-1:val;
+  wuSave();
+  renderWU();
+}
+function renderWU(){
+  const weekOf=wuData.weekOf;
+  document.getElementById('wu-week-label').textContent=wuFormatRange(weekOf);
+  const groups=[
+    {day:'Tuesday',slots:[
+      {time:'Morning',keys:['pasco','pinellas']},
+      {time:'Afternoon',keys:['leecares','orangecounty']}
+    ]},
+    {day:'Wednesday',slots:[
+      {time:'Morning',keys:['rebuildfl','georgiahrrp']},
+      {time:'Afternoon',keys:['resilientsrq']}
+    ]}
+  ];
+  const counts={0:0,1:0,2:0};
+  WU_PROGRAMS.forEach(p=>{counts[wuData.state[p.key]||0]++;});
+  document.getElementById('wu-summary-bar').innerHTML=
+    '<span class="wu-summary-pill idle">&#9711; '+counts[0]+' Incomplete</span>'+
+    '<span class="wu-summary-pill progress">&#9684; '+counts[1]+' Tracker Done</span>'+
+    '<span class="wu-summary-pill done">&#10003; '+counts[2]+' Submitted</span>';
+  let html='';
+  groups.forEach(g=>{
+    html+='<div class="wu-day-section"><div class="wu-day-hdr"><span class="wu-day-label">'+g.day+'</span><div class="wu-day-line"></div></div>';
+    g.slots.forEach(slot=>{
+      html+='<div class="wu-time-block"><div class="wu-time-label">'+slot.time+'</div><div class="wu-cards">';
+      slot.keys.forEach(key=>{
+        const prog=WU_PROGRAMS.find(p=>p.key===key);
+        const status=wuData.state[key]||0;
+        const cardCls=status===2?'wu-done':status===1?'wu-progress':'';
+        html+='<div class="wu-card '+cardCls+'">';
+        html+='<div class="wu-card-name">'+es(prog.label)+'</div>';
+        html+='<div class="wu-card-due">Due '+prog.day+' '+prog.time+'</div>';
+        html+='<div class="wu-steps">';
+        WU_STEP_LABELS.forEach((lbl,i)=>{
+          const cls=status>i?'wu-s-done':status===i?'wu-s-active':'';
+          html+='<button class="wu-step '+cls+'" onclick="wuSetStatus(\''+key+'\','+i+')" title="'+lbl+'">';
+          html+='<div class="wu-step-dot"></div>';
+          html+='<div class="wu-step-lbl">'+lbl+'</div>';
+          html+='</button>';
+          if(i<2)html+='<div class="wu-connector'+(status>i?' wu-conn-done':'')+'"></div>';
+        });
+        html+='</div></div>';
+      });
+      html+='</div></div>';
+    });
+    html+='</div>';
+  });
+  document.getElementById('wu-body').innerHTML=html;
+}
+function toggleWUView(){
+  if(jqView)toggleJQView();
+  if(coqView)toggleCOQView();
+  if(permView)togglePermView();
+  if(taskView)toggleTaskView();
+  if(reportView)toggleReportView();
+  wuView=!wuView;
+  const btn=document.getElementById('wu-view-btn');
+  document.getElementById('main').style.display=wuView?'none':'flex';
+  document.getElementById('topbar').style.display=wuView?'none':'';
+  document.getElementById('jnav').style.display=wuView?'none':'';
+  document.getElementById('wuview').style.display=wuView?'block':'none';
+  if(btn)btn.textContent=wuView?'◄ Back to Tracker':'📅 Weekly Updates';
+  if(wuView){wuLoad().then(()=>renderWU());}
+}
+
 function toggleReportView(){
   if(jqView)toggleJQView();
   if(coqView)toggleCOQView();
   if(permView)togglePermView();
   if(taskView)toggleTaskView();
+  if(wuView)toggleWUView();
   reportView=!reportView;
   const btn=document.getElementById('rpt-view-btn');
   document.getElementById('main').style.display=reportView?'none':'flex';
