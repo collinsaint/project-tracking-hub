@@ -990,7 +990,7 @@ const WU_PROGRAMS=[
   {key:'georgiahrrp',label:'Georgia HRRP',day:'Wednesday',time:'Morning'},
   {key:'resilientsrq',label:'ResilientSRQ',day:'Wednesday',time:'Afternoon'},
 ];
-const WU_STEP_LABELS=['Incomplete','Tracker Done','Submitted'];
+const WU_STEP_LABELS=['Tracker Done','Submitted'];
 let wuView=false,wuData={weekOf:'',state:{}};
 let tasks=[],taskView=false,reportView=false,editTaskId=null,tbProjFilter='',tbPriFilter='',tbTagFilter='',tbSortBy='dueDate',tbSortDir=1,tbDoneOpen=false,detailAddr='';
 let col={p:false,o:false,w:false,c:false};
@@ -2155,7 +2155,7 @@ function renderWU(){
     ]}
   ];
   let cntIdle=0,cntProg=0,cntDone=0;
-  WU_PROGRAMS.forEach(p=>{const s=wuData.state[p.key]||0;if(s===0)cntIdle++;else if(s===3)cntDone++;else cntProg++;});
+  WU_PROGRAMS.forEach(p=>{const s=wuData.state[p.key]||0;if(s===0)cntIdle++;else if(s===2)cntDone++;else cntProg++;});
   document.getElementById('wu-summary-bar').innerHTML=
     '<span class="wu-summary-pill idle">&#9711; '+cntIdle+' Incomplete</span>'+
     '<span class="wu-summary-pill progress">&#9684; '+cntProg+' In Progress</span>'+
@@ -2168,7 +2168,7 @@ function renderWU(){
       slot.keys.forEach(key=>{
         const prog=WU_PROGRAMS.find(p=>p.key===key);
         const status=wuData.state[key]||0;
-        const cardCls=status===3?'wu-done':status>0?'wu-progress':'';
+        const cardCls=status===2?'wu-done':status===1?'wu-progress':'';
         html+='<div class="wu-card '+cardCls+'">';
         html+='<div class="wu-card-name">'+es(prog.label)+'</div>';
         html+='<div class="wu-card-due">Due '+prog.day+' '+prog.time+'</div>';
