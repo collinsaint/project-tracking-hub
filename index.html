@@ -2134,9 +2134,10 @@ async function wuSave(){
   localStorage.setItem('pic_wu_v1',JSON.stringify(wuData));
   try{await sb.from('weekly_updates').upsert({week_of:wuData.weekOf,state:wuData.state,updated_at:new Date().toISOString()},{onConflict:'week_of'});}catch(e){}
 }
-function wuSetStatus(key,val){
+function wuSetStatus(key,circleIdx){
+  const newStatus=circleIdx+1;
   const cur=wuData.state[key]||0;
-  wuData.state[key]=cur===val&&val>0?val-1:val;
+  wuData.state[key]=cur===newStatus?cur-1:newStatus;
   wuSave();
   renderWU();
 }
@@ -2153,12 +2154,12 @@ function renderWU(){
       {time:'Afternoon',keys:['resilientsrq']}
     ]}
   ];
-  const counts={0:0,1:0,2:0};
-  WU_PROGRAMS.forEach(p=>{counts[wuData.state[p.key]||0]++;});
+  let cntIdle=0,cntProg=0,cntDone=0;
+  WU_PROGRAMS.forEach(p=>{const s=wuData.state[p.key]||0;if(s===0)cntIdle++;else if(s===3)cntDone++;else cntProg++;});
   document.getElementById('wu-summary-bar').innerHTML=
-    '<span class="wu-summary-pill idle">&#9711; '+counts[0]+' Incomplete</span>'+
-    '<span class="wu-summary-pill progress">&#9684; '+counts[1]+' Tracker Done</span>'+
-    '<span class="wu-summary-pill done">&#10003; '+counts[2]+' Submitted</span>';
+    '<span class="wu-summary-pill idle">&#9711; '+cntIdle+' Incomplete</span>'+
+    '<span class="wu-summary-pill progress">&#9684; '+cntProg+' In Progress</span>'+
+    '<span class="wu-summary-pill done">&#10003; '+cntDone+' Submitted</span>';
   let html='';
   groups.forEach(g=>{
     html+='<div class="wu-day-section"><div class="wu-day-hdr"><span class="wu-day-label">'+g.day+'</span><div class="wu-day-line"></div></div>';
@@ -2167,18 +2168,19 @@ function renderWU(){
       slot.keys.forEach(key=>{
         const prog=WU_PROGRAMS.find(p=>p.key===key);
         const status=wuData.state[key]||0;
-        const cardCls=status===2?'wu-done':status===1?'wu-progress':'';
+        const cardCls=status===3?'wu-done':status>0?'wu-progress':'';
         html+='<div class="wu-card '+cardCls+'">';
         html+='<div class="wu-card-name">'+es(prog.label)+'</div>';
         html+='<div class="wu-card-due">Due '+prog.day+' '+prog.time+'</div>';
         html+='<div class="wu-steps">';
         WU_STEP_LABELS.forEach((lbl,i)=>{
-          const cls=(status>i||(status===i&&i===WU_STEP_LABELS.length-1))?'wu-s-done':status===i?'wu-s-active':'';
+          const cls=status>i?'wu-s-done':'';
           html+='<button class="wu-step '+cls+'" onclick="wuSetStatus(\''+key+'\','+i+')" title="'+lbl+'">';
           html+='<div class="wu-step-dot"></div>';
           html+='<div class="wu-step-lbl">'+lbl+'</div>';
           html+='</button>';
           if(i<2)html+='<div class="wu-connector'+(status>i?' wu-conn-done':'')+'"></div>';
+
         });
         html+='</div></div>';
       });
