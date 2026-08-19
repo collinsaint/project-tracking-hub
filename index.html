@@ -570,6 +570,7 @@ body.mob .edit-bar-inner{flex-wrap:wrap;gap:6px;padding:6px 12px}
 .wu-cards{display:flex;flex-wrap:wrap;gap:14px}
 .wu-card{background:#fff;border-radius:var(--radius-lg);border:1px solid var(--border);box-shadow:var(--shadow);padding:18px 20px;min-width:260px;flex:1;max-width:380px;transition:box-shadow .15s}
 .wu-card:hover{box-shadow:var(--shadow-md)}
+.wu-card.wu-unchecked{border-color:#fca5a5;background:#fef2f2}
 .wu-card.wu-done{border-color:#86efac;background:#f0fdf4}
 .wu-card.wu-progress{border-color:#fde68a;background:#fffbeb}
 .wu-card-name{font-size:14px;font-weight:700;color:var(--gray-dark);margin-bottom:2px}
@@ -2168,7 +2169,7 @@ function renderWU(){
       slot.keys.forEach(key=>{
         const prog=WU_PROGRAMS.find(p=>p.key===key);
         const status=wuData.state[key]||0;
-        const cardCls=status===2?'wu-done':status===1?'wu-progress':'';
+        const cardCls=status===2?'wu-done':status===1?'wu-progress':'wu-unchecked';
         html+='<div class="wu-card '+cardCls+'">';
         html+='<div class="wu-card-name">'+es(prog.label)+'</div>';
         html+='<div class="wu-card-due">Due '+prog.day+' '+prog.time+'</div>';
@@ -2179,8 +2180,7 @@ function renderWU(){
           html+='<div class="wu-step-dot"></div>';
           html+='<div class="wu-step-lbl">'+lbl+'</div>';
           html+='</button>';
-          if(i<2)html+='<div class="wu-connector'+(status>i?' wu-conn-done':'')+'"></div>';
-
+          if(i<WU_STEP_LABELS.length-1)html+='<div class="wu-connector'+(status>i?' wu-conn-done':'')+'"></div>';
         });
         html+='</div></div>';
       });
