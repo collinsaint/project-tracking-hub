@@ -2173,7 +2173,7 @@ function renderWU(){
         html+='<div class="wu-card-due">Due '+prog.day+' '+prog.time+'</div>';
         html+='<div class="wu-steps">';
         WU_STEP_LABELS.forEach((lbl,i)=>{
-          const cls=status>i?'wu-s-done':status===i?'wu-s-active':'';
+          const cls=(status>i||(status===i&&i===WU_STEP_LABELS.length-1))?'wu-s-done':status===i?'wu-s-active':'';
           html+='<button class="wu-step '+cls+'" onclick="wuSetStatus(\''+key+'\','+i+')" title="'+lbl+'">';
           html+='<div class="wu-step-dot"></div>';
           html+='<div class="wu-step-lbl">'+lbl+'</div>';
