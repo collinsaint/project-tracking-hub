@@ -515,7 +515,11 @@ body.mob #hdr h1{font-size:12px;gap:6px;flex:1;min-width:0;white-space:nowrap;ov
 body.mob #hdr h1 img{height:26px}
 body.mob #hdr h1 .sub{display:none}
 body.mob #save-status{display:none}
-body.mob #hdr>div{display:none!important}
+body.mob #hdr-sep,body.mob #hdr-sep2,body.mob #hdr-views{display:none!important}
+body.mob #hdr-brand{display:flex}
+.mob-lbl{display:none}
+body.mob .dsk-lbl{display:none}
+body.mob .mob-lbl{display:inline}
 body.mob #mob-ham{display:flex}
 
 /* stats + search */
@@ -726,7 +730,7 @@ body.mob .edit-bar-inner{flex-wrap:wrap;gap:6px;padding:6px 12px}
 <div id="topbar">
   <div id="stats-group">
     <div class="sb"><div class="sn ct" id="s8">--</div><div class="sl">Active</div></div>
-    <div class="sb"><div class="sn cb" id="s1">--</div><div class="sl">Pre-Construction</div></div>
+    <div class="sb"><div class="sn cb" id="s1">--</div><div class="sl"><span class="dsk-lbl">Pre-Construction</span><span class="mob-lbl">Pre-Con</span></div></div>
     <div class="sb"><div class="sn ct" id="s3">--</div><div class="sl">In Construction</div></div>
     <div class="sb"><div class="sn co" id="s4">--</div><div class="sl">Permitting</div></div>
     <div class="sb"><div class="sn cg" id="s5">--</div><div class="sl">Complete/Closeout</div></div>
