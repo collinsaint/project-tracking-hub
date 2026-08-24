@@ -1307,7 +1307,6 @@ function rs(){
   document.getElementById('s0').textContent=proj.length;
   document.getElementById('s8').textContent=proj.filter(p=>p.constructionStage==='PRESALE'||p.constructionStage==='OPEN').length;
   document.getElementById('s1').textContent=proj.filter(p=>p.constructionStage==='PRESALE').length;
-  document.getElementById('s2').textContent=proj.filter(p=>p.constructionStage==='OPEN').length;
   document.getElementById('s3').textContent=proj.filter(p=>/^2[1-9]|^30/.test(p.jobStatus||'')).length;
   document.getElementById('s4').textContent=proj.filter(p=>/^19|^20/.test(p.jobStatus||'')).length;
   document.getElementById('s5').textContent=proj.filter(p=>/^4|^99/.test(p.jobStatus||'')||(p.jobStatus||'')==='COMPLETE').length;
