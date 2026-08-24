@@ -204,6 +204,38 @@ tr.dr:hover td.tcrit-miss,tr.dr.row-permit td.tcrit-miss{background:#fecaca}
 #dclose{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18);color:#fff;font-size:15px;cursor:pointer;padding:5px 9px;line-height:1;border-radius:var(--radius-sm);transition:background .15s}
 #dclose:hover{background:rgba(255,255,255,.25)}
 #dbody{padding:18px;flex:1;display:flex;flex-direction:column;gap:12px}
+/* ── DETAIL TABS ──────────────────────────────── */
+#dtabs{display:flex;background:#fff;border-bottom:2px solid var(--border);flex-shrink:0;position:sticky;top:0;z-index:1}
+.dtab{flex:1;padding:10px 14px;font-size:12px;font-weight:700;letter-spacing:.3px;text-transform:uppercase;color:var(--gray);cursor:pointer;text-align:center;border:none;border-bottom:2px solid transparent;margin-bottom:-2px;background:none;transition:color .15s,border-color .15s}
+.dtab:hover{color:var(--blue-mid)}
+.dtab.active{color:var(--blue);border-bottom-color:var(--blue)}
+/* ── NOTES PANEL ─────────────────────────────── */
+#dnotes{padding:18px;display:none;flex-direction:column;gap:14px}
+.pn-compose{background:#fff;border-radius:var(--radius);border:1px solid var(--border);padding:14px;box-shadow:var(--shadow-xs)}
+.pn-compose textarea{width:100%;border:1px solid var(--border-dark);border-radius:var(--radius-sm);padding:9px 11px;font-size:13px;font-family:var(--font);resize:vertical;min-height:80px;color:#1f2937;transition:border-color .15s;outline:none;box-sizing:border-box}
+.pn-compose textarea:focus{border-color:var(--blue-mid)}
+.pn-compose-footer{display:flex;justify-content:flex-end;margin-top:8px}
+.pn-list{display:flex;flex-direction:column;gap:10px}
+.pn-card{background:#fff;border-radius:var(--radius);border:1px solid var(--border);padding:13px 15px;box-shadow:var(--shadow-xs)}
+.pn-card-ts{font-size:10px;color:var(--gray);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px}
+.pn-card-text{font-size:13px;color:#1f2937;line-height:1.65;white-space:pre-wrap;word-break:break-word}
+.pn-card-actions{display:flex;gap:6px;justify-content:flex-end;margin-top:10px}
+.pn-btn-edit{font-size:11px;padding:3px 11px;border-radius:12px;border:1px solid var(--border-dark);background:#fff;color:var(--gray-dark);cursor:pointer;font-weight:600;transition:all .15s}
+.pn-btn-edit:hover{border-color:var(--blue-mid);color:var(--blue-mid)}
+.pn-btn-del{font-size:11px;padding:3px 11px;border-radius:12px;border:1px solid #fca5a5;background:#fff;color:#dc2626;cursor:pointer;font-weight:600;transition:all .15s}
+.pn-btn-del:hover{background:#fef2f2}
+.pn-edit-area{width:100%;border:1px solid var(--blue-mid);border-radius:var(--radius-sm);padding:8px 10px;font-size:13px;font-family:var(--font);resize:vertical;min-height:70px;margin-top:8px;outline:none;box-sizing:border-box}
+.pn-empty{text-align:center;padding:36px 16px;color:var(--gray);font-size:13px}
+.pn-loading{text-align:center;padding:28px;color:var(--gray);font-size:13px}
+/* ── CONFIRM DIALOG ───────────────────────────── */
+#conf-modal{position:fixed;inset:0;background:rgba(9,30,58,.52);z-index:600;display:none;align-items:center;justify-content:center;backdrop-filter:blur(3px)}
+#conf-modal.open{display:flex}
+#conf-box{background:#fff;border-radius:var(--radius-lg);width:370px;max-width:94vw;padding:26px 24px;box-shadow:var(--shadow-lg)}
+#conf-title{font-size:16px;font-weight:700;color:#1f2937;margin-bottom:8px}
+#conf-msg{font-size:13px;color:var(--gray);line-height:1.6;margin-bottom:22px}
+#conf-actions{display:flex;justify-content:flex-end;gap:8px}
+.btn-danger{background:#dc2626;color:#fff;padding:6px 16px;border-radius:20px;font-size:12px;font-weight:600;border:none;cursor:pointer;display:inline-flex;align-items:center;gap:5px;transition:all .18s}
+.btn-danger:hover{background:#b91c1c}
 .ds2{background:#fff;border-radius:var(--radius);border:1px solid var(--border);overflow:hidden;box-shadow:var(--shadow-xs)}
 .dstit{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;color:var(--blue);background:var(--blue-lighter);border-bottom:1px solid var(--blue-light);padding:9px 14px;display:flex;align-items:center;justify-content:space-between}
 .dg2{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:12px 14px}
@@ -821,8 +853,19 @@ body.mob .edit-bar-inner{flex-wrap:wrap;gap:6px;padding:6px 12px}
 <div id="dov" onclick="cd()"></div>
 <div id="dpan">
   <div id="dhdr"><div><div id="daddr">--</div><div id="dsub">--</div></div><div id="dhdr-actions"><button id="dhdr-jq-btn" class="dhdr-jq-btn" onclick="toggleQueueFromDetail()">&#9733; Add to Queue</button><button id="dhdr-coq-btn" class="dhdr-coq-btn" onclick="toggleCOQFromDetail()">&#9651; Change Order</button><button id="dclose" onclick="cd()">&#10005;</button></div></div>
+  <div id="dtabs"><button class="dtab active" data-tab="details" onclick="switchDTab('details')">Details</button><button class="dtab" data-tab="notes" onclick="switchDTab('notes')">&#128221; Notes</button></div>
   <div id="dbody"></div>
+  <div id="dnotes"></div>
 </div>
+
+<div id="conf-modal"><div id="conf-box">
+  <div id="conf-title"></div>
+  <div id="conf-msg"></div>
+  <div id="conf-actions">
+    <button class="btn btn-gh" onclick="closeConf()">Cancel</button>
+    <button class="btn btn-primary" id="conf-ok">Confirm</button>
+  </div>
+</div></div>
 
 <div id="imod"><div id="ibox">
   <h2>Import Buildertrend Report</h2>
@@ -982,6 +1025,7 @@ const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZ
 const sb=window.supabase.createClient(SB_URL,SB_KEY);
 
 let proj=[],filt=[],selI=null;
+let pnotes={},_activeTab='details';
 let jqView=false,jqAddrs=[];
 let coqView=false,coqAddrs=[];
 let permView=false,permSort={col:'',dir:1};
@@ -1508,7 +1552,7 @@ function od(idx){
   function fd3(l,v){return f(l,fd2(v),'da');}
   function fn2(l,v){return f(l,(!v||v==='0')?'':v,'nu');}
   function fm2(l,v){if(!v||v==='0')return f(l,'');const n=parseFloat(v);const fmt=isNaN(n)?v:'$'+n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});return'<div class="df2"><div class="dlb">'+l+'</div><div class="dval mo">'+fmt+'</div></div>';}
-  sec2('Basic Information','<div class="dg2">'+f('First Name',p.firstName)+f('Last Name',p.lastName)+f('Project # / Prefix',p.projectNumber)+f('Program',p.program)+f('City',p.city)+f('Permitting Jurisdiction',p.permittingJurisdiction)+f('Job Type',p.jobType)+f('Superintendent',p.superintendent)+(p.notes?'<div class="df2 full"><div class="dlb">Notes</div><div class="dval pr">'+es(p.notes)+'</div></div>':'')+'</div>');
+  sec2('Basic Information','<div class="dg2">'+f('First Name',p.firstName)+f('Last Name',p.lastName)+f('Project # / Prefix',p.projectNumber)+f('Program',p.program)+f('City',p.city)+f('Permitting Jurisdiction',p.permittingJurisdiction)+f('Job Type',p.jobType)+f('Superintendent',p.superintendent)+'</div>');
   sec2('Pre-Construction','<div class="dg2">'+fd3('Assignment Received',p.assignmentReceived)+fd3('ISV Completed',p.isvCompleted)+fd3('Cost Estimate Submitted',p.costEstimateSubmitted)+fd3('Cost Estimate Approved',p.costEstimateApproved)+fn2('Days to Submittal',p.daysToSubmittal)+fn2('Days to Approval',p.daysToApproval)+fd3('Demo Permit Submitted',p.demoPermitSubmitted)+fd3('Demo Permit Issued',p.demoPermitIssued)+fd3('Bldg Permit Submitted',p.bldgPermitSubmitted)+fd3('Bldg Permit Issued',p.bldgPermitIssued)+f('Permit Kickback Dates',p.permitKickbackDates)+fn2('# of Kickbacks',p.numKickbacks)+fn2('Days in Permitting (Muni)',p.daysInPermittingMuni)+fn2('Assignment to Permit Issued',p.assignmentToPermitIssued)+fd3('Septic Ordered',p.septicOrdered)+fd3('Septic Received',p.septicReceived)+fd3('Bldg Permit Number',p.bldgPermitNumber)+fd3('Demo Permit Number',p.demoPermitNumber)+'</div>');
   sec2('Survey, Plans & Engineering','<div class="dg2">'+fd3('Survey/EC Ordered',p.surveyOrdered)+fd3('Survey/EC Received',p.surveyReceived)+fn2('Days for Survey/EC',p.daysForSurvey)+fd3('Plans Ordered',p.plansOrdered)+fd3('Plans Received',p.plansReceived)+fn2('Days for Plans',p.daysForPlans)+fd3('Revision Requested',p.revisionRequested)+fn2('Days for Revision',p.daysForRevision)+fn2('# of Revisions',p.numRevisions)+'</div>');
   sec2('Construction','<div class="dg2">'+fd3('NTP-P',p.ntpP)+fd3('NTP',p.ntp)+fd3('Construction Start',p.constructionStart)+fd3('Work Order Issued',p.workOrderIssued)+fd3('Pre-Construction Deadline',p.preConDeadline)+fd3('Construction Deadline',p.constructionDeadline)+fn2('Days in Pre-Con',p.daysInPreCon)+fn2('Approved Pre-Con Delays',p.approvedPreConDelays)+fd3('Projected Start',p.projectedStart)+fd3('Projected Completion',p.projectedCompletion)+fd3('50% Inspection',p.inspection50)+fn2('Days to 50%',p.daysTo50)+fd3('100% Inspection',p.inspection100)+fn2('Days in Construction',p.daysInConstruction)+fn2('Approved Constr. Delays',p.approvedConstrDelays)+fn2('Construction Days',p.constructionDays)+fn2('Build Days',p.buildDays)+fn2('Remaining Pre-Con Time',p.remainingPreConTime)+'</div>');
@@ -1548,6 +1592,7 @@ function od(idx){
   document.getElementById('dov').classList.add('open');
   document.getElementById('dpan').classList.add('open');
   document.body.style.overflow='hidden';
+  switchDTab('details',true);
 }
 
 function cd(){
@@ -1555,6 +1600,115 @@ function cd(){
   document.getElementById('dpan').classList.remove('open');
   document.body.style.overflow='';selI=null;
   document.querySelectorAll('tr.dr.sel').forEach(r=>r.classList.remove('sel'));
+}
+
+/* ── DETAIL PANEL TABS ─────────────────────────── */
+function switchDTab(tab,skipLoad){
+  _activeTab=tab;
+  document.querySelectorAll('.dtab').forEach(t=>t.classList.toggle('active',t.dataset.tab===tab));
+  document.getElementById('dbody').style.display=tab==='details'?'flex':'none';
+  const dn=document.getElementById('dnotes');
+  if(dn)dn.style.display=tab==='notes'?'flex':'none';
+  if(tab==='notes'&&!skipLoad){
+    if(pnotes[detailAddr]!==undefined)renderNotes(detailAddr);
+    else loadNotes(detailAddr);
+  }
+}
+
+/* ── CONFIRM DIALOG ───────────────────────────── */
+function showConf(title,msg,okLabel,danger,onOk){
+  document.getElementById('conf-title').textContent=title;
+  document.getElementById('conf-msg').textContent=msg;
+  const btn=document.getElementById('conf-ok');
+  btn.textContent=okLabel||'Confirm';
+  btn.className=danger?'btn btn-danger':'btn btn-primary';
+  btn.onclick=()=>{closeConf();onOk();};
+  document.getElementById('conf-modal').classList.add('open');
+}
+function closeConf(){document.getElementById('conf-modal').classList.remove('open');}
+
+/* ── PROJECT NOTES ────────────────────────────── */
+function fmtNoteTs(ts){
+  if(!ts)return'';
+  const d=new Date(ts);
+  return d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})+' at '+d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+}
+
+async function loadNotes(address){
+  const dn=document.getElementById('dnotes');if(!dn)return;
+  dn.innerHTML='<div class="pn-loading">Loading notes…</div>';
+  try{
+    const{data,error}=await sb.from('project_notes').select('*').eq('project_address',address).order('created_at',{ascending:false});
+    pnotes[address]=(!error&&data)?data:[];
+  }catch(e){pnotes[address]=[];}
+  renderNotes(address);
+}
+
+function renderNotes(address){
+  const dn=document.getElementById('dnotes');if(!dn||_activeTab!=='notes')return;
+  const notes=pnotes[address]||[];
+  const addr64=btoa(unescape(encodeURIComponent(address)));
+  let html='<div class="pn-compose"><textarea id="pn-input" placeholder="Type a note…" rows="3"></textarea><div class="pn-compose-footer"><button class="btn btn-primary" style="font-size:12px;padding:5px 16px" onclick="promptAddNote()">Add Note</button></div></div>';
+  if(notes.length===0){html+='<div class="pn-empty">No notes yet — add one above.</div>';}
+  else{
+    html+='<div class="pn-list">';
+    notes.forEach(n=>{
+      const ts=fmtNoteTs(n.created_at)+(n.updated_at&&n.updated_at!==n.created_at?' · edited '+fmtNoteTs(n.updated_at):'');
+      html+='<div class="pn-card" id="pnc-'+es(n.id)+'"><div class="pn-card-ts">'+es(ts)+'</div><div class="pn-card-text" id="pnt-'+es(n.id)+'">'+es(n.text)+'</div><div class="pn-card-actions"><button class="pn-btn-edit" onclick="promptEditNote(\''+es(n.id)+'\')">Edit</button><button class="pn-btn-del" onclick="promptDeleteNote(\''+es(n.id)+'\')">Delete</button></div></div>';
+    });
+    html+='</div>';
+  }
+  dn.innerHTML=html;
+}
+
+function promptAddNote(){
+  const txt=(document.getElementById('pn-input')?.value||'').trim();
+  if(!txt){st2('Please enter some text first.');return;}
+  showConf('Add Note','Save this note to the project?','Save Note',false,()=>addNote(detailAddr,txt));
+}
+async function addNote(address,text){
+  try{
+    const now=new Date().toISOString();
+    const{data,error}=await sb.from('project_notes').insert({project_address:address,text,created_at:now,updated_at:now}).select().single();
+    if(!error&&data){if(!pnotes[address])pnotes[address]=[];pnotes[address].unshift(data);renderNotes(address);st2('Note saved.');}
+    else st2('Error saving note — check Supabase project_notes table.');
+  }catch(e){st2('Error: '+e.message);}
+}
+
+function promptEditNote(id){
+  const note=(pnotes[detailAddr]||[]).find(n=>n.id===id);if(!note)return;
+  const card=document.getElementById('pnc-'+id);if(!card)return;
+  if(card.querySelector('.pn-edit-area'))return;
+  const textEl=document.getElementById('pnt-'+id);if(!textEl)return;
+  textEl.style.display='none';
+  const ta=document.createElement('textarea');ta.className='pn-edit-area';ta.value=note.text;ta.id='pne-'+id;
+  textEl.after(ta);ta.focus();
+  const actions=card.querySelector('.pn-card-actions');
+  actions.innerHTML='<button class="pn-btn-edit" onclick="renderNotes(detailAddr)">Cancel</button><button class="btn btn-primary" style="font-size:11px;padding:3px 13px" onclick="promptSaveEdit(\''+es(id)+'\')">Save</button>';
+}
+function promptSaveEdit(id){
+  const ta=document.getElementById('pne-'+id);if(!ta)return;
+  const text=ta.value.trim();if(!text){st2('Note cannot be empty.');return;}
+  showConf('Save Changes','Update this note with the new text?','Save Changes',false,()=>saveEditNote(id,detailAddr,text));
+}
+async function saveEditNote(id,address,text){
+  try{
+    const now=new Date().toISOString();
+    const{data,error}=await sb.from('project_notes').update({text,updated_at:now}).eq('id',id).select().single();
+    if(!error&&data){const notes=pnotes[address]||[];const i=notes.findIndex(n=>n.id===id);if(i>=0)notes[i]=data;renderNotes(address);st2('Note updated.');}
+    else st2('Error updating note.');
+  }catch(e){st2('Error: '+e.message);}
+}
+
+function promptDeleteNote(id){
+  showConf('Delete Note','Are you sure? This note will be permanently removed.','Delete',true,()=>deleteNote(id,detailAddr));
+}
+async function deleteNote(id,address){
+  try{
+    const{error}=await sb.from('project_notes').delete().eq('id',id);
+    if(!error){pnotes[address]=(pnotes[address]||[]).filter(n=>n.id!==id);renderNotes(address);st2('Note deleted.');}
+    else st2('Error deleting note.');
+  }catch(e){st2('Error: '+e.message);}
 }
 
 function openImport(){document.getElementById('imod').classList.add('open');}
@@ -1677,6 +1831,11 @@ async function doImportSave(auto){
     const renames=(window._lastChangeLog&&window._lastChangeLog.renames)||[];
     if(renames.length){
       try{await sb.from('projects').delete().in('address',renames.map(r=>r.oldAddr));}catch(e){}
+      // Migrate notes to the new address so they stay attached after a rename
+      for(const r of renames){
+        try{await sb.from('project_notes').update({project_address:r.newAddr}).eq('project_address',r.oldAddr);}catch(e){}
+        if(pnotes[r.oldAddr]){pnotes[r.newAddr]=pnotes[r.oldAddr].map(n=>({...n,project_address:r.newAddr}));delete pnotes[r.oldAddr];}
+      }
     }
     // Upsert ALL rows from the import file (including filtered-out ones like withdrawn/FL Volusia)
     // so their updated statuses are reflected in Supabase and don't reappear on refresh
