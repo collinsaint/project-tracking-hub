@@ -1568,6 +1568,7 @@ function pf(file){
   const reader=new FileReader();
   reader.onload=function(e){
     try{
+      if(wuData.weekOf)localStorage.setItem('pic_wu_v1',JSON.stringify(wuData));
       if(typeof XLSX==='undefined'){sir('error','SheetJS not loaded.');return;}
       const wb=XLSX.read(new Uint8Array(e.target.result),{type:'array',cellDates:true});
       const ws=wb.Sheets[wb.SheetNames[0]];
@@ -2119,15 +2120,16 @@ function wuFormatRange(weekOf){
 }
 async function wuLoad(){
   const weekOf=wuGetWeekOf();
+  if(wuData.weekOf===weekOf&&Object.keys(wuData.state).length>0)return;
   try{
     const {data,error}=await sb.from('weekly_updates').select('*').eq('week_of',weekOf).single();
-    if(!error&&data){wuData={weekOf,state:data.state||{}};localStorage.setItem('pic_wu_v1',JSON.stringify(wuData));return;}
+    if(!error&&data&&data.state&&Object.keys(data.state).length>0){wuData={weekOf,state:data.state};localStorage.setItem('pic_wu_v1',JSON.stringify(wuData));return;}
   }catch(e){}
   try{
     const s=localStorage.getItem('pic_wu_v1');
-    if(s){const p=JSON.parse(s);if(p.weekOf===weekOf){wuData=p;return;}}
+    if(s){const p=JSON.parse(s);if(p.weekOf===weekOf&&Object.keys(p.state||{}).length>0){wuData=p;return;}}
   }catch(e){}
-  wuData={weekOf,state:{}};
+  if(wuData.weekOf!==weekOf)wuData={weekOf,state:{}};
 }
 async function wuSave(){
   localStorage.setItem('pic_wu_v1',JSON.stringify(wuData));
