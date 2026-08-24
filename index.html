@@ -589,6 +589,12 @@ body.mob .mob-clist{display:flex;flex-direction:column;gap:8px;padding:10px}
 .mc-chips{display:flex;flex-wrap:wrap;gap:6px}
 .mc-chip{font-size:11px;color:#374151;background:#f3f4f6;border-radius:4px;padding:2px 7px;display:flex;align-items:center;gap:4px}
 .mc-chip-lbl{font-weight:600;color:#9ca3af;font-size:10px;text-transform:uppercase;letter-spacing:.3px}
+.mc-dates{display:grid;grid-template-columns:1fr 1fr;gap:5px 8px;margin-top:8px;padding-top:8px;border-top:1px solid var(--border)}
+.mc-drow{display:flex;flex-direction:column;gap:1px}
+.mc-dlbl{font-size:9px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.4px}
+.mc-dval{font-size:12px;font-weight:600;color:#1d4ed8}
+.mc-dval.miss{color:#d1d5db;font-style:italic;font-weight:400}
+.mc-dval.num{color:var(--teal)}
 .mc-empty{text-align:center;padding:28px 16px;color:var(--gray);font-size:13px}
 body.mob tr.dr.sel td:first-child{background:var(--blue-lighter)}
 body.mob .erow td:first-child{background:#fff;box-shadow:none}
@@ -1503,6 +1509,12 @@ function rse(sec){
         const idx=proj.indexOf(p);
         const card=document.createElement('div');card.className='mc';
         const addr=p.address||'';const hm=((p.firstName||'')+' '+(p.lastName||'')).trim();const cy=p.city||'';
+        const datesHtml=sec.ec.map(col=>{
+          let v=p[col.key]||'';if(col.key==='ntpP'&&!v)v=p.costEstimateApproved||'';
+          if(col.t==='d'){const fv=fd2(v);return'<div class="mc-drow"><div class="mc-dlbl">'+es(col.label)+'</div><div class="mc-dval'+(fv?'':' miss')+'">'+( fv||'—')+'</div></div>';}
+          if(col.t==='n'){return'<div class="mc-drow"><div class="mc-dlbl">'+es(col.label)+'</div><div class="mc-dval'+(v&&v!=='0'?' num':' miss')+'">'+( v&&v!=='0'?es(v):'—')+'</div></div>';}
+          return'';
+        }).join('');
         card.innerHTML=
           '<div class="mc-top"><div class="mc-addr">'+es(addr||'No address')+'</div>'+(p.projectNumber?'<div class="mc-appid">'+es(p.projectNumber)+'</div>':'')+'</div>'+
           (hm||cy?'<div class="mc-sub">'+(hm?es(hm):'')+(hm&&cy?' · ':'')+es(cy)+'</div>':'')+
@@ -1510,7 +1522,8 @@ function rse(sec){
           '<div class="mc-chips">'+
             (p.superintendent?'<div class="mc-chip"><span class="mc-chip-lbl">Sup</span>'+es(p.superintendent)+'</div>':'')+
             (p.jobType?'<div class="mc-chip"><span class="mc-chip-lbl">Type</span>'+es(p.jobType)+'</div>':'')+
-          '</div>';
+          '</div>'+
+          (datesHtml?'<div class="mc-dates">'+datesHtml+'</div>':'');
         card.addEventListener('click',()=>{if(!editMode)od(idx);});
         cl.appendChild(card);
       });
@@ -1690,30 +1703,17 @@ function showConf(title,msg,okLabel,danger,onOk){
 function closeConf(){document.getElementById('conf-modal').classList.remove('open');}
 
 /* ── MOBILE SORT SHEET ────────────────────────── */
-const MOB_SORT_OPTS=[
-  {col:'_identity',label:'Address'},
-  {col:'projectNumber',label:'App ID'},
-  {col:'program',label:'Program'},
-  {col:'jobStatus',label:'Status'},
-  {col:'superintendent',label:'Superintendent'},
-  {col:'jobType',label:'Type'},
-  {col:'projectedStart',label:'Proj. Start'},
-  {col:'projectedCompletion',label:'Proj. Completion'},
-  {col:'ntp',label:'NTP'},
-  {col:'constructionStart',label:'Construction Start'},
-  {col:'inspection50',label:'50% Inspection'},
-  {col:'inspection100',label:'100% Inspection'},
-];
 let _mobSortSec=null;
 function openMobSort(k,e){
   e.stopPropagation();
   _mobSortSec=k;
   const sec=SECS.find(s=>s.k===k);
   const names={p:'Presale',o:'Open',w:'Warranty',c:'Closed'};
-  document.getElementById('mob-sort-title').textContent='Sort — '+( names[k]||k);
+  document.getElementById('mob-sort-title').textContent='Sort — '+(names[k]||k);
   const cur=srt[k]||{col:'_identity',dir:1};
+  const cols=[...CMN,...(sec?sec.ec:[])].map(c=>({col:c.key,label:c.key==='_identity'?'Address':c.label}));
   const opts=document.getElementById('mob-sort-opts');
-  opts.innerHTML=MOB_SORT_OPTS.map(o=>{
+  opts.innerHTML=cols.map(o=>{
     const active=cur.col===o.col;
     const dir=active?(cur.dir===1?'↑':'↓'):'';
     return'<div class="msopt'+(active?' active':'')+'" onclick="applyMobSort(\''+o.col+'\')"><span class="msopt-label">'+o.label+'</span><span class="msopt-dir">'+dir+'</span></div>';
