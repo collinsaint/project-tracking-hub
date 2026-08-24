@@ -554,6 +554,27 @@ body.mob td:first-child{position:sticky;left:0;z-index:5;background:#fff;box-sha
 body.mob tr.dr:nth-child(even) td:first-child{background:#fafbfd}
 body.mob tr.dr:hover td:first-child{background:#f0f5ff}
 
+/* ── MOBILE SORT ──────────────────────────────── */
+.mob-sort-btn{display:none}
+body.mob .mob-sort-btn{display:flex;align-items:center;gap:4px;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.35);color:#fff;border-radius:var(--radius-sm);font-size:11px;font-weight:700;padding:4px 9px;cursor:pointer;flex-shrink:0;margin-right:6px;letter-spacing:.2px;-webkit-tap-highlight-color:transparent}
+body.mob .mob-sort-btn:active{background:rgba(255,255,255,.32)}
+#mob-sort-sheet{position:fixed;inset:0;z-index:700;display:none;align-items:flex-end}
+#mob-sort-sheet.open{display:flex}
+#mob-sort-ov{position:absolute;inset:0;background:rgba(9,30,58,.45);backdrop-filter:blur(2px)}
+#mob-sort-panel{position:relative;width:100%;background:#fff;border-radius:18px 18px 0 0;padding:0 0 env(safe-area-inset-bottom,0);box-shadow:0 -4px 32px rgba(0,0,0,.18);max-height:80vh;display:flex;flex-direction:column;animation:slideUp .22s cubic-bezier(.4,0,.2,1)}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+#mob-sort-hdr{padding:16px 18px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+#mob-sort-title{font-size:15px;font-weight:700;color:#1f2937}
+#mob-sort-close{background:none;border:none;font-size:20px;color:var(--gray);cursor:pointer;padding:0 2px;line-height:1}
+#mob-sort-opts{overflow-y:auto;flex:1}
+.msopt{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid #f3f4f6;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:background .1s}
+.msopt:last-child{border-bottom:none}
+.msopt:active{background:#f0f5ff}
+.msopt.active{background:#eff6ff}
+.msopt-label{font-size:14px;font-weight:500;color:#1f2937}
+.msopt.active .msopt-label{color:var(--blue);font-weight:700}
+.msopt-dir{font-size:13px;color:var(--blue);font-weight:700;width:24px;text-align:center}
+
 /* ── MOBILE CARDS ─────────────────────────────── */
 .mob-clist{display:none}
 body.mob .tw{display:none}
@@ -745,19 +766,19 @@ body.mob .edit-bar-inner{flex-wrap:wrap;gap:6px;padding:6px 12px}
 
 <div id="main">
   <div class="sc" id="sp">
-    <div class="sh bgp" onclick="ts('p')"><div class="shl"><div class="sht">Presale</div><div class="shc" id="cp">0 projects</div></div><div class="shv" id="tp">&#9660;</div></div>
+    <div class="sh bgp" onclick="ts('p')"><div class="shl"><div class="sht">Presale</div><div class="shc" id="cp">0 projects</div></div><button class="mob-sort-btn" onclick="openMobSort('p',event)">&#8645; Sort</button><div class="shv" id="tp">&#9660;</div></div>
     <div class="sbody" id="bp"><div class="tw"><table><thead id="thp"></thead><tbody id="tbp"></tbody></table></div><div class="mob-clist" id="clp"></div><div class="sft" id="sfp"></div></div>
   </div>
   <div class="sc" id="so">
-    <div class="sh bgo" onclick="ts('o')"><div class="shl"><div class="sht">Open</div><div class="shc" id="co2">0 projects</div></div><div class="shv" id="to">&#9660;</div></div>
+    <div class="sh bgo" onclick="ts('o')"><div class="shl"><div class="sht">Open</div><div class="shc" id="co2">0 projects</div></div><button class="mob-sort-btn" onclick="openMobSort('o',event)">&#8645; Sort</button><div class="shv" id="to">&#9660;</div></div>
     <div class="sbody" id="bo"><div class="tw"><table><thead id="tho"></thead><tbody id="tbo"></tbody></table></div><div class="mob-clist" id="clo"></div><div class="sft" id="sfo"></div></div>
   </div>
   <div class="sc" id="sw2">
-    <div class="sh bgw" onclick="ts('w')"><div class="shl"><div class="sht">Warranty</div><div class="shc" id="cw">0 projects</div></div><div class="shv" id="tw2">&#9660;</div></div>
+    <div class="sh bgw" onclick="ts('w')"><div class="shl"><div class="sht">Warranty</div><div class="shc" id="cw">0 projects</div></div><button class="mob-sort-btn" onclick="openMobSort('w',event)">&#8645; Sort</button><div class="shv" id="tw2">&#9660;</div></div>
     <div class="sbody" id="bw"><div class="tw"><table><thead id="thw"></thead><tbody id="tbw"></tbody></table></div><div class="mob-clist" id="clw"></div><div class="sft" id="sfw"></div></div>
   </div>
   <div class="sc" id="sc2">
-    <div class="sh bgc" onclick="ts('c')"><div class="shl"><div class="sht">Closed</div><div class="shc" id="cc">0 projects</div></div><div class="shv" id="tc">&#9660;</div></div>
+    <div class="sh bgc" onclick="ts('c')"><div class="shl"><div class="sht">Closed</div><div class="shc" id="cc">0 projects</div></div><button class="mob-sort-btn" onclick="openMobSort('c',event)">&#8645; Sort</button><div class="shv" id="tc">&#9660;</div></div>
     <div class="sbody" id="bc"><div class="tw"><table><thead id="thc"></thead><tbody id="tbc"></tbody></table></div><div class="mob-clist" id="clc"></div><div class="sft" id="sfc"></div></div>
   </div>
 </div>
@@ -873,6 +894,8 @@ body.mob .edit-bar-inner{flex-wrap:wrap;gap:6px;padding:6px 12px}
   <div id="dbody"></div>
   <div id="dnotes"></div>
 </div>
+
+<div id="mob-sort-sheet"><div id="mob-sort-ov" onclick="closeMobSort()"></div><div id="mob-sort-panel"><div id="mob-sort-hdr"><span id="mob-sort-title">Sort</span><button id="mob-sort-close" onclick="closeMobSort()">&#10005;</button></div><div id="mob-sort-opts"></div></div></div>
 
 <div id="conf-modal"><div id="conf-box">
   <div id="conf-title"></div>
@@ -1665,6 +1688,44 @@ function showConf(title,msg,okLabel,danger,onOk){
   document.getElementById('conf-modal').classList.add('open');
 }
 function closeConf(){document.getElementById('conf-modal').classList.remove('open');}
+
+/* ── MOBILE SORT SHEET ────────────────────────── */
+const MOB_SORT_OPTS=[
+  {col:'_identity',label:'Address'},
+  {col:'projectNumber',label:'App ID'},
+  {col:'program',label:'Program'},
+  {col:'jobStatus',label:'Status'},
+  {col:'superintendent',label:'Superintendent'},
+  {col:'jobType',label:'Type'},
+  {col:'projectedStart',label:'Proj. Start'},
+  {col:'projectedCompletion',label:'Proj. Completion'},
+  {col:'ntp',label:'NTP'},
+  {col:'constructionStart',label:'Construction Start'},
+  {col:'inspection50',label:'50% Inspection'},
+  {col:'inspection100',label:'100% Inspection'},
+];
+let _mobSortSec=null;
+function openMobSort(k,e){
+  e.stopPropagation();
+  _mobSortSec=k;
+  const sec=SECS.find(s=>s.k===k);
+  const names={p:'Presale',o:'Open',w:'Warranty',c:'Closed'};
+  document.getElementById('mob-sort-title').textContent='Sort — '+( names[k]||k);
+  const cur=srt[k]||{col:'_identity',dir:1};
+  const opts=document.getElementById('mob-sort-opts');
+  opts.innerHTML=MOB_SORT_OPTS.map(o=>{
+    const active=cur.col===o.col;
+    const dir=active?(cur.dir===1?'↑':'↓'):'';
+    return'<div class="msopt'+(active?' active':'')+'" onclick="applyMobSort(\''+o.col+'\')"><span class="msopt-label">'+o.label+'</span><span class="msopt-dir">'+dir+'</span></div>';
+  }).join('');
+  document.getElementById('mob-sort-sheet').classList.add('open');
+}
+function closeMobSort(){document.getElementById('mob-sort-sheet').classList.remove('open');_mobSortSec=null;}
+function applyMobSort(col){
+  if(!_mobSortSec)return;
+  ss(_mobSortSec,col);
+  closeMobSort();
+}
 
 /* ── PROJECT NOTES ────────────────────────────── */
 function fmtNoteTs(ts){
