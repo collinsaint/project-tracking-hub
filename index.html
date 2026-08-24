@@ -131,6 +131,9 @@ tr.dr:hover td.tcrit-miss,tr.dr.row-permit td.tcrit-miss{background:#fecaca}
 .ci-addr{font-weight:700;color:var(--blue-mid);font-size:12px;line-height:1.4;word-break:break-word}
 .ci-nm{font-size:11px;color:#374151;margin-top:3px}
 .ci-city{font-size:10px;color:#9ca3af;margin-top:2px;text-transform:uppercase;letter-spacing:.4px}
+.tc-ai{text-align:center;vertical-align:middle;padding:6px 4px}
+.ci-appid{display:inline-block;font-family:'Consolas','Courier New',monospace;font-size:10px;font-weight:700;color:#3b5bdb;background:#eef2ff;border:1px solid #c5cfff;border-radius:5px;padding:2px 6px;letter-spacing:.3px;white-space:nowrap}
+.ci-appid-miss{color:#d1d5db;font-style:italic;font-size:11px}
 .tc-meta .badge{display:inline-block;margin-bottom:4px}
 .cm-gap{height:4px}
 .ci-type{font-size:11px;font-weight:600;color:#374151}
@@ -933,7 +936,7 @@ const SECS=[
 ];
 const CMN=[
   {key:'_identity',label:'Project',t:'id'},
-  {key:'projectNumber',label:'App ID',t:'tx'},
+  {key:'projectNumber',label:'App ID',t:'ai'},
   {key:'program',label:'Program',t:'p'},
   {key:'jobStatus',label:'Job Status',t:'st'},
   {key:'jobType',label:'Type',t:'tx'},
@@ -1346,7 +1349,7 @@ function rse(sec){
   let cg=tbl.querySelector('colgroup');
   if(!cg){cg=document.createElement('colgroup');tbl.insertBefore(cg,tbl.firstChild);}
   cg.innerHTML='';
-  const pxW={id:'150px',p:'115px',st:'125px',tx:'105px',n:'70px',d:'90px'};
+  const pxW={id:'150px',p:'115px',st:'125px',tx:'105px',n:'70px',d:'90px',ai:'80px'};
   all.forEach(c=>{const col=document.createElement('col');col.style.width=pxW[c.t]||'90px';cg.appendChild(col);});
   const cqc=document.createElement('col');cqc.style.width='40px';cg.appendChild(cqc);
   const cqc2=document.createElement('col');cqc2.style.width='40px';cg.appendChild(cqc2);
@@ -1373,6 +1376,7 @@ function rse(sec){
           miss=!addr;
           if(editMode){td.style.cursor='pointer';td.addEventListener('click',(e)=>{e.stopPropagation();od(idx);});}
         }
+        else if(tp==='ai'){td.className='tc-ai';td.innerHTML=v?'<span class="ci-appid">'+es(v)+'</span>':'<span class="ci-appid-miss">—</span>';miss=!v;}
         else if(tp==='p'){td.className='tpg';td.innerHTML=pbdg(p.program);miss=!p.program;}
         else if(tp==='st'){td.innerHTML=sbdg(p.jobStatus);miss=!p.jobStatus;}
         else if(tp==='tx'){td.textContent=v;miss=!v;}
