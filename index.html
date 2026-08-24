@@ -1286,18 +1286,8 @@ function selAllProgs(){
   updateProgLabel();af();
 }
 function clrProgs(){
-  const allChks=document.querySelectorAll('#prog-opts input[type=checkbox]');
-  // clear all = select none, but "none" effectively shows nothing, so keep at least one?
-  // We'll allow 0 selected = show nothing (user can re-select)
-  allChks.forEach(c=>c.checked=false);
-  selProgs=new Set([...allChks].map(c=>c.value)); // populate with all, then nothing matches...
-  // Actually: empty selProgs means "all", so to show nothing we need a different flag.
-  // Instead, let "clear" = select none = selProgs has all values but nothing checked
-  // Re-think: selProgs.size===0 means ALL pass. To show none, set selProgs to a dummy non-matching value.
-  // Simpler: if no boxes are checked, treat as "no filter applied = show all"
-  // Let's just treat clear as "select all" toggled off → show all (reset)
   selProgs.clear();
-  allChks.forEach(c=>c.checked=true);
+  document.querySelectorAll('#prog-opts input[type=checkbox]').forEach(c=>c.checked=false);
   updateProgLabel();af();
 }
 function updateProgLabel(){
