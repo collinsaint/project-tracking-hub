@@ -648,6 +648,7 @@ body.mob .edit-bar-inner{flex-wrap:wrap;gap:6px;padding:6px 12px}
 <div id="topbar">
   <div id="stats-group">
     <div class="sb"><div class="sn cb" id="s0">--</div><div class="sl">Total</div></div>
+    <div class="sb"><div class="sn ct" id="s8">--</div><div class="sl">Active</div></div>
     <div class="sb"><div class="sn cb" id="s1">--</div><div class="sl">Presale</div></div>
     <div class="sb"><div class="sn cb" id="s2">--</div><div class="sl">Open</div></div>
     <div class="sb"><div class="sn ct" id="s3">--</div><div class="sl">In Construction</div></div>
@@ -1305,6 +1306,7 @@ function toggleShowAll(k){
 
 function rs(){
   document.getElementById('s0').textContent=proj.length;
+  document.getElementById('s8').textContent=proj.filter(p=>p.constructionStage==='PRESALE'||p.constructionStage==='OPEN').length;
   document.getElementById('s1').textContent=proj.filter(p=>p.constructionStage==='PRESALE').length;
   document.getElementById('s2').textContent=proj.filter(p=>p.constructionStage==='OPEN').length;
   document.getElementById('s3').textContent=proj.filter(p=>/^2[1-9]|^30/.test(p.jobStatus||'')).length;
