@@ -1220,8 +1220,11 @@ function cf(){
   ['fst','ft','fs2','fc'].forEach(id=>document.getElementById(id).value='');
   selProgs.clear();
   document.querySelectorAll('#prog-opts input[type=checkbox]').forEach(c=>c.checked=true);
+  closeProgDrop();
   updateProgLabel();
   af();
+  document.getElementById('fpop').classList.remove('open');
+  updateFiltBadge();
 }
 
 function toggleFilterDrop(e){
