@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>Partners in Construction — FL Job Tracker</title>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -2051,16 +2054,22 @@ function closeProgDrop(){document.getElementById('prog-drop').classList.remove('
 window.addEventListener('DOMContentLoaded',init);
 
 /* ── TASK MANAGEMENT ─────────────────────────────── */
+function _mapTaskRow(r){const t={id:r.id,title:r.title||'',notes:r.notes||'',dueDate:r.due_date||'',status:r.status||'todo',priority:r.priority||'medium',tags:Array.isArray(r.tags)?r.tags:[],projectAddress:r.project_address||'',createdAt:r.created_at||''};if(t.status==='inprogress'||t.status==='queue')t.status='todo';return t;}
 async function loadTasks(){
   try{
     const {data,error}=await sb.from('tasks').select('*');
     if(error)throw error;
-    tasks=(data||[]).map(r=>({id:r.id,title:r.title||'',notes:r.notes||'',dueDate:r.due_date||'',status:r.status||'todo',priority:r.priority||'medium',tags:Array.isArray(r.tags)?r.tags:[],projectAddress:r.project_address||'',createdAt:r.created_at||''}));
-    tasks.forEach(t=>{if(t.status==='inprogress'||t.status==='queue')t.status='todo';});
+    const fromDB=(data||[]).map(_mapTaskRow);
+    if(tasks.length===0){
+      tasks=fromDB;
+    } else {
+      // Merge: update/add from DB but never remove tasks present locally
+      // (they may be mid-upsert). Deletions are handled by sbDeleteTask+realtime.
+      fromDB.forEach(rt=>{const i=tasks.findIndex(t=>t.id===rt.id);if(i>=0)tasks[i]=rt;else tasks.push(rt);});
+    }
     localStorage.setItem('pic_tasks_v1',JSON.stringify(tasks));
   }catch(e){
-    try{const s=localStorage.getItem('pic_tasks_v1');tasks=s?JSON.parse(s):[];}catch(e2){tasks=[];}
-    tasks.forEach(t=>{if(t.status==='inprogress'||t.status==='queue')t.status='todo';});
+    if(tasks.length===0){try{const s=localStorage.getItem('pic_tasks_v1');tasks=s?JSON.parse(s):[];}catch(e2){tasks=[];}tasks.forEach(t=>{if(t.status==='inprogress'||t.status==='queue')t.status='todo';});}
   }
 }
 function saveTasks(){
