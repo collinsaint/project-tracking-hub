@@ -638,6 +638,11 @@ body.mob .edit-bar-inner{flex-wrap:wrap;gap:6px;padding:6px 12px}
 
 /* ── WEEKLY UPDATES ─────────────────────────────── */
 #wuview{background:#eef1f6;min-height:calc(100vh - 52px);display:none}
+#permview{background:#eef1f6;min-height:calc(100vh - 52px);display:none}
+#wu-pop{position:absolute;top:calc(100% + 4px);right:0;background:#fff;border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.14);padding:6px;display:none;z-index:300;min-width:200px;flex-direction:column;gap:2px}
+#wu-pop.open{display:flex}
+#wu-wrap{position:relative;display:inline-flex}
+.pu-body{padding:0 24px 24px}
 .wu-topbar{background:#fff;border-bottom:1px solid var(--border);padding:14px 24px;display:flex;align-items:center;justify-content:space-between;gap:12px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
 .wu-topbar-left{display:flex;flex-direction:column;gap:2px}
 .wu-topbar-title{font-size:17px;font-weight:700;color:var(--gray-dark)}
@@ -721,7 +726,13 @@ body.mob .edit-bar-inner{flex-wrap:wrap;gap:6px;padding:6px 12px}
     <button class="btn btn-ol" id="coq-view-btn" onclick="toggleCOQView()">&#9651; Change Orders</button>
     <button class="btn btn-ol" id="perm-view-btn" onclick="togglePermView()">&#9679; Permitting</button>
     <button class="btn btn-ol" id="rpt-view-btn" onclick="toggleReportView()">&#128202; Reports</button>
-    <button class="btn btn-ol" id="wu-view-btn" onclick="toggleWUView()">&#128197; Weekly Updates</button>
+    <div id="wu-wrap">
+      <button class="btn btn-ol" id="wu-view-btn" onclick="toggleWUDrop(event)">&#128197; Weekly Updates &#9660;</button>
+      <div id="wu-pop">
+        <button class="exp-opt" onclick="openWUView();closeWUDrop()"><span class="exp-opt-title">Update Tracker</span><span class="exp-opt-sub">Weekly program reporting</span></button>
+        <button class="exp-opt" onclick="openPermUpdView();closeWUDrop()"><span class="exp-opt-title">Permitting Updates</span><span class="exp-opt-sub">Presale permit status table</span></button>
+      </div>
+    </div>
   </div>
   <div id="hdr-sep2"></div>
   <div id="hdr-actions">
@@ -903,11 +914,33 @@ body.mob .edit-bar-inner{flex-wrap:wrap;gap:6px;padding:6px 12px}
     </div>
     <div class="wu-topbar-right">
       <span class="wu-week-badge" id="wu-week-label"></span>
-      <button class="btn btn-gh" onclick="toggleWUView()">&#8592; Back to Tracker</button>
+      <button class="btn btn-gh" onclick="closeWUView()">&#8592; Back to Tracker</button>
     </div>
   </div>
   <div class="wu-summary-bar" id="wu-summary-bar"></div>
   <div class="wu-body" id="wu-body"></div>
+</div>
+
+<div id="permview">
+  <div class="wu-topbar">
+    <div class="wu-topbar-left">
+      <div class="wu-topbar-title">&#128273; Permitting Updates</div>
+      <div class="wu-topbar-sub">Presale projects — permit status</div>
+    </div>
+    <div class="wu-topbar-right">
+      <span id="pu-cnt" style="font-size:12px;color:#6b7280;font-weight:500"></span>
+      <button class="btn btn-gh" onclick="closePermUpdView()">&#8592; Back to Tracker</button>
+    </div>
+  </div>
+  <div class="pu-body">
+    <div class="tw" style="overflow-x:auto;background:#fff;border-radius:10px;border:1px solid var(--border);box-shadow:var(--shadow)">
+      <table style="width:100%;border-collapse:collapse">
+        <colgroup id="pu-cg"></colgroup>
+        <thead><tr id="pu-thead"></tr></thead>
+        <tbody id="pu-tbody"></tbody>
+      </table>
+    </div>
+  </div>
 </div>
 
 <div id="dov" onclick="cd()"></div>
@@ -1995,7 +2028,7 @@ function exportPermittingCSV(){
 }
 function st2(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3000);}
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){cd();ci();closeProgDrop();closeTaskModal();document.getElementById('chlog-modal').classList.remove('open');}});
-document.addEventListener('click',e=>{if(!document.getElementById('prog-wrap').contains(e.target))closeProgDrop();if(!document.getElementById('export-wrap').contains(e.target))closeExportDrop();});
+document.addEventListener('click',e=>{if(!document.getElementById('prog-wrap').contains(e.target))closeProgDrop();if(!document.getElementById('export-wrap').contains(e.target))closeExportDrop();if(!document.getElementById('wu-wrap').contains(e.target))closeWUDrop();});
 function closeProgDrop(){document.getElementById('prog-drop').classList.remove('open');document.getElementById('prog-btn').classList.remove('open');}
 window.addEventListener('DOMContentLoaded',init);
 
@@ -2147,7 +2180,7 @@ function togglePermView(){
   if(coqView)toggleCOQView();
   if(taskView)toggleTaskView();
   if(reportView)toggleReportView();
-  if(wuView)toggleWUView();
+  if(wuView)closeWUView();if(permUpdView)closePermUpdView();
   permView=!permView;
   const btn=document.getElementById('perm-view-btn');
   document.getElementById('main').style.display=permView?'none':'flex';
@@ -2243,7 +2276,7 @@ function toggleJQView(){
   if(taskView)toggleTaskView();
   if(permView)togglePermView();
   if(reportView)toggleReportView();
-  if(wuView)toggleWUView();
+  if(wuView)closeWUView();if(permUpdView)closePermUpdView();
   jqView=!jqView;
   const btn=document.getElementById('jq-view-btn');
   document.getElementById('main').style.display=jqView?'none':'flex';
@@ -2260,7 +2293,7 @@ function toggleCOQView(){
   if(taskView)toggleTaskView();
   if(permView)togglePermView();
   if(reportView)toggleReportView();
-  if(wuView)toggleWUView();
+  if(wuView)closeWUView();if(permUpdView)closePermUpdView();
   coqView=!coqView;
   const btn=document.getElementById('coq-view-btn');
   document.getElementById('main').style.display=coqView?'none':'flex';
@@ -2372,7 +2405,7 @@ function toggleTaskView(){
   if(coqView)toggleCOQView();
   if(permView)togglePermView();
   if(reportView)toggleReportView();
-  if(wuView)toggleWUView();
+  if(wuView)closeWUView();if(permUpdView)closePermUpdView();
   taskView=!taskView;
   const btn=document.getElementById('task-view-btn');
   document.getElementById('main').style.display=taskView?'none':'flex';
@@ -2476,20 +2509,68 @@ function renderWU(){
   });
   document.getElementById('wu-body').innerHTML=html;
 }
-function toggleWUView(){
-  if(jqView)toggleJQView();
-  if(coqView)toggleCOQView();
-  if(permView)togglePermView();
-  if(taskView)toggleTaskView();
-  if(reportView)toggleReportView();
-  wuView=!wuView;
-  const btn=document.getElementById('wu-view-btn');
-  document.getElementById('main').style.display=wuView?'none':'flex';
-  document.getElementById('topbar').style.display=wuView?'none':'';
-  document.getElementById('jnav').style.display=wuView?'none':'';
-  document.getElementById('wuview').style.display=wuView?'block':'none';
-  if(btn)btn.textContent=wuView?'◄ Back to Tracker':'📅 Weekly Updates';
-  if(wuView){wuLoad().then(()=>renderWU());}
+function toggleWUDrop(e){e.stopPropagation();document.getElementById('wu-pop').classList.toggle('open');}
+function closeWUDrop(){document.getElementById('wu-pop').classList.remove('open');}
+function openWUView(){
+  if(jqView)toggleJQView();if(coqView)toggleCOQView();if(permView)togglePermView();if(taskView)toggleTaskView();if(reportView)toggleReportView();if(permUpdView)closePermUpdView();
+  wuView=true;
+  document.getElementById('main').style.display='none';document.getElementById('topbar').style.display='none';document.getElementById('jnav').style.display='none';
+  document.getElementById('wuview').style.display='block';
+  wuLoad().then(()=>renderWU());
+}
+function closeWUView(){
+  wuView=false;
+  document.getElementById('main').style.display='flex';document.getElementById('topbar').style.display='';document.getElementById('jnav').style.display='';
+  document.getElementById('wuview').style.display='none';
+}
+function toggleWUView(){if(wuView)closeWUView();else openWUView();}
+const PU_COLS=[{key:'_identity',label:'Address',t:'id'},{key:'program',label:'Program',t:'p'},{key:'permittingJurisdiction',label:'Permitting Jurisdiction',t:'tx'},{key:'jobStatus',label:'Job Status',t:'st'},{key:'jobType',label:'Job Type',t:'tx'},{key:'assignmentReceived',label:'Assignment Received',t:'d'},{key:'costEstimateSubmitted',label:'Cost Est. Submitted',t:'d'},{key:'demoPermitSubmitted',label:'Demo Permit Submitted',t:'d'},{key:'demoPermitIssued',label:'Demo Permit Issued',t:'d'},{key:'bldgPermitSubmitted',label:'Bldg Permit Submitted',t:'d'},{key:'bldgPermitIssued',label:'Bldg Permit Issued',t:'d'}];
+let permUpdView=false,puSort={col:'_identity',dir:1};
+function openPermUpdView(){
+  if(jqView)toggleJQView();if(coqView)toggleCOQView();if(permView)togglePermView();if(taskView)toggleTaskView();if(reportView)toggleReportView();if(wuView)closeWUView();
+  permUpdView=true;
+  document.getElementById('main').style.display='none';document.getElementById('topbar').style.display='none';document.getElementById('jnav').style.display='none';
+  document.getElementById('permview').style.display='block';
+  renderPermUpdView();
+}
+function closePermUpdView(){
+  permUpdView=false;
+  document.getElementById('main').style.display='flex';document.getElementById('topbar').style.display='';document.getElementById('jnav').style.display='';
+  document.getElementById('permview').style.display='none';
+}
+function renderPermUpdView(){
+  const data=proj.filter(p=>p.constructionStage==='PRESALE');
+  data.sort((a,b)=>{const sv=p=>puSort.col==='_identity'?p.address||'':p[puSort.col]||'';const r=String(sv(a)).localeCompare(String(sv(b)));return puSort.dir*r;});
+  const cnt=document.getElementById('pu-cnt');if(cnt)cnt.textContent=data.length+' projects';
+  const thead=document.getElementById('pu-thead');thead.innerHTML='';
+  const pxW={id:'150px',p:'115px',st:'125px',tx:'105px',d:'90px'};
+  const cg=document.getElementById('pu-cg');cg.innerHTML='';
+  PU_COLS.forEach(col=>{
+    const th=document.createElement('th');th.style.cssText='position:sticky;top:52px;background:#f3f4f6;padding:9px 12px;text-align:left;font-size:11px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap;border-bottom:1px solid var(--border);cursor:pointer';
+    th.textContent=col.label;th.dataset.key=col.key;
+    th.onclick=()=>{if(puSort.col===col.key)puSort.dir*=-1;else{puSort.col=col.key;puSort.dir=1;}renderPermUpdView();};
+    if(puSort.col===col.key)th.textContent+=(puSort.dir===1?' ↑':' ↓');
+    thead.appendChild(th);
+    const c=document.createElement('col');c.style.width=pxW[col.t]||'90px';cg.appendChild(c);
+  });
+  const tb=document.getElementById('pu-tbody');tb.innerHTML='';
+  if(!data.length){const tr=document.createElement('tr');const td=document.createElement('td');td.colSpan=PU_COLS.length;td.style.cssText='padding:24px;text-align:center;color:#9ca3af';td.textContent='No presale projects found.';tr.appendChild(td);tb.appendChild(tr);return;}
+  data.forEach(p=>{
+    const idx=proj.indexOf(p);
+    const tr=document.createElement('tr');tr.className='dr';tr.addEventListener('click',()=>od(idx));
+    PU_COLS.forEach(col=>{
+      const td=document.createElement('td');const k=col.key,tp=col.t;let v=p[k]||'';let miss=false;
+      if(tp==='id'){td.className='tc-id';td.style.whiteSpace='normal';const addr=p.address||'';const hm=((p.firstName||'')+' '+(p.lastName||'')).trim();const cy=p.city||'';td.innerHTML='<div class="ci-addr">'+(addr?es(addr):'<span class="ci-miss">No address</span>')+'</div>'+(cy?'<div class="ci-city">'+es(cy)+'</div>':'')+(hm?'<div class="ci-nm">'+es(hm)+'</div>':'');miss=!addr;}
+      else if(tp==='p'){td.className='tpg';td.innerHTML=pbdg(p.program);miss=!p.program;}
+      else if(tp==='st'){td.innerHTML=sbdg(p.jobStatus);miss=!p.jobStatus;}
+      else if(tp==='tx'){td.textContent=v;miss=!v;}
+      else if(tp==='d'){if(!v){td.className='tem';td.textContent='--';miss=true;}else{td.className='tdt';td.textContent=fd2(v);}}
+      else{td.textContent=v;}
+      if(miss)td.classList.add('tmiss');
+      tr.appendChild(td);
+    });
+    tb.appendChild(tr);
+  });
 }
 
 function toggleReportView(){
@@ -2497,7 +2578,7 @@ function toggleReportView(){
   if(coqView)toggleCOQView();
   if(permView)togglePermView();
   if(taskView)toggleTaskView();
-  if(wuView)toggleWUView();
+  if(wuView)closeWUView();if(permUpdView)closePermUpdView();
   reportView=!reportView;
   const btn=document.getElementById('rpt-view-btn');
   document.getElementById('main').style.display=reportView?'none':'flex';
