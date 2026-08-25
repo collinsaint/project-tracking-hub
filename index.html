@@ -643,6 +643,13 @@ body.mob .edit-bar-inner{flex-wrap:wrap;gap:6px;padding:6px 12px}
 #wu-pop.open{display:flex}
 #wu-wrap{position:relative;display:inline-flex}
 .pu-body{padding:0 24px 24px}
+.pu-th{background:#1e3a5f;color:rgba(255,255,255,.95);padding:9px 10px;text-align:center;font-size:10px;font-weight:700;white-space:nowrap;letter-spacing:.4px;text-transform:uppercase;cursor:pointer;user-select:none;position:sticky;top:52px;z-index:11;border-bottom:2px solid #0d2d52}
+.pu-th.sa::after{content:' ↑'}.pu-th.sd::after{content:' ↓'}
+.pu-note-cell{padding:6px 8px;text-align:left;vertical-align:top}
+.pu-note-inp{width:100%;min-height:32px;max-width:180px;padding:4px 6px;border:1px solid var(--blue-mid);border-radius:4px;font-size:12px;font-family:inherit;resize:vertical;outline:none;box-sizing:border-box;display:block}
+.pu-note-disp{min-height:28px;min-width:140px;padding:4px 6px;border:1px solid transparent;border-radius:4px;font-size:12px;cursor:text;white-space:pre-wrap;color:#374151}
+.pu-note-disp:hover{border-color:var(--border);background:#fafbfd}
+.pu-note-disp:empty::before{content:'—';color:#d1d5db}
 .wu-topbar{background:#fff;border-bottom:1px solid var(--border);padding:14px 24px;display:flex;align-items:center;justify-content:space-between;gap:12px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
 .wu-topbar-left{display:flex;flex-direction:column;gap:2px}
 .wu-topbar-title{font-size:17px;font-weight:700;color:var(--gray-dark)}
@@ -2524,8 +2531,10 @@ function closeWUView(){
   document.getElementById('wuview').style.display='none';
 }
 function toggleWUView(){if(wuView)closeWUView();else openWUView();}
-const PU_COLS=[{key:'_identity',label:'Address',t:'id'},{key:'program',label:'Program',t:'p'},{key:'permittingJurisdiction',label:'Permitting Jurisdiction',t:'tx'},{key:'jobStatus',label:'Job Status',t:'st'},{key:'jobType',label:'Job Type',t:'tx'},{key:'assignmentReceived',label:'Assignment Received',t:'d'},{key:'costEstimateSubmitted',label:'Cost Est. Submitted',t:'d'},{key:'demoPermitSubmitted',label:'Demo Permit Submitted',t:'d'},{key:'demoPermitIssued',label:'Demo Permit Issued',t:'d'},{key:'bldgPermitSubmitted',label:'Bldg Permit Submitted',t:'d'},{key:'bldgPermitIssued',label:'Bldg Permit Issued',t:'d'}];
+const PU_COLS=[{key:'_identity',label:'Address',t:'id'},{key:'program',label:'Program',t:'p'},{key:'permittingJurisdiction',label:'Permitting Jurisdiction',t:'tx'},{key:'jobStatus',label:'Job Status',t:'st'},{key:'jobType',label:'Job Type',t:'tx'},{key:'assignmentReceived',label:'Assignment Received',t:'d'},{key:'demoPermitSubmitted',label:'Demo Permit Submitted',t:'d'},{key:'demoPermitIssued',label:'Demo Permit Issued',t:'d'},{key:'bldgPermitSubmitted',label:'Bldg Permit Submitted',t:'d'},{key:'bldgPermitIssued',label:'Bldg Permit Issued',t:'d'},{key:'puLastWeek',label:'Last Week',t:'note'},{key:'puThisWeek',label:'This Week',t:'note'}];
 let permUpdView=false,puSort={col:'_identity',dir:1};
+let puNotes={};try{const _pn=localStorage.getItem('pu_notes_v1');if(_pn)puNotes=JSON.parse(_pn);}catch(e){}
+function savePuNote(addr,field,val){if(!puNotes[addr])puNotes[addr]={};puNotes[addr][field]=val;try{localStorage.setItem('pu_notes_v1',JSON.stringify(puNotes));}catch(e){}}
 function openPermUpdView(){
   if(jqView)toggleJQView();if(coqView)toggleCOQView();if(permView)togglePermView();if(taskView)toggleTaskView();if(reportView)toggleReportView();if(wuView)closeWUView();
   permUpdView=true;
@@ -2540,33 +2549,51 @@ function closePermUpdView(){
 }
 function renderPermUpdView(){
   const data=proj.filter(p=>p.constructionStage==='PRESALE');
-  data.sort((a,b)=>{const sv=p=>puSort.col==='_identity'?p.address||'':p[puSort.col]||'';const r=String(sv(a)).localeCompare(String(sv(b)));return puSort.dir*r;});
+  data.sort((a,b)=>{
+    if(puSort.col==='puLastWeek'||puSort.col==='puThisWeek'){const av=(puNotes[a.address]||{})[puSort.col]||'';const bv=(puNotes[b.address]||{})[puSort.col]||'';return puSort.dir*av.localeCompare(bv);}
+    const sv=p=>puSort.col==='_identity'?p.address||'':p[puSort.col]||'';
+    return puSort.dir*String(sv(a)).localeCompare(String(sv(b)));
+  });
   const cnt=document.getElementById('pu-cnt');if(cnt)cnt.textContent=data.length+' projects';
   const thead=document.getElementById('pu-thead');thead.innerHTML='';
-  const pxW={id:'150px',p:'115px',st:'125px',tx:'105px',d:'90px'};
+  const pxW={id:'160px',p:'110px',st:'130px',tx:'110px',d:'95px',note:'160px'};
   const cg=document.getElementById('pu-cg');cg.innerHTML='';
   PU_COLS.forEach(col=>{
-    const th=document.createElement('th');th.style.cssText='position:sticky;top:52px;background:#f3f4f6;padding:9px 12px;text-align:left;font-size:11px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap;border-bottom:1px solid var(--border);cursor:pointer';
+    const th=document.createElement('th');th.className='pu-th';th.style.top='52px';
     th.textContent=col.label;th.dataset.key=col.key;
-    th.onclick=()=>{if(puSort.col===col.key)puSort.dir*=-1;else{puSort.col=col.key;puSort.dir=1;}renderPermUpdView();};
-    if(puSort.col===col.key)th.textContent+=(puSort.dir===1?' ↑':' ↓');
+    if(col.t!=='note'){th.onclick=()=>{if(puSort.col===col.key)puSort.dir*=-1;else{puSort.col=col.key;puSort.dir=1;}renderPermUpdView();};}
+    if(puSort.col===col.key)th.classList.add(puSort.dir===1?'sa':'sd');
     thead.appendChild(th);
-    const c=document.createElement('col');c.style.width=pxW[col.t]||'90px';cg.appendChild(c);
+    const c=document.createElement('col');c.style.width=pxW[col.t]||'95px';cg.appendChild(c);
   });
   const tb=document.getElementById('pu-tbody');tb.innerHTML='';
   if(!data.length){const tr=document.createElement('tr');const td=document.createElement('td');td.colSpan=PU_COLS.length;td.style.cssText='padding:24px;text-align:center;color:#9ca3af';td.textContent='No presale projects found.';tr.appendChild(td);tb.appendChild(tr);return;}
   data.forEach(p=>{
-    const idx=proj.indexOf(p);
+    const idx=proj.indexOf(p);const addr=p.address||'';
     const tr=document.createElement('tr');tr.className='dr';tr.addEventListener('click',()=>od(idx));
     PU_COLS.forEach(col=>{
       const td=document.createElement('td');const k=col.key,tp=col.t;let v=p[k]||'';let miss=false;
-      if(tp==='id'){td.className='tc-id';td.style.whiteSpace='normal';const addr=p.address||'';const hm=((p.firstName||'')+' '+(p.lastName||'')).trim();const cy=p.city||'';td.innerHTML='<div class="ci-addr">'+(addr?es(addr):'<span class="ci-miss">No address</span>')+'</div>'+(cy?'<div class="ci-city">'+es(cy)+'</div>':'')+(hm?'<div class="ci-nm">'+es(hm)+'</div>':'');miss=!addr;}
+      if(tp==='id'){td.className='tc-id';td.style.whiteSpace='normal';const hm=((p.firstName||'')+' '+(p.lastName||'')).trim();const cy=p.city||'';td.innerHTML='<div class="ci-addr">'+(addr?es(addr):'<span class="ci-miss">No address</span>')+'</div>'+(cy?'<div class="ci-city">'+es(cy)+'</div>':'')+(hm?'<div class="ci-nm">'+es(hm)+'</div>':'');miss=!addr;}
       else if(tp==='p'){td.className='tpg';td.innerHTML=pbdg(p.program);miss=!p.program;}
       else if(tp==='st'){td.innerHTML=sbdg(p.jobStatus);miss=!p.jobStatus;}
       else if(tp==='tx'){td.textContent=v;miss=!v;}
       else if(tp==='d'){if(!v){td.className='tem';td.textContent='--';miss=true;}else{td.className='tdt';td.textContent=fd2(v);}}
+      else if(tp==='note'){
+        td.className='pu-note-cell';
+        const noteVal=(puNotes[addr]||{})[k]||'';
+        const disp=document.createElement('div');disp.className='pu-note-disp';disp.textContent=noteVal;
+        disp.addEventListener('click',e=>{
+          e.stopPropagation();disp.style.display='none';
+          const inp=document.createElement('textarea');inp.className='pu-note-inp';inp.value=noteVal;
+          td.appendChild(inp);inp.focus();
+          inp.addEventListener('blur',()=>{const nv=inp.value.trim();savePuNote(addr,k,nv);disp.textContent=nv;inp.remove();disp.style.display='';});
+          inp.addEventListener('keydown',e2=>{if(e2.key==='Escape')inp.blur();});
+          inp.addEventListener('click',e2=>e2.stopPropagation());
+        });
+        td.appendChild(disp);
+      }
       else{td.textContent=v;}
-      if(miss)td.classList.add('tmiss');
+      if(miss&&tp!=='note')td.classList.add('tmiss');
       tr.appendChild(td);
     });
     tb.appendChild(tr);
