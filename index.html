@@ -2066,6 +2066,9 @@ async function loadTasks(){
     const {data,error}=await sb.from('tasks').select('*');
     if(error)throw error;
     const fromDB=(data||[]).map(_mapTaskRow);
+    // Always read localStorage so we can fill in completedAt the DB may not have persisted yet
+    let snap=[];try{const s=localStorage.getItem('pic_tasks_v1');snap=s?JSON.parse(s):[];}catch(e2){}
+    fromDB.forEach(rt=>{const loc=snap.find(t=>t.id===rt.id);if(loc&&!rt.completedAt&&loc.completedAt)rt.completedAt=loc.completedAt;});
     if(tasks.length===0){
       tasks=fromDB;
     } else {
