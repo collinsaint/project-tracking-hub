@@ -1308,7 +1308,7 @@ function setupRealtime(){
     })
     .on('postgres_changes',{event:'UPDATE',schema:'public',table:'tasks'},(pl)=>{
       const t=_rtTask(pl.new);const i=tasks.findIndex(x=>x.id===t.id);
-      if(i>=0)tasks[i]=t;else tasks.push(t);
+      if(i>=0){if(!t.completedAt&&tasks[i].completedAt)t.completedAt=tasks[i].completedAt;tasks[i]=t;}else tasks.push(t);
       saveTasks();recordSync();if(taskView)renderTaskBoard();
     })
     .on('postgres_changes',{event:'DELETE',schema:'public',table:'tasks'},(pl)=>{
@@ -2070,7 +2070,7 @@ async function loadTasks(){
     } else {
       // Merge: update/add from DB but never remove tasks present locally
       // (they may be mid-upsert). Deletions are handled by sbDeleteTask+realtime.
-      fromDB.forEach(rt=>{const i=tasks.findIndex(t=>t.id===rt.id);if(i>=0)tasks[i]=rt;else tasks.push(rt);});
+      fromDB.forEach(rt=>{const i=tasks.findIndex(t=>t.id===rt.id);if(i>=0){if(!rt.completedAt&&tasks[i].completedAt)rt.completedAt=tasks[i].completedAt;tasks[i]=rt;}else tasks.push(rt);});
     }
     localStorage.setItem('pic_tasks_v1',JSON.stringify(tasks));
   }catch(e){
