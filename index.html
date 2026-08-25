@@ -1247,7 +1247,7 @@ async function init(){
       updateFiltBadge();
     }
   });
-  setInterval(()=>{sbSyncTasks();sbSyncJQ();sbSyncCOQ();},60000);
+  setInterval(()=>{sbSyncJQ();sbSyncCOQ();},60000);
   setupRealtime();
 }
 
@@ -2082,7 +2082,7 @@ function initSyncDisplay(){
   _syncIdle();
 }
 
-function _taskRow(t){return{id:t.id,title:t.title,notes:t.notes||'',due_date:t.dueDate||null,status:t.status,priority:t.priority,tags:t.tags||[],project_address:t.projectAddress||'',created_at:t.createdAt};}
+function _taskRow(t){return{id:t.id,title:t.title,notes:t.notes||'',due_date:t.dueDate||'',status:t.status,priority:t.priority,tags:t.tags||[],project_address:t.projectAddress||'',created_at:t.createdAt};}
 async function sbUpsertTask(t){
   showSaveStatus('saving');
   try{
