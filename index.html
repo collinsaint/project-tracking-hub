@@ -385,8 +385,8 @@ tr.dr:hover td.tcrit-miss,tr.dr.row-permit td.tcrit-miss{background:#fecaca}
 .tk-card:hover{box-shadow:var(--shadow-md);transform:translateY(-2px)}
 .tk-card-today{background:#fffbeb;border-color:#fde68a}
 .tk-card-overdue{background:#fef2f2;border-color:#fecaca}
-.tk-counter{font-size:12px;color:#374151;font-weight:600;white-space:nowrap;padding:4px 8px;background:#f3f4f6;border-radius:6px;border:1px solid #e5e7eb}
-.tb-view-btns{display:flex;gap:4px;margin-left:auto;flex-shrink:0}
+.tk-counter{margin-left:auto;font-size:12px;color:#374151;font-weight:600;white-space:nowrap;padding:4px 8px;background:#f3f4f6;border-radius:6px;border:1px solid #e5e7eb}
+.tb-view-btns{display:flex;gap:4px;flex-shrink:0}
 .tb-vbtn{height:30px;padding:0 11px;border:1px solid var(--border);border-radius:20px;font-size:12px;background:#fff;cursor:pointer;font-weight:600;color:#374151;transition:all .15s;white-space:nowrap}
 .tb-vbtn:hover{border-color:var(--blue-mid);color:var(--blue);background:var(--blue-lighter)}
 .tb-vbtn.active{background:var(--blue);color:#fff;border-color:var(--blue)}
@@ -906,13 +906,12 @@ body.mob .edit-bar-inner{flex-wrap:wrap;gap:6px;padding:6px 12px}
     </select>
     <button class="tb-sort-dir" id="tb-sort-dir" onclick="toggleTbSortDir()" title="Toggle sort direction">&#9650;</button>
     <div class="tb-filter-sep"></div>
-    <div class="tk-counter" id="tk-counter"></div>
-    <div class="tb-filter-sep"></div>
     <div class="tb-view-btns">
       <button class="tb-vbtn active" id="tbvbtn-board" onclick="setTbView('board')" title="Kanban board">Board</button>
       <button class="tb-vbtn" id="tbvbtn-tag" onclick="setTbView('tag')" title="Group by tag">By Tag</button>
       <button class="tb-vbtn" id="tbvbtn-list" onclick="setTbView('list')" title="List view">&#9776; List</button>
     </div>
+    <div class="tk-counter" id="tk-counter"></div>
   </div>
   <div class="tb-main-cols" id="tb-main-cols">
     <div class="tk-col tk-col-todo">
