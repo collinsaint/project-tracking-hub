@@ -639,11 +639,13 @@ body.mob .edit-bar-inner{flex-wrap:wrap;gap:6px;padding:6px 12px}
 /* ── WEEKLY UPDATES ─────────────────────────────── */
 #wuview{background:#eef1f6;min-height:calc(100vh - 52px);display:none}
 #permview{background:#eef1f6;min-height:calc(100vh - 52px);display:none}
+#permview .wu-topbar{position:sticky;top:52px;z-index:60}
+#permview td{padding:5px 4px;font-size:11px;white-space:normal;overflow:hidden;text-overflow:ellipsis}
 #wu-pop{position:absolute;top:calc(100% + 4px);right:0;background:#fff;border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.14);padding:6px;display:none;z-index:300;min-width:200px;flex-direction:column;gap:2px}
 #wu-pop.open{display:flex}
 #wu-wrap{position:relative;display:inline-flex}
 .pu-body{padding:0 24px 24px}
-.pu-th{background:#1e3a5f;color:rgba(255,255,255,.95);padding:9px 10px;text-align:center;font-size:10px;font-weight:700;white-space:nowrap;letter-spacing:.4px;text-transform:uppercase;cursor:pointer;user-select:none;position:sticky;top:52px;z-index:11;border-bottom:2px solid #0d2d52}
+.pu-th{background:#1e3a5f;color:rgba(255,255,255,.95);padding:6px 4px;text-align:center;vertical-align:middle;font-size:10px;font-weight:700;white-space:normal;word-break:break-word;letter-spacing:.4px;text-transform:uppercase;cursor:pointer;user-select:none;position:sticky;top:52px;z-index:11;border-bottom:2px solid #0d2d52}
 .pu-th.sa::after{content:' ↑'}.pu-th.sd::after{content:' ↓'}
 .pu-note-cell{padding:6px 8px;text-align:left;vertical-align:top}
 .pu-note-inp{width:100%;min-height:32px;max-width:180px;padding:4px 6px;border:1px solid var(--blue-mid);border-radius:4px;font-size:12px;font-family:inherit;resize:vertical;outline:none;box-sizing:border-box;display:block}
@@ -941,7 +943,7 @@ body.mob .edit-bar-inner{flex-wrap:wrap;gap:6px;padding:6px 12px}
   </div>
   <div class="pu-body">
     <div class="tw" style="overflow-x:auto;background:#fff;border-radius:10px;border:1px solid var(--border);box-shadow:var(--shadow)">
-      <table style="width:100%;border-collapse:collapse">
+      <table style="width:100%;border-collapse:collapse;table-layout:fixed">
         <colgroup id="pu-cg"></colgroup>
         <thead><tr id="pu-thead"></tr></thead>
         <tbody id="pu-tbody"></tbody>
@@ -2531,7 +2533,7 @@ function closeWUView(){
   document.getElementById('wuview').style.display='none';
 }
 function toggleWUView(){if(wuView)closeWUView();else openWUView();}
-const PU_COLS=[{key:'_identity',label:'Address',t:'id'},{key:'program',label:'Program',t:'p'},{key:'permittingJurisdiction',label:'Permitting Jurisdiction',t:'tx'},{key:'jobStatus',label:'Job Status',t:'st'},{key:'jobType',label:'Job Type',t:'tx'},{key:'assignmentReceived',label:'Assignment Received',t:'d'},{key:'demoPermitSubmitted',label:'Demo Permit Submitted',t:'d'},{key:'demoPermitIssued',label:'Demo Permit Issued',t:'d'},{key:'bldgPermitSubmitted',label:'Bldg Permit Submitted',t:'d'},{key:'bldgPermitIssued',label:'Bldg Permit Issued',t:'d'},{key:'puLastWeek',label:'Last Week',t:'note'},{key:'puThisWeek',label:'This Week',t:'note'}];
+const PU_COLS=[{key:'_identity',label:'Address',t:'id'},{key:'program',label:'Program',t:'p'},{key:'permittingJurisdiction',label:'Permitting Jurisdiction',t:'tx'},{key:'jobStatus',label:'Job Status',t:'st'},{key:'jobType',label:'Job Type',t:'tx'},{key:'assignmentReceived',label:'Assignment Received',t:'d'},{key:'bldgPermitSubmitted',label:'Bldg Permit Submitted',t:'d'},{key:'bldgPermitIssued',label:'Bldg Permit Issued',t:'d'},{key:'puLastWeek',label:'Last Week',t:'note'},{key:'puThisWeek',label:'This Week',t:'note'}];
 let permUpdView=false,puSort={col:'_identity',dir:1};
 let puNotes={};try{const _pn=localStorage.getItem('pu_notes_v1');if(_pn)puNotes=JSON.parse(_pn);}catch(e){}
 function savePuNote(addr,field,val){if(!puNotes[addr])puNotes[addr]={};puNotes[addr][field]=val;try{localStorage.setItem('pu_notes_v1',JSON.stringify(puNotes));}catch(e){}}
@@ -2556,10 +2558,10 @@ function renderPermUpdView(){
   });
   const cnt=document.getElementById('pu-cnt');if(cnt)cnt.textContent=data.length+' projects';
   const thead=document.getElementById('pu-thead');thead.innerHTML='';
-  const pxW={id:'160px',p:'110px',st:'130px',tx:'110px',d:'95px',note:'160px'};
+  const pxW={id:'14%',p:'7%',st:'8%',tx:'9%',d:'62px',note:'12.75%'};
   const cg=document.getElementById('pu-cg');cg.innerHTML='';
   PU_COLS.forEach(col=>{
-    const th=document.createElement('th');th.className='pu-th';th.style.top='52px';
+    const th=document.createElement('th');th.className='pu-th';const _puTb=document.querySelector('#permview .wu-topbar');const _puTop=52+(_puTb?_puTb.getBoundingClientRect().height:62);th.style.top=_puTop+'px';
     th.textContent=col.label;th.dataset.key=col.key;
     if(col.t!=='note'){th.onclick=()=>{if(puSort.col===col.key)puSort.dir*=-1;else{puSort.col=col.key;puSort.dir=1;}renderPermUpdView();};}
     if(puSort.col===col.key)th.classList.add(puSort.dir===1?'sa':'sd');
@@ -2577,7 +2579,7 @@ function renderPermUpdView(){
       else if(tp==='p'){td.className='tpg';td.innerHTML=pbdg(p.program);miss=!p.program;}
       else if(tp==='st'){td.innerHTML=sbdg(p.jobStatus);miss=!p.jobStatus;}
       else if(tp==='tx'){td.textContent=v;miss=!v;}
-      else if(tp==='d'){if(!v){td.className='tem';td.textContent='--';miss=true;}else{td.className='tdt';td.textContent=fd2(v);}}
+      else if(tp==='d'){if(!v){td.className='tem';td.textContent='--';miss=true;}else{td.className='tdt';const _dp=v.split('-');td.textContent=_dp.length===3?_dp[1]+'/'+_dp[2]+'/'+_dp[0].slice(2):v;}}
       else if(tp==='note'){
         td.className='pu-note-cell';
         const noteVal=(puNotes[addr]||{})[k]||'';
