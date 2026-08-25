@@ -676,6 +676,7 @@ body.mob .edit-bar-inner{flex-wrap:wrap;gap:6px;padding:6px 12px}
 .pu-note-disp{min-height:28px;min-width:140px;padding:4px 6px;border:1px solid transparent;border-radius:4px;font-size:12px;cursor:text;white-space:pre-wrap;color:#374151}
 .pu-note-disp:hover{border-color:var(--border);background:#fafbfd}
 .pu-note-disp:empty::before{content:'—';color:#d1d5db}
+.pu-note-date{font-size:10px;color:#9ca3af;margin-top:3px;font-style:italic;padding-left:4px}
 .wu-topbar{background:#fff;border-bottom:1px solid var(--border);padding:14px 24px;display:flex;align-items:center;justify-content:space-between;gap:12px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
 .wu-topbar-left{display:flex;flex-direction:column;gap:2px}
 .wu-topbar-title{font-size:17px;font-weight:700;color:var(--gray-dark)}
@@ -1267,7 +1268,7 @@ async function init(){
       proj=dedup(filterProj(Object.values(m)));
     }catch(e){proj=dedup(filterProj([...ID]));}}else{proj=dedup(filterProj([...ID]));}
   }
-  await Promise.all([loadTasks(),initJQ(),initCOQ()]);
+  await Promise.all([loadTasks(),initJQ(),initCOQ(),initPU()]);
   SECS.forEach(s=>bh(s));
   pd();af();
   initSyncDisplay();
@@ -2613,7 +2614,45 @@ function toggleWUView(){if(wuView)closeWUView();else openWUView();}
 const PU_COLS=[{key:'_identity',label:'Address',t:'id'},{key:'program',label:'Program',t:'p'},{key:'permittingJurisdiction',label:'Permitting Jurisdiction',t:'tx'},{key:'jobStatus',label:'Job Status',t:'st'},{key:'jobType',label:'Job Type',t:'tx'},{key:'assignmentReceived',label:'Assignment Received',t:'d'},{key:'bldgPermitSubmitted',label:'Bldg Permit Submitted',t:'d'},{key:'bldgPermitIssued',label:'Bldg Permit Issued',t:'d'},{key:'puLastWeek',label:'Last Week',t:'note'},{key:'puThisWeek',label:'This Week',t:'note'}];
 let permUpdView=false,puSort={col:'_identity',dir:1};
 let puNotes={};try{const _pn=localStorage.getItem('pu_notes_v1');if(_pn)puNotes=JSON.parse(_pn);}catch(e){}
-function savePuNote(addr,field,val){if(!puNotes[addr])puNotes[addr]={};puNotes[addr][field]=val;try{localStorage.setItem('pu_notes_v1',JSON.stringify(puNotes));}catch(e){}}
+let puData={};
+async function initPU(){
+  try{
+    const{data,error}=await sb.from('permitting_updates').select('*');
+    if(!error&&data){data.forEach(r=>{puData[r.address]={lastWeek:r.last_week||'',thisWeek:r.this_week||'',thisWeekSavedAt:r.this_week_saved_at||null,lastRotatedAt:r.last_rotated_at||null};});}
+  }catch(e){}
+  Object.entries(puNotes).forEach(([addr,fields])=>{
+    if(!puData[addr])puData[addr]={lastWeek:'',thisWeek:'',thisWeekSavedAt:null,lastRotatedAt:null};
+    if(!puData[addr].lastWeek&&fields.puLastWeek)puData[addr].lastWeek=fields.puLastWeek;
+    if(!puData[addr].thisWeek&&fields.puThisWeek)puData[addr].thisWeek=fields.puThisWeek;
+  });
+  await checkPuRotation();
+}
+async function checkPuRotation(){
+  const today=new Date();
+  if(today.getDay()!==0)return;
+  const todayStr=today.toISOString().slice(0,10);
+  const toRotate=Object.entries(puData).filter(([,d])=>d.thisWeek&&d.lastRotatedAt!==todayStr);
+  if(!toRotate.length)return;
+  for(const[addr,d]of toRotate){
+    puData[addr]={...d,lastWeek:d.thisWeek,thisWeek:'',thisWeekSavedAt:null,lastRotatedAt:todayStr};
+    try{await sb.from('permitting_updates').upsert({address:addr,last_week:d.thisWeek,this_week:'',this_week_saved_at:null,last_rotated_at:todayStr,updated_at:new Date().toISOString()});}catch(e){}
+  }
+  if(permUpdView)renderPermUpdView();
+}
+async function savePuUpdate(addr,field,value){
+  if(!puData[addr])puData[addr]={lastWeek:'',thisWeek:'',thisWeekSavedAt:null,lastRotatedAt:null};
+  const today=new Date().toISOString().slice(0,10);
+  if(field==='puLastWeek')puData[addr].lastWeek=value;
+  if(field==='puThisWeek'){puData[addr].thisWeek=value;puData[addr].thisWeekSavedAt=today;}
+  if(!puNotes[addr])puNotes[addr]={};
+  puNotes[addr].puLastWeek=puData[addr].lastWeek;puNotes[addr].puThisWeek=puData[addr].thisWeek;
+  try{localStorage.setItem('pu_notes_v1',JSON.stringify(puNotes));}catch(e){}
+  showSaveStatus('saving');
+  try{
+    await sb.from('permitting_updates').upsert({address:addr,last_week:puData[addr].lastWeek,this_week:puData[addr].thisWeek,this_week_saved_at:puData[addr].thisWeekSavedAt,last_rotated_at:puData[addr].lastRotatedAt,updated_at:new Date().toISOString()});
+    showSaveStatus('saved');
+  }catch(e){showSaveStatus('saved');}
+}
 function openPermUpdView(){
   if(jqView)toggleJQView();if(coqView)toggleCOQView();if(permView)togglePermView();if(taskView)toggleTaskView();if(reportView)toggleReportView();if(wuView)closeWUView();
   permUpdView=true;
@@ -2659,17 +2698,39 @@ function renderPermUpdView(){
       else if(tp==='d'){if(!v){td.className='tem';td.textContent='--';miss=true;}else{td.className='tdt';const _dp=v.split('-');td.textContent=_dp.length===3?_dp[1]+'/'+_dp[2]+'/'+_dp[0].slice(2):v;}}
       else if(tp==='note'){
         td.className='pu-note-cell';
-        const noteVal=(puNotes[addr]||{})[k]||'';
+        const isThisWeek=k==='puThisWeek';
+        const pd2=puData[addr]||{};
+        const noteVal=isThisWeek?(pd2.thisWeek||''):(pd2.lastWeek||'');
+        const savedAt=isThisWeek?pd2.thisWeekSavedAt:null;
         const disp=document.createElement('div');disp.className='pu-note-disp';disp.textContent=noteVal;
-        disp.addEventListener('click',e=>{
-          e.stopPropagation();disp.style.display='none';
-          const inp=document.createElement('textarea');inp.className='pu-note-inp';inp.value=noteVal;
-          td.appendChild(inp);inp.focus();
-          inp.addEventListener('blur',()=>{const nv=inp.value.trim();savePuNote(addr,k,nv);disp.textContent=nv;inp.remove();disp.style.display='';});
-          inp.addEventListener('keydown',e2=>{if(e2.key==='Escape')inp.blur();});
-          inp.addEventListener('click',e2=>e2.stopPropagation());
-        });
         td.appendChild(disp);
+        if(savedAt){const de=document.createElement('div');de.className='pu-note-date';de.id='pudate-'+addr.replace(/\s/g,'_')+'-'+k;de.textContent='Saved '+fd2(savedAt);td.appendChild(de);}
+        disp.addEventListener('click',e=>{
+          e.stopPropagation();
+          const origVal=isThisWeek?(puData[addr]||{}).thisWeek||'':( puData[addr]||{}).lastWeek||'';
+          disp.style.display='none';
+          const inp=document.createElement('textarea');inp.className='pu-note-inp';inp.value=origVal;
+          td.insertBefore(inp,disp);inp.focus();
+          inp.addEventListener('keydown',e2=>{if(e2.key==='Escape'){inp.remove();disp.style.display='';}if(e2.key==='Enter'&&(e2.ctrlKey||e2.metaKey))inp.blur();});
+          inp.addEventListener('click',e2=>e2.stopPropagation());
+          inp.addEventListener('blur',()=>{
+            const nv=inp.value.trim();
+            inp.remove();disp.style.display='';
+            if(nv===origVal)return;
+            const fieldLabel=isThisWeek?'This Week':'Last Week';
+            showConf('Save Update','Save "'+fieldLabel+'" for '+addr+'?','Save',false,async()=>{
+              disp.textContent=nv;
+              if(isThisWeek){
+                const today=new Date().toISOString().slice(0,10);
+                const deId='pudate-'+addr.replace(/\s/g,'_')+'-'+k;
+                let de=td.querySelector('.pu-note-date');
+                if(!de){de=document.createElement('div');de.className='pu-note-date';de.id=deId;td.appendChild(de);}
+                de.textContent='Saved '+fd2(today);
+              }
+              await savePuUpdate(addr,k,nv);
+            });
+          });
+        });
       }
       else{td.textContent=v;}
       if(miss&&tp!=='note')td.classList.add('tmiss');
