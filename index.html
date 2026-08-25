@@ -2082,14 +2082,18 @@ function initSyncDisplay(){
   _syncIdle();
 }
 
-function _taskRow(t){return{id:t.id,title:t.title,notes:t.notes,due_date:t.dueDate,status:t.status,priority:t.priority,tags:t.tags||[],project_address:t.projectAddress,created_at:t.createdAt};}
+function _taskRow(t){return{id:t.id,title:t.title,notes:t.notes||'',due_date:t.dueDate||null,status:t.status,priority:t.priority,tags:t.tags||[],project_address:t.projectAddress||'',created_at:t.createdAt};}
 async function sbUpsertTask(t){
   showSaveStatus('saving');
   try{
     const{error}=await sb.from('tasks').upsert(_taskRow(t),{onConflict:'id'});
     if(error)throw error;
     showSaveStatus('saved');
-  }catch(e){console.error('Task upsert failed',e);showSaveStatus('saved');}
+  }catch(e){
+    console.error('Task upsert failed',e);
+    showSaveStatus('saved');
+    st2('⚠ Task save failed — check connection');
+  }
 }
 async function sbDeleteTask(id){
   try{
@@ -2752,7 +2756,7 @@ function filterProjCheck(){
   });
 }
 
-function saveTask(){
+async function saveTask(){
   const title=document.getElementById('t-title').value.trim();
   if(!title){alert('Please enter a task title.');return;}
   const notes=document.getElementById('t-notes').value.trim();
@@ -2764,7 +2768,7 @@ function saveTask(){
   const selAddrs=[...document.querySelectorAll('#tmod-proj-list input[type=checkbox]:checked')].map(c=>c.value);
   if(editTaskId){
     const t=tasks.find(t=>t.id===editTaskId);
-    if(t){Object.assign(t,{title,notes,dueDate:due,status,priority:pri,tags,projectAddress:selAddrs[0]||t.projectAddress||''});saveTasks();sbUpsertTask(t);}
+    if(t){Object.assign(t,{title,notes,dueDate:due,status,priority:pri,tags,projectAddress:selAddrs[0]||t.projectAddress||''});saveTasks();await sbUpsertTask(t);}
     closeTaskModal();
     if(taskView)renderTaskBoard();
     if(selI!==null)renderDetailTasks(detailAddr);
@@ -2773,9 +2777,10 @@ function saveTask(){
     const addrs=selAddrs.length>0?selAddrs:[''];
     const newTasks=addrs.map(addr=>({id:genId(),title,notes,dueDate:due,status,priority:pri,tags,projectAddress:addr,createdAt:new Date().toISOString().slice(0,10)}));
     newTasks.forEach(t=>tasks.push(t));
-    saveTasks();newTasks.forEach(t=>sbUpsertTask(t));closeTaskModal();
+    saveTasks();closeTaskModal();
     if(taskView)renderTaskBoard();
     if(selI!==null)renderDetailTasks(detailAddr);
+    await Promise.all(newTasks.map(t=>sbUpsertTask(t)));
     st2(addrs.length>1?addrs.length+' tasks created':'Task added');
   }
 }
