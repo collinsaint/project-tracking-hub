@@ -2143,7 +2143,7 @@ async function sbSyncJQ(){
     await sb.from('job_start_queue').delete().not('address','is',null);
     if(jqAddrs.length>0)await sb.from('job_start_queue').insert(jqAddrs.map(a=>({address:a})));
     showSaveStatus('saved');
-  }catch(e){showSaveStatus('saved');}
+  }catch(e){console.error('JQ sync failed',e);st2('⚠ Job Queue save failed — check connection');showSaveStatus('saved');}
 }
 function isInJQ(addr){return jqAddrs.includes(addr);}
 function addToJQ(addr){if(!isInJQ(addr)){jqAddrs.push(addr);saveJQ();}}
@@ -2374,7 +2374,7 @@ async function sbSyncCOQ(){
     await sb.from('change_order_queue').delete().not('address','is',null);
     if(coqAddrs.length>0)await sb.from('change_order_queue').insert(coqAddrs.map(a=>({address:a})));
     showSaveStatus('saved');
-  }catch(e){showSaveStatus('saved');}
+  }catch(e){console.error('COQ sync failed',e);st2('⚠ Change Order Queue save failed — check connection');showSaveStatus('saved');}
 }
 function isInCOQ(addr){return coqAddrs.includes(addr);}
 function addToCOQ(addr){if(!isInCOQ(addr)){coqAddrs.push(addr);saveCOQ();}}
