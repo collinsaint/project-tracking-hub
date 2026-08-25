@@ -673,10 +673,19 @@ body.mob .edit-bar-inner{flex-wrap:wrap;gap:6px;padding:6px 12px}
 .pu-th.sa::after{content:' ↑'}.pu-th.sd::after{content:' ↓'}
 .pu-note-cell{padding:6px 8px;text-align:left;vertical-align:top}
 .pu-note-inp{width:100%;min-height:32px;max-width:180px;padding:4px 6px;border:1px solid var(--blue-mid);border-radius:4px;font-size:12px;font-family:inherit;resize:vertical;outline:none;box-sizing:border-box;display:block}
-.pu-note-disp{min-height:28px;min-width:140px;padding:4px 6px;border:1px solid transparent;border-radius:4px;font-size:12px;cursor:text;white-space:pre-wrap;color:#374151}
-.pu-note-disp:hover{border-color:var(--border);background:#fafbfd}
+.pu-note-disp{min-height:28px;min-width:140px;padding:4px 6px;font-size:12px;white-space:pre-wrap;color:#374151}
 .pu-note-disp:empty::before{content:'—';color:#d1d5db}
 .pu-note-date{font-size:10px;color:#9ca3af;margin-top:3px;font-style:italic;padding-left:4px}
+.pu-note-btns{display:flex;gap:4px;margin-top:5px;flex-wrap:wrap}
+.pu-nbtn{height:22px;padding:0 8px;border-radius:4px;font-size:11px;font-family:inherit;font-weight:600;cursor:pointer;border:1px solid;line-height:1}
+.pu-nbtn-edit{border-color:var(--blue-mid);color:var(--blue);background:#f0f7ff}
+.pu-nbtn-edit:hover{background:var(--blue-lighter)}
+.pu-nbtn-del{border-color:#fca5a5;color:#dc2626;background:#fff5f5}
+.pu-nbtn-del:hover{background:#fee2e2}
+.pu-nbtn-save{border-color:#86efac;color:#16a34a;background:#f0fdf4}
+.pu-nbtn-save:hover{background:#dcfce7}
+.pu-nbtn-cancel{border-color:#d1d5db;color:#6b7280;background:#f9fafb}
+.pu-nbtn-cancel:hover{background:#f3f4f6}
 .wu-topbar{background:#fff;border-bottom:1px solid var(--border);padding:14px 24px;display:flex;align-items:center;justify-content:space-between;gap:12px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
 .wu-topbar-left{display:flex;flex-direction:column;gap:2px}
 .wu-topbar-title{font-size:17px;font-weight:700;color:var(--gray-dark)}
@@ -2699,38 +2708,54 @@ function renderPermUpdView(){
       else if(tp==='note'){
         td.className='pu-note-cell';
         const isThisWeek=k==='puThisWeek';
-        const pd2=puData[addr]||{};
-        const noteVal=isThisWeek?(pd2.thisWeek||''):(pd2.lastWeek||'');
-        const savedAt=isThisWeek?pd2.thisWeekSavedAt:null;
-        const disp=document.createElement('div');disp.className='pu-note-disp';disp.textContent=noteVal;
-        td.appendChild(disp);
-        if(savedAt){const de=document.createElement('div');de.className='pu-note-date';de.id='pudate-'+addr.replace(/\s/g,'_')+'-'+k;de.textContent='Saved '+fd2(savedAt);td.appendChild(de);}
-        disp.addEventListener('click',e=>{
-          e.stopPropagation();
-          const origVal=isThisWeek?(puData[addr]||{}).thisWeek||'':( puData[addr]||{}).lastWeek||'';
-          disp.style.display='none';
+        const fieldLabel=isThisWeek?'This Week':'Last Week';
+        const renderNoteCell=()=>{
+          td.innerHTML='';
+          const pd2=puData[addr]||{};
+          const noteVal=isThisWeek?(pd2.thisWeek||''):(pd2.lastWeek||'');
+          const savedAt=isThisWeek?pd2.thisWeekSavedAt:null;
+          const disp=document.createElement('div');disp.className='pu-note-disp';disp.textContent=noteVal;
+          td.appendChild(disp);
+          if(savedAt){const de=document.createElement('div');de.className='pu-note-date';de.textContent='Saved '+fd2(savedAt);td.appendChild(de);}
+          const btns=document.createElement('div');btns.className='pu-note-btns';
+          const editBtn=document.createElement('button');editBtn.className='pu-nbtn pu-nbtn-edit';editBtn.textContent='Edit';
+          editBtn.addEventListener('click',e=>{e.stopPropagation();showNoteEdit();});
+          btns.appendChild(editBtn);
+          if(noteVal){
+            const delBtn=document.createElement('button');delBtn.className='pu-nbtn pu-nbtn-del';delBtn.textContent='Delete';
+            delBtn.addEventListener('click',e=>{
+              e.stopPropagation();
+              showConf('Delete Entry','Clear "'+fieldLabel+'" for '+addr+'?','Delete',true,async()=>{
+                await savePuUpdate(addr,k,'');renderNoteCell();
+              });
+            });
+            btns.appendChild(delBtn);
+          }
+          td.appendChild(btns);
+        };
+        const showNoteEdit=()=>{
+          td.innerHTML='';
+          const pd2=puData[addr]||{};
+          const origVal=isThisWeek?(pd2.thisWeek||''):(pd2.lastWeek||'');
           const inp=document.createElement('textarea');inp.className='pu-note-inp';inp.value=origVal;
-          td.insertBefore(inp,disp);inp.focus();
-          inp.addEventListener('keydown',e2=>{if(e2.key==='Escape'){inp.remove();disp.style.display='';}if(e2.key==='Enter'&&(e2.ctrlKey||e2.metaKey))inp.blur();});
-          inp.addEventListener('click',e2=>e2.stopPropagation());
-          inp.addEventListener('blur',()=>{
+          inp.addEventListener('click',e=>e.stopPropagation());
+          td.appendChild(inp);
+          const btns=document.createElement('div');btns.className='pu-note-btns';
+          const saveBtn=document.createElement('button');saveBtn.className='pu-nbtn pu-nbtn-save';saveBtn.textContent='Save';
+          saveBtn.addEventListener('click',e=>{
+            e.stopPropagation();
             const nv=inp.value.trim();
-            inp.remove();disp.style.display='';
-            if(nv===origVal)return;
-            const fieldLabel=isThisWeek?'This Week':'Last Week';
             showConf('Save Update','Save "'+fieldLabel+'" for '+addr+'?','Save',false,async()=>{
-              disp.textContent=nv;
-              if(isThisWeek){
-                const today=new Date().toISOString().slice(0,10);
-                const deId='pudate-'+addr.replace(/\s/g,'_')+'-'+k;
-                let de=td.querySelector('.pu-note-date');
-                if(!de){de=document.createElement('div');de.className='pu-note-date';de.id=deId;td.appendChild(de);}
-                de.textContent='Saved '+fd2(today);
-              }
-              await savePuUpdate(addr,k,nv);
+              await savePuUpdate(addr,k,nv);renderNoteCell();
             });
           });
-        });
+          const cancelBtn=document.createElement('button');cancelBtn.className='pu-nbtn pu-nbtn-cancel';cancelBtn.textContent='Cancel';
+          cancelBtn.addEventListener('click',e=>{e.stopPropagation();renderNoteCell();});
+          btns.appendChild(saveBtn);btns.appendChild(cancelBtn);
+          td.appendChild(btns);
+          inp.focus();
+        };
+        renderNoteCell();
       }
       else{td.textContent=v;}
       if(miss&&tp!=='note')td.classList.add('tmiss');
