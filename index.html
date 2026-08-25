@@ -55,6 +55,13 @@ body{font-family:var(--font);background:#eef1f6;color:#1f2937;min-height:100vh;f
 .topbar-right{margin-left:auto;display:flex;align-items:center;gap:8px;padding-left:16px;border-left:1px solid var(--border);flex-shrink:0}
 /* ── FILTER POPOUT ───────────────────────────────── */
 #fpop{position:absolute;top:calc(100% + 4px);right:24px;background:#fff;border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.14);padding:16px;display:none;z-index:300;flex-wrap:wrap;gap:10px;align-items:flex-end}
+#export-pop{position:absolute;top:calc(100% + 4px);right:0;background:#fff;border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.14);padding:6px;display:none;z-index:300;min-width:200px;flex-direction:column;gap:2px}
+#export-pop.open{display:flex}
+.exp-opt{display:flex;flex-direction:column;padding:9px 13px;border-radius:7px;cursor:pointer;border:none;background:none;text-align:left;width:100%;transition:background .12s}
+.exp-opt:hover{background:var(--gray-light)}
+.exp-opt-title{font-size:13px;font-weight:600;color:var(--gray-dark)}
+.exp-opt-sub{font-size:11px;color:var(--gray);margin-top:1px}
+#export-wrap{position:relative;display:inline-flex}
 #fpop.open{display:flex}
 #fpop-footer{width:100%;display:flex;justify-content:flex-end;padding-top:8px;border-top:1px solid var(--border);margin-top:4px}
 #filter-btn{display:inline-flex;align-items:center;gap:6px;padding:6px 13px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:#fff;color:#374151;transition:all .15s;letter-spacing:.2px;white-space:nowrap}
@@ -720,7 +727,13 @@ body.mob .edit-bar-inner{flex-wrap:wrap;gap:6px;padding:6px 12px}
   <div id="hdr-actions">
     <button class="btn btn-ol" onclick="openTaskModal()">+ Add Task</button>
     <button class="btn btn-ol" onclick="openImport()">&#8679; Import</button>
-    <button class="btn btn-ol" onclick="exportCSV()">&#8681; Export</button>
+    <div id="export-wrap">
+      <button class="btn btn-ol" onclick="toggleExportDrop(event)">&#8681; Export &#9660;</button>
+      <div id="export-pop">
+        <button class="exp-opt" onclick="exportCSV();closeExportDrop()"><span class="exp-opt-title">Full Export</span><span class="exp-opt-sub">All columns, all projects</span></button>
+        <button class="exp-opt" onclick="exportPermittingCSV();closeExportDrop()"><span class="exp-opt-title">Permitting Export</span><span class="exp-opt-sub">Permit dates &amp; jurisdiction</span></button>
+      </div>
+    </div>
     <button class="btn btn-ol" id="edit-mode-btn" onclick="toggleEditMode()">&#9998; Edit</button>
     <button class="btn btn-icon btn-ol" id="mob-btn" onclick="toggleMobView()" title="Mobile View">&#128241;</button>
   </div>
@@ -1970,9 +1983,19 @@ function exportCSV(){
   st2('CSV exported!');
 }
 
+function toggleExportDrop(e){e.stopPropagation();document.getElementById('export-pop').classList.toggle('open');}
+function closeExportDrop(){document.getElementById('export-pop').classList.remove('open');}
+function exportPermittingCSV(){
+  const cs=[['address','Address'],['program','Program'],['permittingJurisdiction','Permitting Jurisdiction'],['constructionStage','Stage'],['jobStatus','Job Status'],['jobType','Job Type'],['assignmentReceived','Assignment Received'],['costEstimateSubmitted','Cost Est. Submitted'],['demoPermitSubmitted','Demo Permit Submitted'],['demoPermitIssued','Demo Permit Issued'],['bldgPermitSubmitted','Bldg Permit Submitted'],['bldgPermitIssued','Bldg Permit Issued']];
+  const rows=[cs.map(c=>c[1]).join(',')];
+  filt.forEach(p=>{rows.push(cs.map(([k])=>{const v=p[k]||'';return(v.includes(',')||v.includes('"')||v.includes('\n'))?'"'+v.replace(/"/g,'""')+'"':v;}).join(','));});
+  const blob=new Blob([rows.join('\n')],{type:'text/csv'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='FL_Permitting_'+new Date().toISOString().slice(0,10)+'.csv';a.click();
+  st2('Permitting CSV exported!');
+}
 function st2(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3000);}
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){cd();ci();closeProgDrop();closeTaskModal();document.getElementById('chlog-modal').classList.remove('open');}});
-document.addEventListener('click',e=>{if(!document.getElementById('prog-wrap').contains(e.target))closeProgDrop();});
+document.addEventListener('click',e=>{if(!document.getElementById('prog-wrap').contains(e.target))closeProgDrop();if(!document.getElementById('export-wrap').contains(e.target))closeExportDrop();});
 function closeProgDrop(){document.getElementById('prog-drop').classList.remove('open');document.getElementById('prog-btn').classList.remove('open');}
 window.addEventListener('DOMContentLoaded',init);
 
