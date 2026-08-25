@@ -405,6 +405,7 @@ tr.dr:hover td.tcrit-miss,tr.dr.row-permit td.tcrit-miss{background:#fecaca}
 .tk-card-actions{display:flex;gap:4px;margin-top:8px;padding-top:8px;border-top:1px solid #f0f2f6;flex-wrap:wrap}
 .tk-mv{font-size:11px;padding:3px 8px;border-radius:20px;border:1px solid var(--border);background:#fff;cursor:pointer;color:var(--gray-dark);font-weight:500;transition:all .12s}
 .tk-mv:hover{background:var(--blue-lighter);border-color:var(--blue-mid);color:var(--blue)}
+.tk-completed-date{font-size:10px;color:#6b7280;margin-top:7px;padding-top:5px;border-top:1px solid #f0f2f6;font-style:italic}
 .tk-del{font-size:11px;padding:3px 7px;border-radius:20px;border:1px solid var(--border);background:#fff;cursor:pointer;color:var(--red);font-weight:500;transition:all .12s;margin-left:auto}
 .tk-del:hover{background:var(--red-light);border-color:#fca5a5}
 .tk-col-add{background:rgba(255,255,255,.55);border:1px solid rgba(0,0,0,.15);width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;line-height:1;color:var(--gray-dark);transition:all .15s;padding:0;flex-shrink:0}
@@ -2916,6 +2917,7 @@ function renderTaskBoard(preserveTagSel){
     h+='<button class="tk-mv" onclick="openTaskModal(null,\''+t.id+'\')">Edit</button>';
     h+='<button class="tk-del" onclick="deleteTask(\''+t.id+'\')">&#10005;</button>';
     h+='</div>';
+    if(st==='done'&&t.completedAt)h+='<div class="tk-completed-date">&#10003; Completed '+fd2(t.completedAt)+'</div>';
     card.innerHTML=h;
     const banner=card.querySelector('.tk-proj-banner');
     if(banner){const addr=t.projectAddress;banner.addEventListener('click',function(){openProjectByAddr(addr);});}
