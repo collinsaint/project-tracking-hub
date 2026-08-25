@@ -1292,11 +1292,20 @@ function setupRealtime(){
       });
     })
     .subscribe();
+  function _rtTask(r){return{id:r.id,title:r.title||'',notes:r.notes||'',dueDate:r.due_date||'',status:r.status||'todo',priority:r.priority||'medium',tags:Array.isArray(r.tags)?r.tags:[],projectAddress:r.project_address||'',createdAt:r.created_at||''};}
   sb.channel('rt-tasks')
-    .on('postgres_changes',{event:'*',schema:'public',table:'tasks'},async()=>{
-      await loadTasks();
-      recordSync();
-      if(taskView)renderTaskBoard();
+    .on('postgres_changes',{event:'INSERT',schema:'public',table:'tasks'},(pl)=>{
+      const t=_rtTask(pl.new);if(!tasks.find(x=>x.id===t.id))tasks.push(t);
+      saveTasks();recordSync();if(taskView)renderTaskBoard();
+    })
+    .on('postgres_changes',{event:'UPDATE',schema:'public',table:'tasks'},(pl)=>{
+      const t=_rtTask(pl.new);const i=tasks.findIndex(x=>x.id===t.id);
+      if(i>=0)tasks[i]=t;else tasks.push(t);
+      saveTasks();recordSync();if(taskView)renderTaskBoard();
+    })
+    .on('postgres_changes',{event:'DELETE',schema:'public',table:'tasks'},(pl)=>{
+      if(pl.old?.id)tasks=tasks.filter(t=>t.id!==pl.old.id);
+      saveTasks();recordSync();if(taskView)renderTaskBoard();
     })
     .subscribe();
 }
