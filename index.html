@@ -1139,8 +1139,8 @@ const sb=window.supabase.createClient(SB_URL,SB_KEY);
 
 let proj=[],filt=[],selI=null;
 let pnotes={},_activeTab='details';
-let jqView=false,jqAddrs=[];
-let coqView=false,coqAddrs=[];
+let jqView=false,jqAddrs=[],jqLoaded=false;
+let coqView=false,coqAddrs=[],coqLoaded=false;
 let permView=false,permSort={col:'',dir:1};
 let editMode=false,editQueue={},editPopCtx=null;
 const WU_PROGRAMS=[
@@ -2129,8 +2129,10 @@ async function initJQ(){
     if(error)throw error;
     jqAddrs=(data||[]).map(r=>r.address);
     localStorage.setItem('pic_jsq_v1',JSON.stringify(jqAddrs));
+    jqLoaded=true;
   }catch(e){
     try{const s=localStorage.getItem('pic_jsq_v1');if(s)jqAddrs=JSON.parse(s);}catch(e2){}
+    jqLoaded=true;
   }
 }
 function saveJQ(){
@@ -2138,10 +2140,15 @@ function saveJQ(){
   sbSyncJQ();
 }
 async function sbSyncJQ(){
+  if(!jqLoaded)return; // never write before we've read from DB
   try{
     showSaveStatus('saving');
-    await sb.from('job_start_queue').delete().not('address','is',null);
-    if(jqAddrs.length>0)await sb.from('job_start_queue').insert(jqAddrs.map(a=>({address:a})));
+    const{data}=await sb.from('job_start_queue').select('address');
+    const dbAddrs=(data||[]).map(r=>r.address);
+    const toAdd=jqAddrs.filter(a=>!dbAddrs.includes(a));
+    const toRemove=dbAddrs.filter(a=>!jqAddrs.includes(a));
+    if(toAdd.length>0)await sb.from('job_start_queue').insert(toAdd.map(a=>({address:a})));
+    for(const a of toRemove)await sb.from('job_start_queue').delete().eq('address',a);
     showSaveStatus('saved');
   }catch(e){console.error('JQ sync failed',e);st2('⚠ Job Queue save failed — check connection');showSaveStatus('saved');}
 }
@@ -2360,8 +2367,10 @@ async function initCOQ(){
     if(error)throw error;
     coqAddrs=(data||[]).map(r=>r.address);
     localStorage.setItem('pic_coq_v1',JSON.stringify(coqAddrs));
+    coqLoaded=true;
   }catch(e){
     try{const s=localStorage.getItem('pic_coq_v1');if(s)coqAddrs=JSON.parse(s);}catch(e2){}
+    coqLoaded=true;
   }
 }
 function saveCOQ(){
@@ -2369,10 +2378,15 @@ function saveCOQ(){
   sbSyncCOQ();
 }
 async function sbSyncCOQ(){
+  if(!coqLoaded)return; // never write before we've read from DB
   try{
     showSaveStatus('saving');
-    await sb.from('change_order_queue').delete().not('address','is',null);
-    if(coqAddrs.length>0)await sb.from('change_order_queue').insert(coqAddrs.map(a=>({address:a})));
+    const{data}=await sb.from('change_order_queue').select('address');
+    const dbAddrs=(data||[]).map(r=>r.address);
+    const toAdd=coqAddrs.filter(a=>!dbAddrs.includes(a));
+    const toRemove=dbAddrs.filter(a=>!coqAddrs.includes(a));
+    if(toAdd.length>0)await sb.from('change_order_queue').insert(toAdd.map(a=>({address:a})));
+    for(const a of toRemove)await sb.from('change_order_queue').delete().eq('address',a);
     showSaveStatus('saved');
   }catch(e){console.error('COQ sync failed',e);st2('⚠ Change Order Queue save failed — check connection');showSaveStatus('saved');}
 }
