@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+﻿﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -385,7 +385,23 @@ tr.dr:hover td.tcrit-miss,tr.dr.row-permit td.tcrit-miss{background:#fecaca}
 .tk-card:hover{box-shadow:var(--shadow-md);transform:translateY(-2px)}
 .tk-card-today{background:#fffbeb;border-color:#fde68a}
 .tk-card-overdue{background:#fef2f2;border-color:#fecaca}
-.tk-counter{margin-left:auto;font-size:12px;color:#374151;font-weight:600;white-space:nowrap;padding:4px 8px;background:#f3f4f6;border-radius:6px;border:1px solid #e5e7eb}
+.tk-counter{font-size:12px;color:#374151;font-weight:600;white-space:nowrap;padding:4px 8px;background:#f3f4f6;border-radius:6px;border:1px solid #e5e7eb}
+.tb-view-btns{display:flex;gap:4px;margin-left:auto;flex-shrink:0}
+.tb-vbtn{height:30px;padding:0 11px;border:1px solid var(--border);border-radius:20px;font-size:12px;background:#fff;cursor:pointer;font-weight:600;color:#374151;transition:all .15s;white-space:nowrap}
+.tb-vbtn:hover{border-color:var(--blue-mid);color:var(--blue);background:var(--blue-lighter)}
+.tb-vbtn.active{background:var(--blue);color:#fff;border-color:var(--blue)}
+.tk-lv-wrap{background:#fff;border-radius:var(--radius-lg);box-shadow:var(--shadow-md);border:1px solid rgba(0,0,0,.05);overflow:hidden}
+.tk-lv-row{display:grid;grid-template-columns:22px 1fr 150px 72px 90px auto 90px;align-items:center;padding:8px 14px;border-bottom:1px solid #f3f4f6;gap:10px;font-size:12px;cursor:default}
+.tk-lv-hdr{background:#f8f9fb;font-weight:700;color:#6b7280;font-size:11px;text-transform:uppercase;letter-spacing:.04em;cursor:default!important}
+.tk-lv-row:hover:not(.tk-lv-hdr){background:#f9fafb}
+.tk-lv-dot{width:14px;height:14px;border-radius:50%;border:2px solid #d1d5db;cursor:pointer;flex-shrink:0;box-sizing:border-box;display:inline-block}
+.tk-lv-dot.done-dot{border-color:#22c55e;background:#22c55e}
+.tk-lv-title{font-weight:600;color:#111827;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tk-lv-title.done-text{text-decoration:line-through;color:#9ca3af;font-weight:400}
+.tk-lv-proj{font-size:11px;color:var(--blue);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer}
+.tk-lv-proj:hover{text-decoration:underline}
+.tk-lv-tags{display:flex;gap:3px;flex-wrap:nowrap;overflow:hidden}
+.tk-lv-acts{display:flex;gap:4px;justify-content:flex-end}
 .tk-proj-banner{display:flex;align-items:center;gap:5px;background:linear-gradient(135deg,var(--blue-lighter),#e4eeff);border:1px solid #c7d9ff;padding:5px 9px;border-radius:6px;margin-bottom:8px;font-size:11px;font-weight:700;color:var(--blue);line-height:1.3;word-break:break-word;cursor:pointer;transition:background .15s,border-color .15s}
 .tk-proj-banner:hover{background:linear-gradient(135deg,#d4e8ff,#c8d8ff);border-color:#7aabf0;text-decoration:underline}
 .tk-proj-banner::before{content:'📍';font-size:10px;flex-shrink:0}
@@ -891,13 +907,20 @@ body.mob .edit-bar-inner{flex-wrap:wrap;gap:6px;padding:6px 12px}
     <button class="tb-sort-dir" id="tb-sort-dir" onclick="toggleTbSortDir()" title="Toggle sort direction">&#9650;</button>
     <div class="tb-filter-sep"></div>
     <div class="tk-counter" id="tk-counter"></div>
+    <div class="tb-filter-sep"></div>
+    <div class="tb-view-btns">
+      <button class="tb-vbtn active" id="tbvbtn-board" onclick="setTbView('board')" title="Kanban board">Board</button>
+      <button class="tb-vbtn" id="tbvbtn-tag" onclick="setTbView('tag')" title="Group by tag">By Tag</button>
+      <button class="tb-vbtn" id="tbvbtn-list" onclick="setTbView('list')" title="List view">&#9776; List</button>
+    </div>
   </div>
-  <div class="tb-main-cols">
+  <div class="tb-main-cols" id="tb-main-cols">
     <div class="tk-col tk-col-todo">
       <div class="tk-col-hdr"><div class="tk-col-title">&#128203; To Do <span class="tk-cnt" id="tkcnt-todo">0</span></div><button class="tk-col-add" onclick="openTaskModal()" title="Add task">+</button></div>
       <div class="tk-list" id="tkcol-todo"></div>
     </div>
   </div>
+  <div id="tb-alt-view" style="display:none"></div>
   <div class="tk-done-sec">
     <div class="tk-done-hdr" id="tk-done-hdr" onclick="toggleTbDone()">
       <span>&#9989; Done</span>
@@ -1154,7 +1177,7 @@ const WU_PROGRAMS=[
 ];
 const WU_STEP_LABELS=['Tracker Done','Submitted'];
 let wuView=false,wuData={weekOf:'',state:{}};
-let tasks=[],taskView=false,reportView=false,editTaskId=null,tbProjFilter='',tbPriFilter='',tbTagFilter='',tbSortBy='dueDate',tbSortDir=1,tbDoneOpen=false,detailAddr='';
+let tasks=[],taskView=false,reportView=false,editTaskId=null,tbProjFilter='',tbPriFilter='',tbTagFilter='',tbSortBy='dueDate',tbSortDir=1,tbDoneOpen=false,detailAddr='',tbViewMode='board';
 let col={p:false,o:false,w:false,c:false};
 let srt={p:{col:'address',dir:1},o:{col:'address',dir:1},w:{col:'address',dir:1},c:{col:'address',dir:1}};
 let pgn={p:1,o:1,w:1,c:1};
@@ -2940,29 +2963,111 @@ function renderTaskBoard(preserveTagSel){
     if(banner){const addr=t.projectAddress;banner.addEventListener('click',function(){openProjectByAddr(addr);});}
     return card;
   };
-  ['todo','done'].forEach(st=>{
-    const list=document.getElementById('tkcol-'+st);
-    const cntEl=document.getElementById('tkcnt-'+st);
-    if(!list||!cntEl)return;
-    const col=[...tks.filter(t=>t.status===st)].sort(sortFn);
-    cntEl.textContent=col.length;
-    list.innerHTML='';
-    if(col.length===0&&st!=='done'){
-      const emp=document.createElement('div');
-      emp.style.cssText='color:var(--gray);font-style:italic;text-align:center;padding:22px 12px;font-size:12px;grid-column:1/-1';
-      emp.textContent='No tasks here';
-      list.appendChild(emp);
-    } else {
-      col.forEach(t=>list.appendChild(buildCard(t,st)));
+  const boardCols=document.getElementById('tb-main-cols');
+  const altView=document.getElementById('tb-alt-view');
+  const doneSec=document.querySelector('.tk-done-sec');
+
+  if(tbViewMode==='board'){
+    if(boardCols)boardCols.style.display='';
+    if(altView){altView.style.display='none';altView.innerHTML='';}
+    if(doneSec)doneSec.style.display='';
+    ['todo','done'].forEach(st=>{
+      const list=document.getElementById('tkcol-'+st);
+      const cntEl=document.getElementById('tkcnt-'+st);
+      if(!list||!cntEl)return;
+      const col=[...tks.filter(t=>t.status===st)].sort(sortFn);
+      cntEl.textContent=col.length;
+      list.innerHTML='';
+      if(col.length===0&&st!=='done'){
+        const emp=document.createElement('div');
+        emp.style.cssText='color:var(--gray);font-style:italic;text-align:center;padding:22px 12px;font-size:12px;grid-column:1/-1';
+        emp.textContent='No tasks here';
+        list.appendChild(emp);
+      } else {
+        col.forEach(t=>list.appendChild(buildCard(t,st)));
+      }
+      if(st!=='done'){
+        const addBtn=document.createElement('button');
+        addBtn.className='tk-add-inline';
+        addBtn.textContent='+ Add Task';
+        addBtn.onclick=function(){openTaskModal();};
+        list.appendChild(addBtn);
+      }
+    });
+
+  } else if(tbViewMode==='tag'){
+    if(boardCols)boardCols.style.display='none';
+    if(doneSec)doneSec.style.display='none';
+    if(altView){
+      altView.innerHTML='';
+      altView.style.cssText='display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:14px;align-items:start';
+      const rawTags=[...new Set(tks.flatMap(t=>t.tags&&t.tags.length?t.tags:[]))].sort();
+      const hasUntagged=tks.some(t=>!t.tags||t.tags.length===0);
+      const tagColors=['#6366f1','#0ea5e9','#10b981','#f59e0b','#ef4444','#8b5cf6','#ec4899','#14b8a6','#f97316','#84cc16'];
+      rawTags.forEach((tag,i)=>{
+        const group=tks.filter(t=>t.tags&&t.tags.includes(tag)).sort(sortFn);
+        const col2=document.createElement('div');col2.className='tk-col';
+        const clr=tagColors[i%tagColors.length];
+        col2.innerHTML='<div class="tk-col-hdr" style="background:#f8f9fb;border-color:'+clr+'"><div class="tk-col-title" style="color:'+clr+'">&#127991; '+es(tag)+' <span class="tk-cnt" style="background:'+clr+'22;color:'+clr+'">'+group.length+'</span></div></div>';
+        const list2=document.createElement('div');list2.className='tk-list';
+        if(group.length===0){const emp2=document.createElement('div');emp2.style.cssText='color:var(--gray);font-style:italic;text-align:center;padding:22px 12px;font-size:12px;grid-column:1/-1';emp2.textContent='No tasks';list2.appendChild(emp2);}
+        else{group.forEach(t=>list2.appendChild(buildCard(t,t.status)));}
+        col2.appendChild(list2);altView.appendChild(col2);
+      });
+      if(hasUntagged){
+        const group=tks.filter(t=>!t.tags||t.tags.length===0).sort(sortFn);
+        const col2=document.createElement('div');col2.className='tk-col';
+        col2.innerHTML='<div class="tk-col-hdr" style="background:#f8f9fb;border-color:#9ca3af"><div class="tk-col-title" style="color:#6b7280">&#8709; No Tag <span class="tk-cnt" style="background:#f3f4f6;color:#6b7280">'+group.length+'</span></div></div>';
+        const list2=document.createElement('div');list2.className='tk-list';
+        group.forEach(t=>list2.appendChild(buildCard(t,t.status)));
+        col2.appendChild(list2);altView.appendChild(col2);
+      }
+      if(rawTags.length===0&&!hasUntagged){altView.style.display='block';altView.innerHTML='<div style="color:var(--gray);font-style:italic;text-align:center;padding:40px;font-size:13px">No tasks to display</div>';}
     }
-    if(st!=='done'){
-      const addBtn=document.createElement('button');
-      addBtn.className='tk-add-inline';
-      addBtn.textContent='+ Add Task';
-      addBtn.onclick=function(){openTaskModal();};
-      list.appendChild(addBtn);
+
+  } else if(tbViewMode==='list'){
+    if(boardCols)boardCols.style.display='none';
+    if(doneSec)doneSec.style.display='none';
+    if(altView){
+      altView.style.cssText='display:block';
+      altView.innerHTML='';
+      const wrap=document.createElement('div');wrap.className='tk-lv-wrap';
+      const hdr=document.createElement('div');hdr.className='tk-lv-row tk-lv-hdr';
+      hdr.innerHTML='<span></span><span>Title</span><span>Project</span><span>Priority</span><span>Due</span><span>Tags</span><span>Actions</span>';
+      wrap.appendChild(hdr);
+      const all=[...tks].sort(sortFn);
+      if(all.length===0){const emp=document.createElement('div');emp.style.cssText='padding:32px;text-align:center;color:var(--gray);font-size:13px;font-style:italic';emp.textContent='No tasks to display';wrap.appendChild(emp);}
+      all.forEach(t=>{
+        const done=t.status==='done';
+        const overdue=t.dueDate&&t.dueDate<today&&!done;
+        const row=document.createElement('div');
+        row.className='tk-lv-row'+(overdue?' tk-card-overdue':'');
+        const dotSpan=document.createElement('span');
+        dotSpan.className='tk-lv-dot'+(done?' done-dot':'');
+        dotSpan.title=done?'Mark to-do':'Mark done';
+        dotSpan.onclick=()=>moveTask(t.id,done?'todo':'done');
+        const titleSpan='<span class="tk-lv-title'+(done?' done-text':'')+'">'+es(t.title)+'</span>';
+        const projSpan=t.projectAddress?'<span class="tk-lv-proj" onclick="openProjectByAddr(\''+es(t.projectAddress)+'\')">'+es(t.projectAddress)+'</span>':'<span style="color:#9ca3af;font-size:11px">&#8212;</span>';
+        const pri=t.priority||'medium';
+        const priC={high:'#ef4444',medium:'#f59e0b',low:'#22c55e'};
+        const priBg={high:'#fee2e2',medium:'#fef3c7',low:'#dcfce7'};
+        const priSpan='<span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;background:'+priBg[pri]+';color:'+priC[pri]+'">'+pri+'</span>';
+        const dueSpan=t.dueDate?'<span style="font-size:11px;color:'+(overdue?'#ef4444':'#374151')+'">'+(overdue?'&#9888; ':'')+fd2(t.dueDate)+'</span>':'<span style="color:#9ca3af;font-size:11px">&#8212;</span>';
+        const tagsSpan='<div class="tk-lv-tags">'+((t.tags&&t.tags.length)?t.tags.slice(0,2).map(tag=>'<span class="tk-tag">'+es(tag)+'</span>').join('')+(t.tags.length>2?'<span class="tk-tag">+'+(t.tags.length-2)+'</span>':''):'<span style="color:#9ca3af;font-size:11px">&#8212;</span>')+'</div>';
+        const actsSpan='<div class="tk-lv-acts"><button class="tk-mv" onclick="openTaskModal(null,\''+t.id+'\')">Edit</button><button class="tk-del" onclick="deleteTask(\''+t.id+'\')">&#10005;</button></div>';
+        row.appendChild(dotSpan);
+        row.insertAdjacentHTML('beforeend',titleSpan+projSpan+priSpan+dueSpan+tagsSpan+actsSpan);
+        wrap.appendChild(row);
+      });
+      altView.appendChild(wrap);
     }
-  });
+  }
+}
+
+function setTbView(mode){
+  tbViewMode=mode;
+  ['board','tag','list'].forEach(m=>{const b=document.getElementById('tbvbtn-'+m);if(b)b.classList.toggle('active',m===mode);});
+  renderTaskBoard();
 }
 
 function renderDetailTasks(addr){
