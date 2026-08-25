@@ -2056,7 +2056,6 @@ async function loadTasks(){
 }
 function saveTasks(){
   try{localStorage.setItem('pic_tasks_v1',JSON.stringify(tasks));}catch(e){}
-  sbSyncTasks();
 }
 let _saveTimer=null,_lastSync=null;
 function _fmtSync(d){if(!d)return'never';const h=d.getHours()%12||12,m=String(d.getMinutes()).padStart(2,'0'),ap=d.getHours()<12?'AM':'PM',mo=d.getMonth()+1,dy=d.getDate();return mo+'/'+dy+' '+h+':'+m+' '+ap;}
@@ -2074,14 +2073,24 @@ function initSyncDisplay(){
   _syncIdle();
 }
 
-async function sbSyncTasks(){
+function _taskRow(t){return{id:t.id,title:t.title,notes:t.notes,due_date:t.dueDate,status:t.status,priority:t.priority,tags:t.tags||[],project_address:t.projectAddress,created_at:t.createdAt};}
+async function sbUpsertTask(t){
+  showSaveStatus('saving');
   try{
-    showSaveStatus('saving');
-    const rows=tasks.map(t=>({id:t.id,title:t.title,notes:t.notes,due_date:t.dueDate,status:t.status,priority:t.priority,tags:t.tags||[],project_address:t.projectAddress,created_at:t.createdAt}));
-    await sb.from('tasks').delete().not('id','is',null);
-    if(rows.length>0)await sb.from('tasks').insert(rows);
+    const{error}=await sb.from('tasks').upsert(_taskRow(t),{onConflict:'id'});
+    if(error)throw error;
     showSaveStatus('saved');
-  }catch(e){showSaveStatus('saved');}
+  }catch(e){console.error('Task upsert failed',e);showSaveStatus('saved');}
+}
+async function sbDeleteTask(id){
+  try{
+    const{error}=await sb.from('tasks').delete().eq('id',id);
+    if(error)throw error;
+  }catch(e){console.error('Task delete failed',e);}
+}
+async function sbSyncTasks(){
+  await loadTasks();
+  if(taskView)renderTaskBoard();
 }
 async function initJQ(){
   try{
@@ -2746,15 +2755,16 @@ function saveTask(){
   const selAddrs=[...document.querySelectorAll('#tmod-proj-list input[type=checkbox]:checked')].map(c=>c.value);
   if(editTaskId){
     const t=tasks.find(t=>t.id===editTaskId);
-    if(t)Object.assign(t,{title,notes,dueDate:due,status,priority:pri,tags,projectAddress:selAddrs[0]||t.projectAddress||''});
-    saveTasks();closeTaskModal();
+    if(t){Object.assign(t,{title,notes,dueDate:due,status,priority:pri,tags,projectAddress:selAddrs[0]||t.projectAddress||''});saveTasks();sbUpsertTask(t);}
+    closeTaskModal();
     if(taskView)renderTaskBoard();
     if(selI!==null)renderDetailTasks(detailAddr);
     st2('Task updated');
   } else {
     const addrs=selAddrs.length>0?selAddrs:[''];
-    addrs.forEach(addr=>tasks.push({id:genId(),title,notes,dueDate:due,status,priority:pri,tags,projectAddress:addr,createdAt:new Date().toISOString().slice(0,10)}));
-    saveTasks();closeTaskModal();
+    const newTasks=addrs.map(addr=>({id:genId(),title,notes,dueDate:due,status,priority:pri,tags,projectAddress:addr,createdAt:new Date().toISOString().slice(0,10)}));
+    newTasks.forEach(t=>tasks.push(t));
+    saveTasks();newTasks.forEach(t=>sbUpsertTask(t));closeTaskModal();
     if(taskView)renderTaskBoard();
     if(selI!==null)renderDetailTasks(detailAddr);
     st2(addrs.length>1?addrs.length+' tasks created':'Task added');
@@ -2763,26 +2773,26 @@ function saveTask(){
 
 function moveTask(id,newStatus){
   const t=tasks.find(t=>t.id===id);
-  if(t){t.status=newStatus;saveTasks();renderTaskBoard();}
+  if(t){t.status=newStatus;saveTasks();sbUpsertTask(t);renderTaskBoard();}
 }
 
 function deleteTask(id){
   if(!confirm('Delete this task?'))return;
   tasks=tasks.filter(t=>t.id!==id);
-  saveTasks();renderTaskBoard();
+  saveTasks();sbDeleteTask(id);renderTaskBoard();
   if(selI!==null)renderDetailTasks(detailAddr);
 }
 
 function deleteTaskDetail(id){
   if(!confirm('Delete this task?'))return;
   tasks=tasks.filter(t=>t.id!==id);
-  saveTasks();renderDetailTasks(detailAddr);
+  saveTasks();sbDeleteTask(id);renderDetailTasks(detailAddr);
   if(taskView)renderTaskBoard();
 }
 
 function toggleTaskDone(id){
   const t=tasks.find(t=>t.id===id);
-  if(t){t.status=t.status==='done'?'todo':'done';saveTasks();renderDetailTasks(detailAddr);if(taskView)renderTaskBoard();}
+  if(t){t.status=t.status==='done'?'todo':'done';saveTasks();sbUpsertTask(t);renderDetailTasks(detailAddr);if(taskView)renderTaskBoard();}
 }
 
 function updateTbFilters(){
