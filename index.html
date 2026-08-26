@@ -218,7 +218,7 @@ tr.dr:hover td.tcrit-miss,tr.dr.row-permit td.tcrit-miss{background:#fecaca}
 /* ── DETAIL TABS ──────────────────────────────── */
 #dtabs{display:flex;background:#fff;border-bottom:2px solid var(--border);flex-shrink:0}
 /* ── JUMP TO NAV ─────────────────────────────── */
-.djump-nav{display:flex;gap:5px;flex-wrap:wrap;padding:2px 0 8px;border-bottom:1px solid var(--border);margin-bottom:2px;flex-shrink:0}
+.djump-nav{display:flex;gap:5px;flex-wrap:wrap;padding:8px 18px 10px;border-bottom:1px solid var(--border);margin:0 -18px 12px;flex-shrink:0;position:sticky;top:0;background:#f4f6f9;z-index:2}
 .djump-btn{height:24px;padding:0 10px;border:1px solid var(--blue-mid);border-radius:20px;font-size:11px;font-weight:600;color:var(--blue);background:#f0f7ff;cursor:pointer;transition:all .15s;white-space:nowrap}
 .djump-btn:hover{background:var(--blue);color:#fff}
 .dtab{flex:1;padding:10px 14px;font-size:12px;font-weight:700;letter-spacing:.3px;text-transform:uppercase;color:var(--gray);cursor:pointer;text-align:center;border:none;border-bottom:2px solid transparent;margin-bottom:-2px;background:none;transition:color .15s,border-color .15s}
@@ -261,7 +261,8 @@ tr.dr:hover td.tcrit-miss,tr.dr.row-permit td.tcrit-miss{background:#fecaca}
 .dval.em{color:#c9cdd4;font-style:italic;font-size:12px}
 .dval.da{color:var(--blue-mid);font-weight:500}.dval.nu{color:var(--teal);font-weight:700}
 .dval.mo{color:var(--green);font-weight:700}.dval.pr{white-space:pre-wrap}
-.dbdg{display:flex;gap:6px;flex-wrap:wrap;padding:12px 14px 4px}
+.dbdg{display:flex;gap:8px;flex-wrap:wrap;padding:14px 18px 6px;justify-content:center}
+.dbdg .badge{font-size:13px;padding:6px 16px;border-radius:24px}
 
 /* ── IMPORT MODAL ───────────────────────────────── */
 #imod{position:fixed;inset:0;background:rgba(9,30,58,.5);z-index:300;display:none;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
