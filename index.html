@@ -218,8 +218,9 @@ tr.dr:hover td.tcrit-miss,tr.dr.row-permit td.tcrit-miss{background:#fecaca}
 /* ── DETAIL TABS ──────────────────────────────── */
 #dtabs{display:flex;background:#fff;border-bottom:2px solid var(--border);flex-shrink:0}
 /* ── JUMP TO NAV ─────────────────────────────── */
-.djump-nav{display:flex;gap:5px;flex-wrap:wrap;padding:8px 18px 10px;border-bottom:1px solid var(--border);margin:0 -18px 12px;flex-shrink:0;position:sticky;top:0;background:#f4f6f9;z-index:2}
-.djump-btn{height:24px;padding:0 10px;border:1px solid var(--blue-mid);border-radius:20px;font-size:11px;font-weight:600;color:var(--blue);background:#f0f7ff;cursor:pointer;transition:all .15s;white-space:nowrap}
+#djump-bar{display:none;gap:6px;flex-wrap:wrap;justify-content:center;padding:8px 18px 9px;border-bottom:1px solid var(--border);background:#fff;flex-shrink:0}
+#djump-bar.has-btns{display:flex}
+.djump-btn{height:26px;padding:0 12px;border:1px solid var(--blue-mid);border-radius:20px;font-size:11px;font-weight:600;color:var(--blue);background:#f0f7ff;cursor:pointer;transition:all .15s;white-space:nowrap}
 .djump-btn:hover{background:var(--blue);color:#fff}
 .dtab{flex:1;padding:10px 14px;font-size:12px;font-weight:700;letter-spacing:.3px;text-transform:uppercase;color:var(--gray);cursor:pointer;text-align:center;border:none;border-bottom:2px solid transparent;margin-bottom:-2px;background:none;transition:color .15s,border-color .15s}
 .dtab:hover{color:var(--blue-mid)}
@@ -1003,6 +1004,7 @@ body.mob .edit-bar-inner{flex-wrap:wrap;gap:6px;padding:6px 12px}
 <div id="dpan">
   <div id="dhdr"><div><div id="daddr">--</div><div id="dsub">--</div></div><div id="dhdr-actions"><button id="dhdr-jq-btn" class="dhdr-jq-btn" onclick="toggleQueueFromDetail()">&#9733; Add to Queue</button><button id="dhdr-coq-btn" class="dhdr-coq-btn" onclick="toggleCOQFromDetail()">&#9651; Change Order</button><button id="dclose" onclick="cd()">&#10005;</button></div></div>
   <div id="dtabs"><button class="dtab active" data-tab="details" onclick="switchDTab('details')">Details</button><button class="dtab" data-tab="notes" onclick="switchDTab('notes')">&#128221; Notes</button></div>
+  <div id="djump-bar"></div>
   <div id="dbody"></div>
   <div id="dnotes"></div>
 </div>
@@ -1781,9 +1783,9 @@ function od(idx){
   tkDiv.innerHTML='<div class="dstit" style="display:flex;align-items:center;justify-content:space-between"><span>Tasks</span><button class="btn btn-gh" style="font-size:11px;padding:2px 10px;height:24px" onclick="openTaskModal(detailAddr)">&#43; Add Task</button></div><div id="detail-tasks"></div>';
   body.appendChild(tkDiv);
   _jumpSecs.push({id:'dsec-tasks',label:'Tasks'});
-  const jnav=document.createElement('div');jnav.className='djump-nav';
-  jnav.innerHTML='<span style="font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;align-self:center;white-space:nowrap">Jump to:</span>'+_jumpSecs.map(s=>'<button class="djump-btn" onclick="(function(){const db=document.getElementById(\'dbody\');const tgt=document.getElementById(\''+s.id+'\');if(db&&tgt){const br=db.getBoundingClientRect();const tr=tgt.getBoundingClientRect();db.scrollTop+=tr.top-br.top-4;}})()">'+s.label+'</button>').join('');
-  body.insertBefore(jnav,br.nextSibling);
+  const jbar=document.getElementById('djump-bar');
+  jbar.innerHTML=_jumpSecs.map(s=>'<button class="djump-btn" onclick="(function(){const db=document.getElementById(\'dbody\');const tgt=document.getElementById(\''+s.id+'\');if(db&&tgt){const br=db.getBoundingClientRect();const tr=tgt.getBoundingClientRect();db.scrollTop+=tr.top-br.top-4;}})()">'+s.label+'</button>').join('');
+  jbar.classList.add('has-btns');
   renderDetailTasks(detailAddr);
   document.getElementById('dov').classList.add('open');
   document.getElementById('dpan').classList.add('open');
@@ -1796,6 +1798,7 @@ function cd(){
   document.getElementById('dpan').classList.remove('open');
   document.body.style.overflow='';selI=null;
   document.querySelectorAll('tr.dr.sel').forEach(r=>r.classList.remove('sel'));
+  const jbar=document.getElementById('djump-bar');if(jbar){jbar.innerHTML='';jbar.classList.remove('has-btns');}
 }
 
 /* ── DETAIL PANEL TABS ─────────────────────────── */
@@ -1803,6 +1806,7 @@ function switchDTab(tab,skipLoad){
   _activeTab=tab;
   document.querySelectorAll('.dtab').forEach(t=>t.classList.toggle('active',t.dataset.tab===tab));
   document.getElementById('dbody').style.display=tab==='details'?'flex':'none';
+  const jbar=document.getElementById('djump-bar');if(jbar)jbar.style.display=tab==='details'&&jbar.classList.contains('has-btns')?'flex':'none';
   const dn=document.getElementById('dnotes');
   if(dn)dn.style.display=tab==='notes'?'flex':'none';
   if(tab==='notes'&&!skipLoad){
