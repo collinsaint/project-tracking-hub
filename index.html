@@ -1742,7 +1742,7 @@ function buildTracker(p){
     {key:'costEstimateApproved',short:'Cost Est. Appr.',label:'Cost Est. Approved'},
     {key:'bldgPermitSubmitted',short:'Permit Sub.',label:'Bldg Permit Submitted'},
     {key:'bldgPermitIssued',short:'Permit Issued',label:'Bldg Permit Issued'},
-    {key:'ntpP',short:'NTP-P',label:'NTP-P'},
+    {key:'ntpP',short:'NTP-P',label:'NTP-P',fallback:'costEstimateApproved'},
     {key:'ntp',short:'NTP',label:'NTP'},
     {key:'inspection50',short:'50% Insp.',label:'50% Inspection'},
     {key:'inspection100',short:'100% Insp.',label:'100% Inspection'},
@@ -1750,12 +1750,13 @@ function buildTracker(p){
   let foundActive=false;
   let bar='<div class="dtrack-bar">';
   steps.forEach((s,i)=>{
-    const has=p[s.key]&&p[s.key]!=='0';
+    const val=(p[s.key]&&p[s.key]!=='0')?p[s.key]:(s.fallback&&p[s.fallback]&&p[s.fallback]!=='0'?p[s.fallback]:'');
+    const has=!!val;
     let cls;
     if(has){cls='ts-done';}
     else if(!foundActive){cls='ts-active';foundActive=true;}
     else{cls='ts-pending';}
-    const tip=s.label+(has?' — '+fd2(p[s.key]):'');
+    const tip=s.label+(has?' — '+fd2(val):'');
     bar+='<div class="dtrack-step '+cls+'" title="'+tip+'"><span class="dtrack-num">'+(i+1)+'</span><span class="dtrack-lbl">'+s.short+'</span></div>';
   });
   bar+='</div>';
