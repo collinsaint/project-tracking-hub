@@ -277,7 +277,15 @@ tr.dr:hover td.tcrit-miss,tr.dr.row-permit td.tcrit-miss{background:#fecaca}
 .dtrack-lbl{font-size:8px;font-weight:600;text-transform:uppercase;letter-spacing:.3px;line-height:1.1;text-align:center;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .dtrack-phases{display:flex;margin-top:5px}
 .dtrack-phase{text-align:center;font-size:9px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.5px}
-.dtrack-permit-hdr{font-size:9px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.5px;text-align:center;margin-bottom:3px}
+.dtrack-permit-slim{height:20px !important;border-radius:10px !important}
+.dtrack-permit-cell{flex:1;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;cursor:default;padding:0 6px}
+.dtrack-permit-cell:first-child{border-radius:10px 0 0 10px}
+.dtrack-permit-cell:last-child{border-radius:0 10px 10px 0}
+.tp-green{background:#16a34a;color:#fff}
+.tp-yellow{background:#d97706;color:#fff}
+.tp-flash{background:#dc2626;color:#fff;animation:permit-flash 1s ease-in-out infinite}
+.tp-gray{background:#e5e7eb;color:#9ca3af}
+@keyframes permit-flash{0%,100%{opacity:1}50%{opacity:.35}}
 
 /* ── IMPORT MODAL ───────────────────────────────── */
 #imod{position:fixed;inset:0;background:rgba(9,30,58,.5);z-index:300;display:none;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
@@ -1746,10 +1754,6 @@ function buildTracker(p){
     {key:'inspection50',short:'50% Insp.',label:'50% Inspection'},
     {key:'inspection100',short:'100% Insp.',label:'100% Inspection'},
   ];
-  const permitSteps=[
-    {key:'bldgPermitSubmitted',short:'Bldg Permit Submitted',label:'Bldg Permit Submitted'},
-    {key:'bldgPermitIssued',short:'Bldg Permit Issued',label:'Bldg Permit Issued'},
-  ];
   function makeSteps(steps,h){
     let fa=false;let html='<div class="dtrack-bar" style="height:'+h+'px">';
     steps.forEach((s,i)=>{
@@ -1761,13 +1765,20 @@ function buildTracker(p){
     });
     return html+'</div>';
   }
-  // Permit bar floats above main bar, aligned over steps 2-6 (ISV→NTP): flex 1 : 5 : 2
+  // Permit bar: 2-cell slim bar above main bar, aligned over steps 2-6 (flex 1:5:2)
+  const sub=p.bldgPermitSubmitted&&p.bldgPermitSubmitted!=='0';
+  const iss=p.bldgPermitIssued&&p.bldgPermitIssued!=='0';
+  const c1=iss?'tp-green':sub?'tp-yellow':'tp-flash';
+  const c2=iss?'tp-green':sub?'tp-flash':'tp-gray';
+  const t1='Bldg Permit Submitted'+(sub?' — '+fd2(p.bldgPermitSubmitted):'');
+  const t2='Bldg Permit Issued'+(iss?' — '+fd2(p.bldgPermitIssued):'');
   let out='<div style="display:flex;align-items:flex-end;margin-bottom:4px">';
   out+='<div style="flex:1;min-width:0"></div>';
   out+='<div style="flex:5;min-width:0">';
-  out+='<div class="dtrack-permit-hdr">Permitting</div>';
-  out+=makeSteps(permitSteps,36);
-  out+='</div>';
+  out+='<div class="dtrack-bar dtrack-permit-slim">';
+  out+='<div class="dtrack-permit-cell '+c1+'" title="'+t1+'">Bldg Permit Submitted</div>';
+  out+='<div class="dtrack-permit-cell '+c2+'" title="'+t2+'">Bldg Permit Issued</div>';
+  out+='</div></div>';
   out+='<div style="flex:2;min-width:0"></div>';
   out+='</div>';
   out+=makeSteps(mainSteps,50);
