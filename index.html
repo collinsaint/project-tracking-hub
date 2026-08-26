@@ -355,7 +355,7 @@ tr.dr:hover td.tcrit-miss,tr.dr.row-permit td.tcrit-miss{background:#fecaca}
 .jq-row-btn.jq-in{color:#f59e0b}
 .jq-rm-btn{background:#fff;border:1px solid #fca5a5;color:#dc2626;border-radius:var(--radius);font-size:11px;padding:3px 8px;cursor:pointer;font-weight:600;transition:background .12s}
 .jq-rm-btn:hover{background:#fef2f2}
-#dhdr-jobtype{font-size:11px;font-weight:600;color:rgba(255,255,255,.75);background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);border-radius:10px;padding:2px 9px;white-space:nowrap}
+#dhdr-program,#dhdr-jobtype{font-size:11px;font-weight:600;color:rgba(255,255,255,.75);background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);border-radius:10px;padding:2px 9px;white-space:nowrap}
 #dhdr-status{font-size:11px;font-weight:600;border-radius:10px;padding:2px 9px;white-space:nowrap}
 .dhdr-jq-btn{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.35);color:#fff;border-radius:var(--radius);font-size:11px;font-weight:600;padding:5px 11px;cursor:pointer;transition:background .15s;white-space:nowrap}
 .dhdr-jq-btn:hover{background:rgba(255,255,255,.28)}
@@ -1027,7 +1027,7 @@ body.mob .edit-bar-inner{flex-wrap:wrap;gap:6px;padding:6px 12px}
 
 <div id="dov" onclick="cd()"></div>
 <div id="dpan">
-  <div id="dhdr"><div style="flex:1;min-width:0"><div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><div id="daddr">--</div><span id="dhdr-jobtype"></span><span id="dhdr-status"></span></div><div style="margin-top:4px"><div id="dsub">--</div></div></div><div id="dhdr-actions"><button id="dhdr-jq-btn" class="dhdr-jq-btn" onclick="toggleQueueFromDetail()">&#9733; Add to Queue</button><button id="dhdr-coq-btn" class="dhdr-coq-btn" onclick="toggleCOQFromDetail()">&#9651; Change Order</button><button id="dclose" onclick="cd()">&#10005;</button></div></div>
+  <div id="dhdr"><div style="flex:1;min-width:0"><div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap"><div id="daddr">--</div><div id="dhdr-location" style="font-size:13px;color:rgba(255,255,255,.65);font-weight:400"></div></div><div style="display:flex;align-items:center;gap:6px;margin-top:7px;flex-wrap:wrap"><span id="dhdr-program"></span><span id="dhdr-jobtype"></span><span id="dhdr-status"></span></div></div><div id="dhdr-actions"><button id="dhdr-jq-btn" class="dhdr-jq-btn" onclick="toggleQueueFromDetail()">&#9733; Add to Queue</button><button id="dhdr-coq-btn" class="dhdr-coq-btn" onclick="toggleCOQFromDetail()">&#9651; Change Order</button><button id="dclose" onclick="cd()">&#10005;</button></div></div>
   <div id="dtabs"><button class="dtab active" data-tab="details" onclick="switchDTab('details')">Details</button><button class="dtab" data-tab="notes" onclick="switchDTab('notes')">&#128221; Notes</button></div>
   <div id="djump-bar"></div>
   <div id="dbody"></div>
@@ -1794,7 +1794,10 @@ function od(idx){
   const p=proj[idx];
   detailAddr=p.address||'';
   document.getElementById('daddr').textContent=p.address||'--';
-  document.getElementById('dsub').textContent=[p.program,p.city,p.permittingJurisdiction].filter(Boolean).join(' - ');
+  const locEl=document.getElementById('dhdr-location');
+  if(locEl)locEl.textContent=[p.city,p.permittingJurisdiction].filter(Boolean).join(' · ');
+  const progEl=document.getElementById('dhdr-program');
+  if(progEl){progEl.textContent=p.program||'';progEl.style.display=p.program?'':'none';}
   const dhdrBtn=document.getElementById('dhdr-jq-btn');
   if(dhdrBtn){const inQ=isInJQ(p.address);dhdrBtn.textContent=inQ?'★ In Queue':'☆ Add to Queue';dhdrBtn.className='dhdr-jq-btn'+(inQ?' btn-jq-active':'');}
   const dhdrCoqBtn=document.getElementById('dhdr-coq-btn');
@@ -1893,6 +1896,8 @@ function cd(){
   const jbar=document.getElementById('djump-bar');if(jbar){jbar.innerHTML='';jbar.classList.remove('has-btns');}
   const dhdrJT=document.getElementById('dhdr-jobtype');if(dhdrJT)dhdrJT.textContent='';
   const dhdrSt=document.getElementById('dhdr-status');if(dhdrSt){dhdrSt.textContent='';dhdrSt.style.display='none';}
+  const dhdrLoc=document.getElementById('dhdr-location');if(dhdrLoc)dhdrLoc.textContent='';
+  const dhdrProg=document.getElementById('dhdr-program');if(dhdrProg){dhdrProg.textContent='';dhdrProg.style.display='none';}
 }
 
 /* ── DETAIL PANEL TABS ─────────────────────────── */
