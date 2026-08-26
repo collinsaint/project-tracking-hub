@@ -275,8 +275,9 @@ tr.dr:hover td.tcrit-miss,tr.dr.row-permit td.tcrit-miss{background:#fecaca}
 .dtrack-step:hover{filter:brightness(1.12)}
 .dtrack-num{font-size:11px;font-weight:800;line-height:1}
 .dtrack-lbl{font-size:8px;font-weight:600;text-transform:uppercase;letter-spacing:.3px;line-height:1.1;text-align:center;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.dtrack-phases{display:flex;margin-top:5px}
-.dtrack-phase{text-align:center;font-size:9px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.5px}
+.dtrack-phases{display:flex;margin-top:7px;align-items:center}
+.dtrack-phase{display:flex;align-items:center;gap:5px;font-size:9px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:.6px;min-width:0}
+.dtrack-phase::before,.dtrack-phase::after{content:'';flex:1;height:1px;background:#d1d5db;min-width:3px}
 .dtrack-permit-slim{height:20px !important;border-radius:10px !important}
 .dtrack-permit-cell{flex:1;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;cursor:default;padding:0 6px}
 .dtrack-permit-cell:first-child{border-radius:10px 0 0 10px}
@@ -1782,7 +1783,7 @@ function buildTracker(p){
   out+='<div style="flex:2;min-width:0"></div>';
   out+='</div>';
   out+=makeSteps(mainSteps,50);
-  out+='<div class="dtrack-phases"><div class="dtrack-phase" style="flex:5">Pre-Construction</div><div class="dtrack-phase" style="flex:2">In Construction</div><div class="dtrack-phase" style="flex:1">Complete</div></div>';
+  out+='<div class="dtrack-phases"><div class="dtrack-phase" style="flex:5"><span>Pre-Construction</span></div><div class="dtrack-phase" style="flex:2"><span>In Construction</span></div><div class="dtrack-phase" style="flex:1"><span>Complete</span></div></div>';
   const wrap=document.createElement('div');wrap.id='dtracker';wrap.innerHTML=out;return wrap;
 }
 function od(idx){
