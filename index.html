@@ -2118,13 +2118,17 @@ async function loadTasks(){
     let snap=[];try{const s=localStorage.getItem('pic_tasks_v1');snap=s?JSON.parse(s):[];}catch(e2){}
     fromDB.forEach(rt=>{const loc=snap.find(t=>t.id===rt.id);if(loc&&!rt.completedAt&&loc.completedAt)rt.completedAt=loc.completedAt;});
     if(tasks.length===0){
-      tasks=fromDB;
+      // If DB returned 0 rows but localStorage has tasks, prefer localStorage —
+      // guards against Supabase RLS silently filtering all rows and wiping local data.
+      tasks=fromDB.length>0?fromDB:snap;
     } else {
       // Merge: update/add from DB but never remove tasks present locally
       // (they may be mid-upsert). Deletions are handled by sbDeleteTask+realtime.
       fromDB.forEach(rt=>{const i=tasks.findIndex(t=>t.id===rt.id);if(i>=0){if(!rt.completedAt&&tasks[i].completedAt)rt.completedAt=tasks[i].completedAt;tasks[i]=rt;}else tasks.push(rt);});
     }
-    localStorage.setItem('pic_tasks_v1',JSON.stringify(tasks));
+    tasks.forEach(t=>{if(t.status==='inprogress'||t.status==='queue')t.status='todo';});
+    // Never overwrite localStorage with an empty list — only save when we have data to keep
+    if(tasks.length>0)localStorage.setItem('pic_tasks_v1',JSON.stringify(tasks));
   }catch(e){
     if(tasks.length===0){try{const s=localStorage.getItem('pic_tasks_v1');tasks=s?JSON.parse(s):[];}catch(e2){tasks=[];}tasks.forEach(t=>{if(t.status==='inprogress'||t.status==='queue')t.status='todo';});}
   }
