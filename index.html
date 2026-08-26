@@ -207,21 +207,25 @@ tr.dr:hover td.tcrit-miss,tr.dr.row-permit td.tcrit-miss{background:#fecaca}
 /* ── DETAIL PANEL ───────────────────────────────── */
 #dov{position:fixed;inset:0;background:rgba(9,30,58,.45);z-index:200;display:none;backdrop-filter:blur(2px)}
 #dov.open{display:block}
-#dpan{position:fixed;top:0;right:0;width:620px;max-width:95vw;height:100vh;background:#f4f6f9;z-index:201;box-shadow:-6px 0 32px rgba(0,0,0,.18);transform:translateX(100%);transition:transform .28s cubic-bezier(.4,0,.2,1);overflow-y:auto;display:flex;flex-direction:column}
-#dpan.open{transform:translateX(0)}
-#dhdr{background:linear-gradient(135deg,#091e3a 0%,#0d3b6e 100%);color:#fff;padding:16px 20px;display:flex;align-items:flex-start;justify-content:space-between;position:sticky;top:0;z-index:1;box-shadow:0 2px 10px rgba(0,0,0,.25)}
+#dpan{position:fixed;top:50%;left:50%;transform:translate(-50%,-46%);opacity:0;width:720px;max-width:92vw;max-height:88vh;background:#f4f6f9;z-index:201;box-shadow:0 8px 48px rgba(0,0,0,.28);border-radius:14px;display:flex;flex-direction:column;overflow:hidden;pointer-events:none;transition:transform .25s cubic-bezier(.4,0,.2,1),opacity .25s}
+#dpan.open{transform:translate(-50%,-50%);opacity:1;pointer-events:auto}
+#dhdr{background:linear-gradient(135deg,#091e3a 0%,#0d3b6e 100%);color:#fff;padding:16px 20px;display:flex;align-items:flex-start;justify-content:space-between;flex-shrink:0;box-shadow:0 2px 10px rgba(0,0,0,.25);border-radius:14px 14px 0 0}
 #daddr{font-size:18px;font-weight:700;line-height:1.2;margin-bottom:4px}
 #dsub{font-size:12px;opacity:.8;letter-spacing:.2px}
 #dclose{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18);color:#fff;font-size:15px;cursor:pointer;padding:5px 9px;line-height:1;border-radius:var(--radius-sm);transition:background .15s}
 #dclose:hover{background:rgba(255,255,255,.25)}
-#dbody{padding:18px;flex:1;display:flex;flex-direction:column;gap:12px}
+#dbody{padding:18px;flex:1;display:flex;flex-direction:column;gap:12px;overflow-y:auto}
 /* ── DETAIL TABS ──────────────────────────────── */
-#dtabs{display:flex;background:#fff;border-bottom:2px solid var(--border);flex-shrink:0;position:sticky;top:0;z-index:1}
+#dtabs{display:flex;background:#fff;border-bottom:2px solid var(--border);flex-shrink:0}
+/* ── JUMP TO NAV ─────────────────────────────── */
+.djump-nav{display:flex;gap:5px;flex-wrap:wrap;padding:2px 0 8px;border-bottom:1px solid var(--border);margin-bottom:2px;flex-shrink:0}
+.djump-btn{height:24px;padding:0 10px;border:1px solid var(--blue-mid);border-radius:20px;font-size:11px;font-weight:600;color:var(--blue);background:#f0f7ff;cursor:pointer;transition:all .15s;white-space:nowrap}
+.djump-btn:hover{background:var(--blue);color:#fff}
 .dtab{flex:1;padding:10px 14px;font-size:12px;font-weight:700;letter-spacing:.3px;text-transform:uppercase;color:var(--gray);cursor:pointer;text-align:center;border:none;border-bottom:2px solid transparent;margin-bottom:-2px;background:none;transition:color .15s,border-color .15s}
 .dtab:hover{color:var(--blue-mid)}
 .dtab.active{color:var(--blue);border-bottom-color:var(--blue)}
 /* ── NOTES PANEL ─────────────────────────────── */
-#dnotes{padding:18px;display:none;flex-direction:column;gap:14px}
+#dnotes{padding:18px;display:none;flex-direction:column;gap:14px;overflow-y:auto;flex:1}
 .pn-compose{background:#fff;border-radius:var(--radius);border:1px solid var(--border);padding:14px;box-shadow:var(--shadow-xs)}
 .pn-compose textarea{width:100%;border:1px solid var(--border-dark);border-radius:var(--radius-sm);padding:9px 11px;font-size:13px;font-family:var(--font);resize:vertical;min-height:80px;color:#1f2937;transition:border-color .15s;outline:none;box-sizing:border-box}
 .pn-compose textarea:focus{border-color:var(--blue-mid)}
@@ -635,7 +639,7 @@ body.mob tr.dr.sel td:first-child{background:var(--blue-lighter)}
 body.mob .erow td:first-child{background:#fff;box-shadow:none}
 
 /* detail panel */
-body.mob #dpan{width:100vw;max-width:100vw}
+body.mob #dpan{width:calc(100vw - 16px);max-height:92vh}
 body.mob .dg2,body.mob .dg3{grid-template-columns:1fr}
 body.mob #dbody{padding:10px}
 body.mob #dhdr{padding:12px 14px}
@@ -1164,6 +1168,7 @@ const FIELD_MAP={
   'Monday - Call HOs':{key:'monCallHOs',t:'tx'},'Monday - Date':{key:'monDate',t:'d'},
   'Wednesday - Call HOs':{key:'wedCallHOs',t:'tx'},'Wednesday - Date':{key:'wedDate',t:'d'},
   'Friday - Permit Status':{key:'friPermitStatus',t:'tx'},'Friday - Date':{key:'friDate',t:'d'},
+  'Applicant Phone':{key:'applicantPhone',t:'tx'},'Applicant Email':{key:'applicantEmail',t:'tx'},
 };
 const PGS=30;
 const SB_URL='https://wqqqzgzjipgzirpvdewj.supabase.co';
@@ -1732,18 +1737,19 @@ function od(idx){
   br.innerHTML='<span class="badge '+stCl+'" data-edit-key="constructionStage" data-edit-label="Status" data-edit-type="tx">'+es(p.constructionStage||'--')+'</span>'+(p.jobStatus?'<span class="badge '+jsCl+'" data-edit-key="jobStatus" data-edit-label="Job Status" data-edit-type="tx">'+es(p.jobStatus)+'</span>':'');
   if(p.jobType)br.innerHTML+='<span class="badge bd2">'+es(p.jobType)+'</span>';
   body.appendChild(br);
-  function sec2(t,h){const d=document.createElement('div');d.className='ds2';d.innerHTML='<div class="dstit">'+t+'</div>'+h;body.appendChild(d);}
+  const _jumpSecs=[];
+  function sec2(t,h,sid){const d=document.createElement('div');d.className='ds2';if(sid){d.id=sid;_jumpSecs.push({id:sid,label:t});}d.innerHTML='<div class="dstit">'+t+'</div>'+h;body.appendChild(d);}
   function f(l,v,c=''){const e=!v||v==='0';return'<div class="df2"><div class="dlb">'+l+'</div><div class="dval '+(e?'em':c)+'">'+(e?'--':es(v))+'</div></div>';}
   function fd3(l,v){return f(l,fd2(v),'da');}
   function fn2(l,v){return f(l,(!v||v==='0')?'':v,'nu');}
   function fm2(l,v){if(!v||v==='0')return f(l,'');const n=parseFloat(v);const fmt=isNaN(n)?v:'$'+n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});return'<div class="df2"><div class="dlb">'+l+'</div><div class="dval mo">'+fmt+'</div></div>';}
-  sec2('Basic Information','<div class="dg2">'+f('First Name',p.firstName)+f('Last Name',p.lastName)+f('Project # / Prefix',p.projectNumber)+f('Program',p.program)+f('City',p.city)+f('Permitting Jurisdiction',p.permittingJurisdiction)+f('Job Type',p.jobType)+f('Superintendent',p.superintendent)+'</div>');
-  sec2('Pre-Construction','<div class="dg2">'+fd3('Assignment Received',p.assignmentReceived)+fd3('ISV Completed',p.isvCompleted)+fd3('Cost Estimate Submitted',p.costEstimateSubmitted)+fd3('Cost Estimate Approved',p.costEstimateApproved)+fn2('Days to Submittal',p.daysToSubmittal)+fn2('Days to Approval',p.daysToApproval)+fd3('Demo Permit Submitted',p.demoPermitSubmitted)+fd3('Demo Permit Issued',p.demoPermitIssued)+fd3('Bldg Permit Submitted',p.bldgPermitSubmitted)+fd3('Bldg Permit Issued',p.bldgPermitIssued)+f('Permit Kickback Dates',p.permitKickbackDates)+fn2('# of Kickbacks',p.numKickbacks)+fn2('Days in Permitting (Muni)',p.daysInPermittingMuni)+fn2('Assignment to Permit Issued',p.assignmentToPermitIssued)+fd3('Septic Ordered',p.septicOrdered)+fd3('Septic Received',p.septicReceived)+fd3('Bldg Permit Number',p.bldgPermitNumber)+fd3('Demo Permit Number',p.demoPermitNumber)+'</div>');
-  sec2('Survey, Plans & Engineering','<div class="dg2">'+fd3('Survey/EC Ordered',p.surveyOrdered)+fd3('Survey/EC Received',p.surveyReceived)+fn2('Days for Survey/EC',p.daysForSurvey)+fd3('Plans Ordered',p.plansOrdered)+fd3('Plans Received',p.plansReceived)+fn2('Days for Plans',p.daysForPlans)+fd3('Revision Requested',p.revisionRequested)+fn2('Days for Revision',p.daysForRevision)+fn2('# of Revisions',p.numRevisions)+'</div>');
-  sec2('Construction','<div class="dg2">'+fd3('NTP-P',p.ntpP)+fd3('NTP',p.ntp)+fd3('Construction Start',p.constructionStart)+fd3('Work Order Issued',p.workOrderIssued)+fd3('Pre-Construction Deadline',p.preConDeadline)+fd3('Construction Deadline',p.constructionDeadline)+fn2('Days in Pre-Con',p.daysInPreCon)+fn2('Approved Pre-Con Delays',p.approvedPreConDelays)+fd3('Projected Start',p.projectedStart)+fd3('Projected Completion',p.projectedCompletion)+fd3('50% Inspection',p.inspection50)+fn2('Days to 50%',p.daysTo50)+fd3('100% Inspection',p.inspection100)+fn2('Days in Construction',p.daysInConstruction)+fn2('Approved Constr. Delays',p.approvedConstrDelays)+fn2('Construction Days',p.constructionDays)+fn2('Build Days',p.buildDays)+fn2('Remaining Pre-Con Time',p.remainingPreConTime)+'</div>');
-  sec2('Financial','<div class="dg2">'+fm2('Contract Amount',p.contractAmount)+fm2('Job Cost',p.jobCost)+f('Accounting Job Type',p.acctJobType)+'</div>');
+  sec2('Basic Information','<div class="dg2">'+f('First Name',p.firstName)+f('Last Name',p.lastName)+f('Applicant Phone',p.applicantPhone)+f('Applicant Email',p.applicantEmail)+f('Project # / Prefix',p.projectNumber)+f('Program',p.program)+f('City',p.city)+f('Permitting Jurisdiction',p.permittingJurisdiction)+f('Job Type',p.jobType)+f('Superintendent',p.superintendent)+'</div>','dsec-basic');
+  sec2('Pre-Construction','<div class="dg2">'+fd3('Assignment Received',p.assignmentReceived)+fd3('ISV Completed',p.isvCompleted)+fd3('Cost Estimate Submitted',p.costEstimateSubmitted)+fd3('Cost Estimate Approved',p.costEstimateApproved)+fn2('Days to Submittal',p.daysToSubmittal)+fn2('Days to Approval',p.daysToApproval)+fd3('Demo Permit Submitted',p.demoPermitSubmitted)+fd3('Demo Permit Issued',p.demoPermitIssued)+fd3('Bldg Permit Submitted',p.bldgPermitSubmitted)+fd3('Bldg Permit Issued',p.bldgPermitIssued)+f('Permit Kickback Dates',p.permitKickbackDates)+fn2('# of Kickbacks',p.numKickbacks)+fn2('Days in Permitting (Muni)',p.daysInPermittingMuni)+fn2('Assignment to Permit Issued',p.assignmentToPermitIssued)+fd3('Septic Ordered',p.septicOrdered)+fd3('Septic Received',p.septicReceived)+fd3('Bldg Permit Number',p.bldgPermitNumber)+fd3('Demo Permit Number',p.demoPermitNumber)+'</div>','dsec-precon');
+  sec2('Survey, Plans & Engineering','<div class="dg2">'+fd3('Survey/EC Ordered',p.surveyOrdered)+fd3('Survey/EC Received',p.surveyReceived)+fn2('Days for Survey/EC',p.daysForSurvey)+fd3('Plans Ordered',p.plansOrdered)+fd3('Plans Received',p.plansReceived)+fn2('Days for Plans',p.daysForPlans)+fd3('Revision Requested',p.revisionRequested)+fn2('Days for Revision',p.daysForRevision)+fn2('# of Revisions',p.numRevisions)+'</div>','dsec-survey');
+  sec2('Construction','<div class="dg2">'+fd3('NTP-P',p.ntpP)+fd3('NTP',p.ntp)+fd3('Construction Start',p.constructionStart)+fd3('Work Order Issued',p.workOrderIssued)+fd3('Pre-Construction Deadline',p.preConDeadline)+fd3('Construction Deadline',p.constructionDeadline)+fn2('Days in Pre-Con',p.daysInPreCon)+fn2('Approved Pre-Con Delays',p.approvedPreConDelays)+fd3('Projected Start',p.projectedStart)+fd3('Projected Completion',p.projectedCompletion)+fd3('50% Inspection',p.inspection50)+fn2('Days to 50%',p.daysTo50)+fd3('100% Inspection',p.inspection100)+fn2('Days in Construction',p.daysInConstruction)+fn2('Approved Constr. Delays',p.approvedConstrDelays)+fn2('Construction Days',p.constructionDays)+fn2('Build Days',p.buildDays)+fn2('Remaining Pre-Con Time',p.remainingPreConTime)+'</div>','dsec-construction');
+  sec2('Financial','<div class="dg2">'+fm2('Contract Amount',p.contractAmount)+fm2('Job Cost',p.jobCost)+f('Accounting Job Type',p.acctJobType)+'</div>','dsec-financial');
   const hu=p.monCallHOs||p.monDate||p.wedCallHOs||p.wedDate||p.friPermitStatus||p.friDate;
-  if(hu)sec2('Weekly Updates','<div class="dg3">'+f('Monday - Call HOs',p.monCallHOs)+fd3('Monday - Date',p.monDate)+'<div></div>'+f('Wednesday - Call HOs',p.wedCallHOs)+fd3('Wednesday - Date',p.wedDate)+'<div></div>'+f('Friday - Permit Status',p.friPermitStatus)+fd3('Friday - Date',p.friDate)+'</div>');
+  if(hu)sec2('Weekly Updates','<div class="dg3">'+f('Monday - Call HOs',p.monCallHOs)+fd3('Monday - Date',p.monDate)+'<div></div>'+f('Wednesday - Call HOs',p.wedCallHOs)+fd3('Wednesday - Date',p.wedDate)+'<div></div>'+f('Friday - Permit Status',p.friPermitStatus)+fd3('Friday - Date',p.friDate)+'</div>','dsec-weekly');
   if(editMode){
     body.querySelectorAll('.df2').forEach(df=>{
       const lblEl=df.querySelector('.dlb');const valEl=df.querySelector('.dval');
@@ -1770,9 +1776,13 @@ function od(idx){
       if(eq){el.style.outline='2px solid #d97706';el.title='Edited → '+eq.newValue;}
     });
   }
-  const tkDiv=document.createElement('div');tkDiv.className='ds2';
+  const tkDiv=document.createElement('div');tkDiv.className='ds2';tkDiv.id='dsec-tasks';
   tkDiv.innerHTML='<div class="dstit" style="display:flex;align-items:center;justify-content:space-between"><span>Tasks</span><button class="btn btn-gh" style="font-size:11px;padding:2px 10px;height:24px" onclick="openTaskModal(detailAddr)">&#43; Add Task</button></div><div id="detail-tasks"></div>';
   body.appendChild(tkDiv);
+  _jumpSecs.push({id:'dsec-tasks',label:'Tasks'});
+  const jnav=document.createElement('div');jnav.className='djump-nav';
+  jnav.innerHTML='<span style="font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;align-self:center;white-space:nowrap">Jump to:</span>'+_jumpSecs.map(s=>'<button class="djump-btn" onclick="(function(){const db=document.getElementById(\'dbody\');const tgt=document.getElementById(\''+s.id+'\');if(db&&tgt){const br=db.getBoundingClientRect();const tr=tgt.getBoundingClientRect();db.scrollTop+=tr.top-br.top-4;}})()">'+s.label+'</button>').join('');
+  body.insertBefore(jnav,br.nextSibling);
   renderDetailTasks(detailAddr);
   document.getElementById('dov').classList.add('open');
   document.getElementById('dpan').classList.add('open');
@@ -1926,7 +1936,7 @@ function ci(){document.getElementById('imod').classList.remove('open');const r=d
 function hfd(e){e.preventDefault();document.getElementById('fdrop').classList.remove('drag');const f=e.dataTransfer.files[0];if(f)pf(f);}
 function hfs(e){const f=e.target.files[0];if(f)pf(f);e.target.value='';}
 
-const FIELD_LABELS={address:'Address',program:'Program',city:'City',jobType:'Job Type',permittingJurisdiction:'Permitting Jurisdiction',jobStatus:'Job Status',assignmentReceived:'Assignment Received',surveyOrdered:'Survey Ordered',surveyReceived:'Survey Received',plansOrdered:'Plans Ordered',plansReceived:'Plans Received',septicOrdered:'Septic Design Ordered',septicReceived:'Septic Design Received',isvCompleted:'ISV Completed',costEstimateSubmitted:'Cost Est. Submitted',costEstimateApproved:'Cost Est. Approved',bldgPermitSubmitted:'Bldg Permit Submitted',bldgPermitIssued:'Bldg Permit Issued',bldgPermitNumber:'Bldg Permit #',ntp:'NTP',ntpP:'NTP-P',constructionStart:'Construction Start',constructionDeadline:'Construction Deadline',constructionStage:'Stage',projectedStart:'Proj. Start',projectedCompletion:'Proj. Completion',inspection50:'50% Inspection',inspection100:'100% Inspection',demoPermitSubmitted:'Demo Permit Submitted',demoPermitIssued:'Demo Permit Issued',demoPermitNumber:'Demo Permit #',superintendent:'Superintendent',contractAmount:'Contract Amount',firstName:'First Name',lastName:'Last Name',projectNumber:'Project #',preConDeadline:'Pre-Con Deadline',approvedPreConDelays:'Pre-Con Delay Days',approvedConstrDelays:'Constr. Delay Days'};
+const FIELD_LABELS={address:'Address',program:'Program',city:'City',jobType:'Job Type',permittingJurisdiction:'Permitting Jurisdiction',jobStatus:'Job Status',assignmentReceived:'Assignment Received',surveyOrdered:'Survey Ordered',surveyReceived:'Survey Received',plansOrdered:'Plans Ordered',plansReceived:'Plans Received',septicOrdered:'Septic Design Ordered',septicReceived:'Septic Design Received',isvCompleted:'ISV Completed',costEstimateSubmitted:'Cost Est. Submitted',costEstimateApproved:'Cost Est. Approved',bldgPermitSubmitted:'Bldg Permit Submitted',bldgPermitIssued:'Bldg Permit Issued',bldgPermitNumber:'Bldg Permit #',ntp:'NTP',ntpP:'NTP-P',constructionStart:'Construction Start',constructionDeadline:'Construction Deadline',constructionStage:'Stage',projectedStart:'Proj. Start',projectedCompletion:'Proj. Completion',inspection50:'50% Inspection',inspection100:'100% Inspection',demoPermitSubmitted:'Demo Permit Submitted',demoPermitIssued:'Demo Permit Issued',demoPermitNumber:'Demo Permit #',superintendent:'Superintendent',contractAmount:'Contract Amount',firstName:'First Name',lastName:'Last Name',projectNumber:'Project #',preConDeadline:'Pre-Con Deadline',approvedPreConDelays:'Pre-Con Delay Days',approvedConstrDelays:'Constr. Delay Days',applicantPhone:'Applicant Phone',applicantEmail:'Applicant Email'};
 
 function pf(file){
   const reader=new FileReader();
@@ -1952,7 +1962,7 @@ function pf(file){
       const allImportedNd=[];
       rows.forEach(r=>{
         const addr=g(r,'Street Address')||g(r,'Job Name');if(!addr){sk++;return;}
-        const nd={address:addr,program:g(r,'Groups'),city:g(r,'City'),jobType:g(r,'Job Type *'),permittingJurisdiction:g(r,'Permitting Jurisdiction*'),jobStatus:g(r,'Job Status*'),assignmentReceived:gd3(r,'Assignment Received*'),surveyOrdered:gd3(r,'Survey / EC Ordered*'),surveyReceived:gd3(r,'Survey / EC Received*'),plansOrdered:gd3(r,'Plans Ordered*'),plansReceived:gd3(r,'Plans Received*'),septicOrdered:gd3(r,'Septic Design Ordered*'),septicReceived:gd3(r,'Septic Design Received*'),isvCompleted:gd3(r,'ISV Completed*'),costEstimateSubmitted:gd3(r,'Cost Estimate Submitted*'),costEstimateApproved:gd3(r,'Cost Estimate Approved*'),bldgPermitSubmitted:gd3(r,'Building Permit Submitted*'),bldgPermitIssued:gd3(r,'Building Permit Issued*'),ntp:gd3(r,'NTP*'),constructionStart:gd3(r,'Actual Start'),inspection50:gd3(r,'50% Complete Date*'),inspection100:gd3(r,'100% Complete Date*'),superintendent:gd3(r,'Superintendent*'),constructionDeadline:gd3(r,'Construction Deadline*'),approvedConstrDelays:g(r,'Construction Delay Days*'),demoPermitIssued:gd3(r,'Demo Permit Issued*'),demoPermitNumber:g(r,'Demo Permit Number*'),demoPermitSubmitted:gd3(r,'Demo Permit Submitted*'),bldgPermitNumber:g(r,'Building Permit Number*'),ntpP:gd3(r,'NTP-P*'),approvedPreConDelays:g(r,'Pre-Con Delay Days*'),preConDeadline:gd3(r,'Pre-Construction Deadline*'),firstName:g(r,'Applicant First Name*'),lastName:g(r,'Applicant Last Name*'),projectNumber:g(r,'Prefix'),contractAmount:g(r,'Contract Price')==='0'?'':g(r,'Contract Price'),projectedStart:gd3(r,'Proj. Start'),projectedCompletion:gd3(r,'Proj. Completion'),constructionStage:g(r,'Status')};
+        const nd={address:addr,program:g(r,'Groups'),city:g(r,'City'),jobType:g(r,'Job Type *'),permittingJurisdiction:g(r,'Permitting Jurisdiction*'),jobStatus:g(r,'Job Status*'),assignmentReceived:gd3(r,'Assignment Received*'),surveyOrdered:gd3(r,'Survey / EC Ordered*'),surveyReceived:gd3(r,'Survey / EC Received*'),plansOrdered:gd3(r,'Plans Ordered*'),plansReceived:gd3(r,'Plans Received*'),septicOrdered:gd3(r,'Septic Design Ordered*'),septicReceived:gd3(r,'Septic Design Received*'),isvCompleted:gd3(r,'ISV Completed*'),costEstimateSubmitted:gd3(r,'Cost Estimate Submitted*'),costEstimateApproved:gd3(r,'Cost Estimate Approved*'),bldgPermitSubmitted:gd3(r,'Building Permit Submitted*'),bldgPermitIssued:gd3(r,'Building Permit Issued*'),ntp:gd3(r,'NTP*'),constructionStart:gd3(r,'Actual Start'),inspection50:gd3(r,'50% Complete Date*'),inspection100:gd3(r,'100% Complete Date*'),superintendent:gd3(r,'Superintendent*'),constructionDeadline:gd3(r,'Construction Deadline*'),approvedConstrDelays:g(r,'Construction Delay Days*'),demoPermitIssued:gd3(r,'Demo Permit Issued*'),demoPermitNumber:g(r,'Demo Permit Number*'),demoPermitSubmitted:gd3(r,'Demo Permit Submitted*'),bldgPermitNumber:g(r,'Building Permit Number*'),ntpP:gd3(r,'NTP-P*'),approvedPreConDelays:g(r,'Pre-Con Delay Days*'),preConDeadline:gd3(r,'Pre-Construction Deadline*'),firstName:g(r,'Applicant First Name*'),lastName:g(r,'Applicant Last Name*'),applicantPhone:g(r,'Applicant Phone Number*'),applicantEmail:g(r,'Applicant Email*'),projectNumber:g(r,'Prefix'),contractAmount:g(r,'Contract Price')==='0'?'':g(r,'Contract Price'),projectedStart:gd3(r,'Proj. Start'),projectedCompletion:gd3(r,'Proj. Completion'),constructionStage:g(r,'Status')};
         allImportedNd.push(nd);
         const k=nmFuzzy(addr);
         if(pm[k]!==undefined){
