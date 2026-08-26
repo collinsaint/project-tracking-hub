@@ -1747,13 +1747,8 @@ function buildTracker(p){
     {key:'inspection100',short:'100% Insp.',label:'100% Inspection'},
   ];
   const permitSteps=[
-    {key:'isvCompleted',short:'ISV',label:'ISV Completed'},
-    {key:'costEstimateSubmitted',short:'Cost Sub.',label:'Cost Est. Submitted'},
-    {key:'costEstimateApproved',short:'Cost Appr.',label:'Cost Est. Approved'},
-    {key:'bldgPermitSubmitted',short:'Permit Sub.',label:'Bldg Permit Submitted'},
-    {key:'bldgPermitIssued',short:'Permit Issued',label:'Bldg Permit Issued'},
-    {key:'ntpP',short:'NTP-P',label:'NTP-P',fallback:'costEstimateApproved'},
-    {key:'ntp',short:'NTP',label:'NTP'},
+    {key:'bldgPermitSubmitted',short:'Bldg Permit Submitted',label:'Bldg Permit Submitted'},
+    {key:'bldgPermitIssued',short:'Bldg Permit Issued',label:'Bldg Permit Issued'},
   ];
   function makeSteps(steps,h){
     let fa=false;let html='<div class="dtrack-bar" style="height:'+h+'px">';
