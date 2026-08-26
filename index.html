@@ -1755,8 +1755,8 @@ function buildTracker(p){
     {key:'inspection50',short:'50% Insp.',label:'50% Inspection'},
     {key:'inspection100',short:'100% Insp.',label:'100% Inspection'},
   ];
-  function makeSteps(steps,h){
-    let fa=false;let html='<div class="dtrack-bar" style="height:'+h+'px">';
+  function makeSteps(steps,h,id){
+    let fa=false;let html='<div class="dtrack-bar"'+(id?' id="'+id+'"':'')+' style="height:'+h+'px">';
     steps.forEach((s,i)=>{
       const val=(p[s.key]&&p[s.key]!=='0')?p[s.key]:(s.fallback&&p[s.fallback]&&p[s.fallback]!=='0'?p[s.fallback]:'');
       const has=!!val;
@@ -1773,16 +1773,12 @@ function buildTracker(p){
   const c2=iss?'tp-green':sub?'tp-flash':'tp-gray';
   const t1='Bldg Permit Submitted'+(sub?' — '+fd2(p.bldgPermitSubmitted):'');
   const t2='Bldg Permit Issued'+(iss?' — '+fd2(p.bldgPermitIssued):'');
-  let out='<div style="display:flex;align-items:flex-end;margin-bottom:4px">';
-  out+='<div style="flex:1;min-width:0"></div>';
-  out+='<div style="flex:5;min-width:0">';
+  let out='<div id="dtrack-permit-wrap" style="margin-bottom:4px;visibility:hidden">';
   out+='<div class="dtrack-bar dtrack-permit-slim">';
   out+='<div class="dtrack-permit-cell '+c1+'" title="'+t1+'">Bldg Permit Submitted</div>';
   out+='<div class="dtrack-permit-cell '+c2+'" title="'+t2+'">Bldg Permit Issued</div>';
   out+='</div></div>';
-  out+='<div style="flex:2;min-width:0"></div>';
-  out+='</div>';
-  out+=makeSteps(mainSteps,50);
+  out+=makeSteps(mainSteps,50,'dtrack-main-bar');
   out+='<div class="dtrack-phases">'+
     '<div class="dtrack-phase" style="left:0;width:calc(62.5% - 5px)"><span>Pre-Construction</span></div>'+
     '<div class="dtrack-phase" style="left:calc(62.5% + 5px);width:calc(25% - 10px)"><span>In Construction</span></div>'+
@@ -1810,6 +1806,19 @@ function od(idx){
   if(p.jobType)br.innerHTML+='<span class="badge bd2">'+es(p.jobType)+'</span>';
   body.appendChild(br);
   body.appendChild(buildTracker(p));
+  requestAnimationFrame(function(){
+    const mb=document.getElementById('dtrack-main-bar');
+    const pw=document.getElementById('dtrack-permit-wrap');
+    if(!mb||!pw)return;
+    const ss=mb.querySelectorAll('.dtrack-step');
+    if(ss.length<6)return;
+    const br=mb.getBoundingClientRect();
+    const s2=ss[1].getBoundingClientRect();
+    const s6=ss[5].getBoundingClientRect();
+    pw.style.marginLeft=(s2.left-br.left)+'px';
+    pw.style.width=(s6.right-s2.left)+'px';
+    pw.style.visibility='visible';
+  });
   const _jumpSecs=[];
   function sec2(t,h,sid){const d=document.createElement('div');d.className='ds2';if(sid){d.id=sid;_jumpSecs.push({id:sid,label:t});}d.innerHTML='<div class="dstit">'+t+'</div>'+h;body.appendChild(d);}
   function f(l,v,c=''){const e=!v||v==='0';return'<div class="df2"><div class="dlb">'+l+'</div><div class="dval '+(e?'em':c)+'">'+(e?'--':es(v))+'</div></div>';}
