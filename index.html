@@ -1755,26 +1755,28 @@ function buildTracker(p){
     {key:'ntpP',short:'NTP-P',label:'NTP-P',fallback:'costEstimateApproved'},
     {key:'ntp',short:'NTP',label:'NTP'},
   ];
-  function makeSteps(steps,h,small){
+  function makeSteps(steps,h){
     let fa=false;let html='<div class="dtrack-bar" style="height:'+h+'px">';
     steps.forEach((s,i)=>{
       const val=(p[s.key]&&p[s.key]!=='0')?p[s.key]:(s.fallback&&p[s.fallback]&&p[s.fallback]!=='0'?p[s.fallback]:'');
       const has=!!val;
       let cls=has?'ts-done':fa?'ts-pending':(fa=true,'ts-active');
       const tip=s.label+(has?' — '+fd2(val):'');
-      html+='<div class="dtrack-step '+cls+'" title="'+tip+'"><span class="dtrack-num">'+(i+1)+'</span>'+(small?'':'<span class="dtrack-lbl">'+s.short+'</span>')+'</div>';
+      html+='<div class="dtrack-step '+cls+'" title="'+tip+'"><span class="dtrack-num">'+(i+1)+'</span><span class="dtrack-lbl">'+s.short+'</span></div>';
     });
     return html+'</div>';
   }
-  // Main bar: 8 steps. Permit child spans steps 2-6 (ISV→NTP) = left 1/8, width 5/8
-  const n=mainSteps.length;const sl=1,el=5;
-  const lp=(sl/n*100).toFixed(3),wp=((el-sl+1)/n*100).toFixed(3);
-  let out=makeSteps(mainSteps,50,false);
-  out+='<div class="dtrack-phases"><div class="dtrack-phase" style="flex:5">Pre-Construction</div><div class="dtrack-phase" style="flex:2">In Construction</div><div class="dtrack-phase" style="flex:1">Complete</div></div>';
-  out+='<div style="margin-left:'+lp+'%;width:'+wp+'%;margin-top:5px">';
+  // Permit bar floats above main bar, aligned over steps 2-6 (ISV→NTP): flex 1 : 5 : 2
+  let out='<div style="display:flex;align-items:flex-end;margin-bottom:4px">';
+  out+='<div style="flex:1;min-width:0"></div>';
+  out+='<div style="flex:5;min-width:0">';
   out+='<div class="dtrack-permit-hdr">Permitting</div>';
-  out+=makeSteps(permitSteps,38,false);
+  out+=makeSteps(permitSteps,36);
   out+='</div>';
+  out+='<div style="flex:2;min-width:0"></div>';
+  out+='</div>';
+  out+=makeSteps(mainSteps,50);
+  out+='<div class="dtrack-phases"><div class="dtrack-phase" style="flex:5">Pre-Construction</div><div class="dtrack-phase" style="flex:2">In Construction</div><div class="dtrack-phase" style="flex:1">Complete</div></div>';
   const wrap=document.createElement('div');wrap.id='dtracker';wrap.innerHTML=out;return wrap;
 }
 function od(idx){
