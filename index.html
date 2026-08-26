@@ -264,6 +264,19 @@ tr.dr:hover td.tcrit-miss,tr.dr.row-permit td.tcrit-miss{background:#fecaca}
 .dval.mo{color:var(--green);font-weight:700}.dval.pr{white-space:pre-wrap}
 .dbdg{display:flex;gap:8px;flex-wrap:wrap;padding:14px 18px 6px;justify-content:center}
 .dbdg .badge{font-size:13px;padding:6px 16px;border-radius:24px}
+#dtracker{padding:6px 18px 10px;flex-shrink:0}
+.dtrack-bar{display:flex;width:100%;height:50px;border-radius:25px;overflow:hidden;gap:2px;background:#c5cad3}
+.dtrack-step{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:0 3px;cursor:default;transition:filter .15s}
+.dtrack-step:first-child{border-radius:25px 0 0 25px;padding-left:10px}
+.dtrack-step:last-child{border-radius:0 25px 25px 0;padding-right:10px}
+.dtrack-step.ts-done{background:#0d3b6e;color:#fff}
+.dtrack-step.ts-active{background:#dc2626;color:#fff;box-shadow:inset 0 -3px 0 rgba(0,0,0,.2)}
+.dtrack-step.ts-pending{background:#e5e7eb;color:#9ca3af}
+.dtrack-step:hover{filter:brightness(1.12)}
+.dtrack-num{font-size:11px;font-weight:800;line-height:1}
+.dtrack-lbl{font-size:8px;font-weight:600;text-transform:uppercase;letter-spacing:.3px;line-height:1.1;text-align:center;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dtrack-phases{display:flex;margin-top:5px}
+.dtrack-phase{text-align:center;font-size:9px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.5px}
 
 /* ── IMPORT MODAL ───────────────────────────────── */
 #imod{position:fixed;inset:0;background:rgba(9,30,58,.5);z-index:300;display:none;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
@@ -1721,6 +1734,34 @@ function ts(k){
 
 function jt(id){document.getElementById(id).scrollIntoView({behavior:'smooth',block:'start'});}
 
+function buildTracker(p){
+  const steps=[
+    {key:'assignmentReceived',short:'Assignment Rcvd',label:'Assignment Received'},
+    {key:'isvCompleted',short:'ISV Completed',label:'ISV Completed'},
+    {key:'costEstimateSubmitted',short:'Cost Est. Sub.',label:'Cost Est. Submitted'},
+    {key:'costEstimateApproved',short:'Cost Est. Appr.',label:'Cost Est. Approved'},
+    {key:'bldgPermitSubmitted',short:'Permit Sub.',label:'Bldg Permit Submitted'},
+    {key:'bldgPermitIssued',short:'Permit Issued',label:'Bldg Permit Issued'},
+    {key:'ntpP',short:'NTP-P',label:'NTP-P'},
+    {key:'ntp',short:'NTP',label:'NTP'},
+    {key:'inspection50',short:'50% Insp.',label:'50% Inspection'},
+    {key:'inspection100',short:'100% Insp.',label:'100% Inspection'},
+  ];
+  let foundActive=false;
+  let bar='<div class="dtrack-bar">';
+  steps.forEach((s,i)=>{
+    const has=p[s.key]&&p[s.key]!=='0';
+    let cls;
+    if(has){cls='ts-done';}
+    else if(!foundActive){cls='ts-active';foundActive=true;}
+    else{cls='ts-pending';}
+    const tip=s.label+(has?' — '+fd2(p[s.key]):'');
+    bar+='<div class="dtrack-step '+cls+'" title="'+tip+'"><span class="dtrack-num">'+(i+1)+'</span><span class="dtrack-lbl">'+s.short+'</span></div>';
+  });
+  bar+='</div>';
+  bar+='<div class="dtrack-phases"><div class="dtrack-phase" style="flex:7">Pre-Construction</div><div class="dtrack-phase" style="flex:2">In Construction</div><div class="dtrack-phase" style="flex:1">Complete</div></div>';
+  const wrap=document.createElement('div');wrap.id='dtracker';wrap.innerHTML=bar;return wrap;
+}
 function od(idx){
   selI=idx;
   document.querySelectorAll('tr.dr.sel').forEach(r=>r.classList.remove('sel'));
@@ -1740,6 +1781,7 @@ function od(idx){
   br.innerHTML='<span class="badge '+stCl+'" data-edit-key="constructionStage" data-edit-label="Status" data-edit-type="tx">'+es(p.constructionStage||'--')+'</span>'+(p.jobStatus?'<span class="badge '+jsCl+'" data-edit-key="jobStatus" data-edit-label="Job Status" data-edit-type="tx">'+es(p.jobStatus)+'</span>':'');
   if(p.jobType)br.innerHTML+='<span class="badge bd2">'+es(p.jobType)+'</span>';
   body.appendChild(br);
+  body.appendChild(buildTracker(p));
   const _jumpSecs=[];
   function sec2(t,h,sid){const d=document.createElement('div');d.className='ds2';if(sid){d.id=sid;_jumpSecs.push({id:sid,label:t});}d.innerHTML='<div class="dstit">'+t+'</div>'+h;body.appendChild(d);}
   function f(l,v,c=''){const e=!v||v==='0';return'<div class="df2"><div class="dlb">'+l+'</div><div class="dval '+(e?'em':c)+'">'+(e?'--':es(v))+'</div></div>';}
