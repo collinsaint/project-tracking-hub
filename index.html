@@ -355,6 +355,8 @@ tr.dr:hover td.tcrit-miss,tr.dr.row-permit td.tcrit-miss{background:#fecaca}
 .jq-row-btn.jq-in{color:#f59e0b}
 .jq-rm-btn{background:#fff;border:1px solid #fca5a5;color:#dc2626;border-radius:var(--radius);font-size:11px;padding:3px 8px;cursor:pointer;font-weight:600;transition:background .12s}
 .jq-rm-btn:hover{background:#fef2f2}
+#dhdr-jobtype{font-size:11px;font-weight:600;color:rgba(255,255,255,.75);background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);border-radius:10px;padding:2px 9px;white-space:nowrap}
+#dhdr-status{font-size:11px;font-weight:600;border-radius:10px;padding:2px 9px;white-space:nowrap}
 .dhdr-jq-btn{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.35);color:#fff;border-radius:var(--radius);font-size:11px;font-weight:600;padding:5px 11px;cursor:pointer;transition:background .15s;white-space:nowrap}
 .dhdr-jq-btn:hover{background:rgba(255,255,255,.28)}
 .dhdr-jq-btn.jq-in{background:#f59e0b;border-color:#d97706;color:#fff}
@@ -1025,7 +1027,7 @@ body.mob .edit-bar-inner{flex-wrap:wrap;gap:6px;padding:6px 12px}
 
 <div id="dov" onclick="cd()"></div>
 <div id="dpan">
-  <div id="dhdr"><div><div id="daddr">--</div><div id="dsub">--</div></div><div id="dhdr-actions"><button id="dhdr-jq-btn" class="dhdr-jq-btn" onclick="toggleQueueFromDetail()">&#9733; Add to Queue</button><button id="dhdr-coq-btn" class="dhdr-coq-btn" onclick="toggleCOQFromDetail()">&#9651; Change Order</button><button id="dclose" onclick="cd()">&#10005;</button></div></div>
+  <div id="dhdr"><div style="flex:1;min-width:0"><div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><div id="daddr">--</div><span id="dhdr-jobtype"></span></div><div style="display:flex;align-items:center;gap:8px;margin-top:4px;flex-wrap:wrap"><div id="dsub">--</div><span id="dhdr-status"></span></div></div><div id="dhdr-actions"><button id="dhdr-jq-btn" class="dhdr-jq-btn" onclick="toggleQueueFromDetail()">&#9733; Add to Queue</button><button id="dhdr-coq-btn" class="dhdr-coq-btn" onclick="toggleCOQFromDetail()">&#9651; Change Order</button><button id="dclose" onclick="cd()">&#10005;</button></div></div>
   <div id="dtabs"><button class="dtab active" data-tab="details" onclick="switchDTab('details')">Details</button><button class="dtab" data-tab="notes" onclick="switchDTab('notes')">&#128221; Notes</button></div>
   <div id="djump-bar"></div>
   <div id="dbody"></div>
@@ -1798,13 +1800,24 @@ function od(idx){
   const dhdrCoqBtn=document.getElementById('dhdr-coq-btn');
   if(dhdrCoqBtn){const inCQ=isInCOQ(p.address);dhdrCoqBtn.textContent=inCQ?'▲ In CO Queue':'△ Change Order';dhdrCoqBtn.className='dhdr-coq-btn'+(inCQ?' coq-in':'');}
   const body=document.getElementById('dbody');body.innerHTML='';
-  const br=document.createElement('div');br.className='dbdg';
-  const sm={OPEN:'bp2',CLOSED:'bd2',PRESALE:'bd2',WARRANTY:'bh2'};
-  const stCl=sm[p.constructionStage]||'bd2';
-  let jsCl='bd2';{const sl=(p.jobStatus||'').toLowerCase();if(sl.includes('withdrawn'))jsCl='bw2';else if(sl.includes('hold'))jsCl='bh2';else if(/^0[1-9]/.test(p.jobStatus||''))jsCl='be2';else if(/^19|^20/.test(p.jobStatus||''))jsCl='bp2';else if(/^2[1-9]|^30/.test(p.jobStatus||''))jsCl='bc2';else if(/^4|^99/.test(p.jobStatus||'')||(p.jobStatus||'')==='COMPLETE')jsCl='bk2';}
-  br.innerHTML='<span class="badge '+stCl+'" data-edit-key="constructionStage" data-edit-label="Status" data-edit-type="tx">'+es(p.constructionStage||'--')+'</span>'+(p.jobStatus?'<span class="badge '+jsCl+'" data-edit-key="jobStatus" data-edit-label="Job Status" data-edit-type="tx">'+es(p.jobStatus)+'</span>':'');
-  if(p.jobType)br.innerHTML+='<span class="badge bd2">'+es(p.jobType)+'</span>';
-  body.appendChild(br);
+  // Job Type next to address
+  const dhdrJT=document.getElementById('dhdr-jobtype');
+  if(dhdrJT)dhdrJT.textContent=p.jobType||'';
+  // Job Status in header subtitle row, with color coding
+  const dhdrSt=document.getElementById('dhdr-status');
+  if(dhdrSt){
+    let jsBg='rgba(255,255,255,.18)';let jsCol='#fff';
+    const sl=(p.jobStatus||'').toLowerCase();
+    if(sl.includes('withdrawn')){jsBg='#6b7280';jsCol='#fff';}
+    else if(sl.includes('hold')){jsBg='#d97706';jsCol='#fff';}
+    else if(/^0[1-9]/.test(p.jobStatus||'')){jsBg='#3b82f6';jsCol='#fff';}
+    else if(/^19|^20/.test(p.jobStatus||'')){jsBg='#8b5cf6';jsCol='#fff';}
+    else if(/^2[1-9]|^30/.test(p.jobStatus||'')){jsBg='#10b981';jsCol='#fff';}
+    else if(/^4|^99/.test(p.jobStatus||'')||(p.jobStatus||'')==='COMPLETE'){jsBg='#1f2937';jsCol='#e5e7eb';}
+    dhdrSt.textContent=p.jobStatus||'';
+    dhdrSt.style.background=jsBg;dhdrSt.style.color=jsCol;
+    dhdrSt.style.display=p.jobStatus?'':'none';
+  }
   body.appendChild(buildTracker(p));
   requestAnimationFrame(function(){
     const mb=document.getElementById('dtrack-main-bar');
@@ -1878,6 +1891,8 @@ function cd(){
   document.body.style.overflow='';selI=null;
   document.querySelectorAll('tr.dr.sel').forEach(r=>r.classList.remove('sel'));
   const jbar=document.getElementById('djump-bar');if(jbar){jbar.innerHTML='';jbar.classList.remove('has-btns');}
+  const dhdrJT=document.getElementById('dhdr-jobtype');if(dhdrJT)dhdrJT.textContent='';
+  const dhdrSt=document.getElementById('dhdr-status');if(dhdrSt){dhdrSt.textContent='';dhdrSt.style.display='none';}
 }
 
 /* ── DETAIL PANEL TABS ─────────────────────────── */
