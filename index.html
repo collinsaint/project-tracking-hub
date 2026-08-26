@@ -277,6 +277,7 @@ tr.dr:hover td.tcrit-miss,tr.dr.row-permit td.tcrit-miss{background:#fecaca}
 .dtrack-lbl{font-size:8px;font-weight:600;text-transform:uppercase;letter-spacing:.3px;line-height:1.1;text-align:center;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .dtrack-phases{display:flex;margin-top:5px}
 .dtrack-phase{text-align:center;font-size:9px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.5px}
+.dtrack-permit-hdr{font-size:9px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.5px;text-align:center;margin-bottom:3px}
 
 /* ── IMPORT MODAL ───────────────────────────────── */
 #imod{position:fixed;inset:0;background:rgba(9,30,58,.5);z-index:300;display:none;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
@@ -1735,33 +1736,46 @@ function ts(k){
 function jt(id){document.getElementById(id).scrollIntoView({behavior:'smooth',block:'start'});}
 
 function buildTracker(p){
-  const steps=[
+  const mainSteps=[
     {key:'assignmentReceived',short:'Assignment Rcvd',label:'Assignment Received'},
     {key:'isvCompleted',short:'ISV Completed',label:'ISV Completed'},
     {key:'costEstimateSubmitted',short:'Cost Est. Sub.',label:'Cost Est. Submitted'},
     {key:'costEstimateApproved',short:'Cost Est. Appr.',label:'Cost Est. Approved'},
-    {key:'bldgPermitSubmitted',short:'Permit Sub.',label:'Bldg Permit Submitted'},
-    {key:'bldgPermitIssued',short:'Permit Issued',label:'Bldg Permit Issued'},
     {key:'ntpP',short:'NTP-P',label:'NTP-P',fallback:'costEstimateApproved'},
     {key:'ntp',short:'NTP',label:'NTP'},
     {key:'inspection50',short:'50% Insp.',label:'50% Inspection'},
     {key:'inspection100',short:'100% Insp.',label:'100% Inspection'},
   ];
-  let foundActive=false;
-  let bar='<div class="dtrack-bar">';
-  steps.forEach((s,i)=>{
-    const val=(p[s.key]&&p[s.key]!=='0')?p[s.key]:(s.fallback&&p[s.fallback]&&p[s.fallback]!=='0'?p[s.fallback]:'');
-    const has=!!val;
-    let cls;
-    if(has){cls='ts-done';}
-    else if(!foundActive){cls='ts-active';foundActive=true;}
-    else{cls='ts-pending';}
-    const tip=s.label+(has?' — '+fd2(val):'');
-    bar+='<div class="dtrack-step '+cls+'" title="'+tip+'"><span class="dtrack-num">'+(i+1)+'</span><span class="dtrack-lbl">'+s.short+'</span></div>';
-  });
-  bar+='</div>';
-  bar+='<div class="dtrack-phases"><div class="dtrack-phase" style="flex:7">Pre-Construction</div><div class="dtrack-phase" style="flex:2">In Construction</div><div class="dtrack-phase" style="flex:1">Complete</div></div>';
-  const wrap=document.createElement('div');wrap.id='dtracker';wrap.innerHTML=bar;return wrap;
+  const permitSteps=[
+    {key:'isvCompleted',short:'ISV',label:'ISV Completed'},
+    {key:'costEstimateSubmitted',short:'Cost Sub.',label:'Cost Est. Submitted'},
+    {key:'costEstimateApproved',short:'Cost Appr.',label:'Cost Est. Approved'},
+    {key:'bldgPermitSubmitted',short:'Permit Sub.',label:'Bldg Permit Submitted'},
+    {key:'bldgPermitIssued',short:'Permit Issued',label:'Bldg Permit Issued'},
+    {key:'ntpP',short:'NTP-P',label:'NTP-P',fallback:'costEstimateApproved'},
+    {key:'ntp',short:'NTP',label:'NTP'},
+  ];
+  function makeSteps(steps,h,small){
+    let fa=false;let html='<div class="dtrack-bar" style="height:'+h+'px">';
+    steps.forEach((s,i)=>{
+      const val=(p[s.key]&&p[s.key]!=='0')?p[s.key]:(s.fallback&&p[s.fallback]&&p[s.fallback]!=='0'?p[s.fallback]:'');
+      const has=!!val;
+      let cls=has?'ts-done':fa?'ts-pending':(fa=true,'ts-active');
+      const tip=s.label+(has?' — '+fd2(val):'');
+      html+='<div class="dtrack-step '+cls+'" title="'+tip+'"><span class="dtrack-num">'+(i+1)+'</span>'+(small?'':'<span class="dtrack-lbl">'+s.short+'</span>')+'</div>';
+    });
+    return html+'</div>';
+  }
+  // Main bar: 8 steps. Permit child spans steps 2-6 (ISV→NTP) = left 1/8, width 5/8
+  const n=mainSteps.length;const sl=1,el=5;
+  const lp=(sl/n*100).toFixed(3),wp=((el-sl+1)/n*100).toFixed(3);
+  let out=makeSteps(mainSteps,50,false);
+  out+='<div class="dtrack-phases"><div class="dtrack-phase" style="flex:5">Pre-Construction</div><div class="dtrack-phase" style="flex:2">In Construction</div><div class="dtrack-phase" style="flex:1">Complete</div></div>';
+  out+='<div style="margin-left:'+lp+'%;width:'+wp+'%;margin-top:5px">';
+  out+='<div class="dtrack-permit-hdr">Permitting</div>';
+  out+=makeSteps(permitSteps,38,false);
+  out+='</div>';
+  const wrap=document.createElement('div');wrap.id='dtracker';wrap.innerHTML=out;return wrap;
 }
 function od(idx){
   selI=idx;
