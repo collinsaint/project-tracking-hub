@@ -1302,6 +1302,7 @@ function nmFuzzy(s){
 function es(s){if(!s)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function fd2(d){if(!d)return'';const p=d.split('-');return p.length===3?p[1]+'/'+p[2]+'/'+p[0]:d;}
 
+const EXCLUDED_ADDRESSES=['3901 Bahia Vista St Lot 431','3901 Bahia Vista St Lot 136','3901 Bahia Vista St #112'];
 function filterProj(arr){
   return arr.filter(p=>{
     const js=(p.jobStatus||'').toLowerCase();
@@ -1309,6 +1310,7 @@ function filterProj(arr){
     if(js.includes('withdrawn'))return false;
     if(pg.includes('(withdrawn)'))return false;
     if(pg.includes('fl volusia'))return false;
+    if(EXCLUDED_ADDRESSES.includes((p.address||'').trim()))return false;
     return true;
   });
 }
