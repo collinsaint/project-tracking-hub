@@ -1842,6 +1842,12 @@ function od(idx){
     pw.style.width=(s6.right-s2.left)+'px';
     pw.style.visibility='visible';
   });
+  if(p.constructionStage==='OPEN'&&p.ntp&&p.ntp!=='0'&&(!p.constructionDeadline||p.constructionDeadline==='0')){
+    const cpDiv=document.createElement('div');cpDiv.className='cprog-wrap';
+    cpDiv.style.borderLeftColor='#dc2626';
+    cpDiv.innerHTML='<span style="font-size:11px;font-weight:800;color:#dc2626;text-transform:uppercase;letter-spacing:.6px">⚠ Construction Deadline Date Needs To Be Entered</span>';
+    body.appendChild(cpDiv);
+  }
   if(p.constructionStage==='OPEN'&&p.ntp&&p.ntp!=='0'&&p.constructionDeadline&&p.constructionDeadline!=='0'){
     const ntpD=new Date(p.ntp);const dlD=new Date(p.constructionDeadline);
     const today=new Date();today.setHours(0,0,0,0);
