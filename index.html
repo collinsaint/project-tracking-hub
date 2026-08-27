@@ -263,6 +263,13 @@ tr.dr:hover td.tcrit-miss,tr.dr.row-permit td.tcrit-miss{background:#fecaca}
 .dval.da{color:var(--blue-mid);font-weight:600}.dval.nu{color:var(--teal);font-weight:700}
 .dval.mo{color:var(--green);font-weight:700}.dval.pr{white-space:pre-wrap}
 .dbdg{display:flex;gap:8px;flex-wrap:wrap;padding:14px 18px 6px;justify-content:center}
+.cprog-wrap{background:#fff;border-radius:12px;border:1px solid #e2e8f2;border-left:3px solid var(--blue);padding:14px 16px;box-shadow:0 1px 4px rgba(15,23,42,.06);flex-shrink:0}
+.cprog-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.cprog-title{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.9px;color:#0f2040}
+.cprog-days{font-size:12px;font-weight:700}
+.cprog-track{height:10px;background:#e8eef8;border-radius:5px;overflow:hidden;margin-bottom:8px}
+.cprog-fill{height:100%;border-radius:5px}
+.cprog-dates{display:flex;justify-content:space-between;font-size:10px;font-weight:600;color:#5a6d85}
 .dbdg .badge{font-size:13px;padding:6px 16px;border-radius:24px}
 #dtracker{padding:6px 18px 10px;flex-shrink:0}
 .dtrack-bar{display:flex;width:100%;height:50px;border-radius:25px;overflow:hidden;gap:2px;background:#c5cad3}
@@ -1835,6 +1842,24 @@ function od(idx){
     pw.style.width=(s6.right-s2.left)+'px';
     pw.style.visibility='visible';
   });
+  if(p.constructionStage==='OPEN'&&p.ntp&&p.ntp!=='0'&&p.constructionDeadline&&p.constructionDeadline!=='0'){
+    const ntpD=new Date(p.ntp);const dlD=new Date(p.constructionDeadline);
+    const today=new Date();today.setHours(0,0,0,0);
+    const totalDays=Math.round((dlD-ntpD)/86400000);
+    const elapsedDays=Math.max(0,Math.round((today-ntpD)/86400000));
+    const pct=totalDays>0?Math.min(100,Math.round(elapsedDays/totalDays*100)):0;
+    const overdue=today>dlD;
+    const col=overdue||pct>=90?'#dc2626':pct>=75?'#d97706':'#16a34a';
+    const remaining=totalDays-elapsedDays;
+    const cpDiv=document.createElement('div');cpDiv.className='cprog-wrap';
+    cpDiv.innerHTML='<div class="cprog-hdr"><span class="cprog-title">Days in Construction</span>'+
+      '<span class="cprog-days" style="color:'+col+'">'+(overdue?'Overdue by '+(elapsedDays-totalDays)+' day(s)':elapsedDays+' of '+totalDays+' days')+'</span></div>'+
+      '<div class="cprog-track"><div class="cprog-fill" style="width:'+pct+'%;background:'+col+'"></div></div>'+
+      '<div class="cprog-dates"><span>NTP: '+fd2(p.ntp)+'</span>'+
+      '<span style="color:'+col+';font-weight:700">'+pct+'%'+((!overdue&&remaining>0)?' · '+remaining+' days left':'')+'</span>'+
+      '<span>Deadline: '+fd2(p.constructionDeadline)+'</span></div>';
+    body.appendChild(cpDiv);
+  }
   const _jumpSecs=[];
   function sec2(t,h,sid){const d=document.createElement('div');d.className='ds2';if(sid){d.id=sid;_jumpSecs.push({id:sid,label:t});}d.innerHTML='<div class="dstit">'+t+'</div>'+h;body.appendChild(d);}
   function f(l,v,c=''){const e=!v||v==='0';return'<div class="df2'+(e?'':' df2-filled')+'"><div class="dlb">'+l+'</div><div class="dval '+(e?'em':c)+'">'+(e?'--':es(v))+'</div></div>';}
