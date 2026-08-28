@@ -131,7 +131,7 @@ tr.dr:hover td.tmiss,tr.dr.row-permit td.tmiss{background:#fef08a}
 tr.dr td.tcrit-miss{background:#fee2e2;color:#dc2626}
 tr.dr:hover td.tcrit-miss,tr.dr.row-permit td.tcrit-miss{background:#fecaca}
 .ta{font-weight:600;color:var(--blue-mid);overflow:hidden;text-overflow:ellipsis}
-.tpg{white-space:nowrap;overflow:hidden}
+.tpg{white-space:normal}
 .tdt{color:#1d4ed8;font-variant-numeric:tabular-nums;font-size:12px}
 .tdt.toverdue{color:#dc2626;font-weight:700}
 .tnu{color:var(--teal);font-variant-numeric:tabular-nums;font-weight:700}
@@ -1165,7 +1165,7 @@ tr.pu-row-selected:hover{background:#dbeafe!important}
   </div>
   <div class="pu-body">
     <div class="tw" style="overflow-x:clip;background:#fff;border-radius:10px;border:1px solid var(--border);box-shadow:var(--shadow)">
-      <table style="width:100%;border-collapse:collapse;table-layout:fixed">
+      <table style="width:100%;border-collapse:collapse;table-layout:auto">
         <colgroup id="pu-cg"></colgroup>
         <thead><tr id="pu-thead"></tr></thead>
         <tbody id="pu-tbody"></tbody>
@@ -3119,7 +3119,7 @@ function renderPermUpdView(){
   const thisSun=puGetSunday(0);const lastSun=puGetSunday(-1);
   const thisWeekKey=puSundayKey(thisSun);
   const thead=document.getElementById('pu-thead');thead.innerHTML='';
-  const pxW={id:'14%',p:'7%',st:'8%',tx:'9%',d:'62px',note:'12.75%'};
+  const pxW={id:'13%',p:'13%',st:'13%',tx:'9%',d:'72px',note:'auto'};
   const cg=document.getElementById('pu-cg');cg.innerHTML='';
   if(puSelMode){
     const chkTh=document.createElement('th');chkTh.className='pu-th pu-chk-col';
