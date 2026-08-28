@@ -858,6 +858,7 @@ tr.pu-row-selected:hover{background:#dbeafe!important}
   </div>
   <div id="hdr-sep"></div>
   <div id="hdr-views">
+    <button class="btn btn-ol" id="tracker-home-btn" onclick="goToTracker()">&#8962; Tracker</button>
     <button class="btn btn-ol" id="dash-view-btn" onclick="openDashboard()">&#9632; Dashboard</button>
     <button class="btn btn-ol" id="task-view-btn" onclick="toggleTaskView()">&#9776; Tasks</button>
     <button class="btn btn-ol" id="jq-view-btn" onclick="toggleJQView()">&#9733; Job Queue</button>
@@ -996,7 +997,6 @@ tr.pu-row-selected:hover{background:#dbeafe!important}
 <div id="jqueue">
   <div class="jq-top">
     <div class="jq-top-left"><div class="jq-title">&#9733; Job Start Queue</div><div class="jq-sub">Projects queued for construction start</div></div>
-    <button class="btn btn-gh" onclick="toggleJQView()">&#8592; Back to Tracker</button>
   </div>
   <div class="sc" style="border-radius:0;box-shadow:0 1px 4px rgba(0,0,0,.1)">
     <div class="sh bgp" style="cursor:default"><div class="shl"><div class="sht">Queued Projects</div><div class="shc" id="jq-count">0 projects</div></div></div>
@@ -1007,7 +1007,6 @@ tr.pu-row-selected:hover{background:#dbeafe!important}
 <div id="coqueue">
   <div class="coq-top">
     <div class="coq-top-left"><div class="coq-title">&#9651; Change Order Queue</div><div class="coq-sub">Projects queued for change orders</div></div>
-    <button class="btn btn-gh" onclick="toggleCOQView()">&#8592; Back to Tracker</button>
   </div>
   <div class="sc" style="border-radius:0;box-shadow:0 1px 4px rgba(0,0,0,.1)">
     <div class="sh bgo" style="cursor:default"><div class="shl"><div class="sht">Queued Projects</div><div class="shc" id="coq-count">0 projects</div></div></div>
@@ -1018,7 +1017,6 @@ tr.pu-row-selected:hover{background:#dbeafe!important}
 <div id="permqueue">
   <div class="perm-top">
     <div class="perm-top-left"><div class="perm-title">&#9679; Permitting</div><div class="perm-sub">Projects awaiting building permit issuance</div></div>
-    <button class="btn btn-gh" onclick="togglePermView()">&#8592; Back to Tracker</button>
   </div>
   <div class="sc" style="border-radius:0;box-shadow:0 1px 4px rgba(0,0,0,.1)">
     <div class="sh" style="background:#0d9488;cursor:default"><div class="shl"><div class="sht" style="color:#fff">Pending Permit</div><div class="shc" id="perm-count" style="color:rgba(255,255,255,.75)">0 projects</div></div></div>
@@ -1084,7 +1082,6 @@ tr.pu-row-selected:hover{background:#dbeafe!important}
       <select class="rpt-type-sel" id="rpt-type" onchange="renderReport()">
         <option value="program">Program Breakdown</option>
       </select>
-      <button class="btn btn-gh" onclick="toggleReportView()">&#8592; Back to Tracker</button>
     </div>
   </div>
   <div class="rpt-body" id="rpt-body"></div>
@@ -1098,7 +1095,6 @@ tr.pu-row-selected:hover{background:#dbeafe!important}
     </div>
     <div class="wu-topbar-right">
       <span class="wu-week-badge" id="wu-week-label"></span>
-      <button class="btn btn-gh" onclick="closeWUView()">&#8592; Back to Tracker</button>
     </div>
   </div>
   <div class="wu-summary-bar" id="wu-summary-bar"></div>
@@ -1116,7 +1112,6 @@ tr.pu-row-selected:hover{background:#dbeafe!important}
       <div class="pu-search-wrap"><span class="pu-search-icon">&#128269;</span><input id="pu-search" class="pu-search-inp" type="text" placeholder="Search address or name…" oninput="applyPuFilter()"></div>
       <button id="pu-filter-toggle" class="pu-sel-btn" onclick="togglePuFilterBar()">&#9776; Filter</button>
       <button id="pu-sel-toggle" class="pu-sel-btn" onclick="togglePuSelMode()">&#9745; Select</button>
-      <button class="btn btn-gh" onclick="closePermUpdView()">&#8592; Back to Tracker</button>
     </div>
   </div>
   <div id="pu-filter-bar" class="pu-filter-bar">
@@ -2690,6 +2685,16 @@ function renderPerm(){
     });
     tb.appendChild(tr);
   });
+}
+function goToTracker(){
+  if(jqView)toggleJQView();
+  if(coqView)toggleCOQView();
+  if(permView)togglePermView();
+  if(taskView)toggleTaskView();
+  if(reportView)toggleReportView();
+  if(wuView)closeWUView();
+  if(permUpdView)closePermUpdView();
+  closeDashboard();
 }
 function openDashboard(){
   document.getElementById('dash-view').classList.add('open');
