@@ -2823,7 +2823,7 @@ function renderMetricsView(){
           : '<table class="mcard-table">'+
               '<thead><tr>'+
                 '<th>Address</th>'+
-                '<th>Homeowner</th>'+
+                '<th>App ID</th>'+
                 '<th>Program</th>'+
                 '<th>Status</th>'+
                 '<th>Date</th>'+
@@ -2834,7 +2834,7 @@ function renderMetricsView(){
                 const date=fd2(p[sec.key]);
                 return '<tr>'+
                   '<td><div class="mcard-addr" title="'+es(p.address||'')+'">'+es(p.address||'')+'</div></td>'+
-                  '<td><div class="mcard-name" title="'+es(name)+'">'+es(name)+'</div></td>'+
+                  '<td><div class="mcard-name">'+es(p.projectNumber||'—')+'</div></td>'+
                   '<td>'+pbdg(p.program||'')+'</td>'+
                   '<td>'+sbdg(p.jobStatus||'')+'</td>'+
                   '<td><span class="mcard-date" style="color:'+sec.color+'">'+date+'</span></td>'+
