@@ -754,6 +754,13 @@ body.mob .edit-bar-inner{flex-wrap:wrap;gap:6px;padding:6px 12px}
 .pu-bulk-action:disabled{background:#9ca3af;cursor:not-allowed}
 .pu-bulk-cancel{height:28px;padding:0 11px;border:1px solid #d1d5db;border-radius:6px;font-size:11px;font-weight:600;background:#fff;color:#6b7280;cursor:pointer;transition:background .12s}
 .pu-bulk-cancel:hover{background:#f1f5f9}
+.pu-bulk-divider{width:1px;height:24px;background:#fde68a;flex-shrink:0}
+.pu-bulk-text-group{display:flex;align-items:center;gap:8px;flex:1;min-width:0}
+.pu-bulk-text-inp{flex:1;min-width:160px;padding:5px 9px;border:1.5px solid #fbbf24;border-radius:6px;font-size:12px;font-family:inherit;resize:none;outline:none;background:#fffdf5;color:#1e293b;line-height:1.4;overflow:hidden;max-height:80px}
+.pu-bulk-text-inp:focus{border-color:#f59e0b;box-shadow:0 0 0 2px rgba(251,191,36,.2)}
+.pu-bulk-apply-btn{white-space:nowrap;background:#2563eb}
+.pu-bulk-apply-btn:hover:not(:disabled){background:#1d4ed8}
+.pu-bulk-apply-btn:disabled{background:#9ca3af;cursor:not-allowed}
 tr.pu-row-selected{background:#eff6ff!important}
 tr.pu-row-selected:hover{background:#dbeafe!important}
 .pu-chk-col{width:36px;padding:4px 8px!important;text-align:center;vertical-align:middle}
@@ -1098,7 +1105,14 @@ tr.pu-row-selected:hover{background:#dbeafe!important}
   </div>
   <div id="pu-bulk-bar" class="pu-bulk-bar">
     <span id="pu-bulk-cnt" class="pu-bulk-cnt">0 selected</span>
+    <div class="pu-bulk-divider"></div>
     <button id="pu-bulk-copy" class="pu-bulk-action" onclick="bulkCopyLastToThis()">&#8593; Copy Last Week &#8594; This Week</button>
+    <div class="pu-bulk-divider"></div>
+    <div class="pu-bulk-text-group">
+      <textarea id="pu-bulk-text" class="pu-bulk-text-inp" placeholder="Type update text to apply to all selected..." rows="1" onclick="event.stopPropagation()"></textarea>
+      <button id="pu-bulk-apply" class="pu-bulk-action pu-bulk-apply-btn" onclick="bulkApplyText()" disabled>&#10003; Apply Text to Selected</button>
+    </div>
+    <div class="pu-bulk-divider"></div>
     <button class="pu-bulk-cancel" onclick="togglePuSelMode()">Cancel</button>
   </div>
   <div class="pu-body">
@@ -2951,6 +2965,9 @@ function togglePuSelMode(){
   if(bar)bar.classList.toggle('visible',puSelMode);
   const bc=document.getElementById('pu-bulk-cnt');if(bc)bc.textContent='0 selected';
   const ba=document.getElementById('pu-bulk-copy');if(ba)ba.disabled=true;
+  const bap=document.getElementById('pu-bulk-apply');if(bap)bap.disabled=true;
+  const bti=document.getElementById('pu-bulk-text');
+  if(bti){bti.value='';bti.addEventListener('input',()=>{const bap2=document.getElementById('pu-bulk-apply');if(bap2)bap2.disabled=!bti.value.trim()||puSelected.size===0;});}
   renderPermUpdView();
 }
 async function bulkCopyLastToThis(){
@@ -2963,6 +2980,19 @@ async function bulkCopyLastToThis(){
       const val=(puData[addr]||{}).lastWeek||'';
       if(val)await savePuUpdate(addr,'puThisWeek',val,thisWeekKey);
     }
+    puSelected.clear();
+    togglePuSelMode();
+  });
+}
+async function bulkApplyText(){
+  if(!puSelected.size)return;
+  const bti=document.getElementById('pu-bulk-text');
+  const text=(bti&&bti.value.trim())||'';
+  if(!text)return;
+  const addrs=[...puSelected];
+  const thisSun=puGetSunday(0);const thisWeekKey=puSundayKey(thisSun);
+  showConf('Apply Text','Set This Week update to "'+text.slice(0,60)+(text.length>60?'…':'')+'" for '+addrs.length+' project'+(addrs.length===1?'':'s')+'?','Apply',false,async()=>{
+    for(const addr of addrs)await savePuUpdate(addr,'puThisWeek',text,thisWeekKey);
     puSelected.clear();
     togglePuSelMode();
   });
@@ -3024,7 +3054,7 @@ function renderPermUpdView(){
   const tb=document.getElementById('pu-tbody');tb.innerHTML='';
   if(!data.length){const tr=document.createElement('tr');const td=document.createElement('td');td.colSpan=PU_COLS.length+(puSelMode?1:0);td.style.cssText='padding:24px;text-align:center;color:#9ca3af';td.textContent='No presale projects found.';tr.appendChild(td);tb.appendChild(tr);return;}
   const allAddrs=data.map(p=>p.address||'');
-  const updateBulkBar=()=>{const bc=document.getElementById('pu-bulk-cnt');if(bc)bc.textContent=puSelected.size+' selected';const ba=document.getElementById('pu-bulk-copy');if(ba)ba.disabled=puSelected.size===0;};
+  const updateBulkBar=()=>{const bc=document.getElementById('pu-bulk-cnt');if(bc)bc.textContent=puSelected.size+' selected';const ba=document.getElementById('pu-bulk-copy');if(ba)ba.disabled=puSelected.size===0;const bap=document.getElementById('pu-bulk-apply');const bti=document.getElementById('pu-bulk-text');if(bap)bap.disabled=puSelected.size===0||!(bti&&bti.value.trim());};
   const syncSelectAll=()=>{const allChk=thead.querySelector('.pu-chk');if(!allChk)return;allChk.checked=allAddrs.length>0&&allAddrs.every(a=>puSelected.has(a));allChk.indeterminate=!allChk.checked&&allAddrs.some(a=>puSelected.has(a));};
   data.forEach(p=>{
     const idx=proj.indexOf(p);const addr=p.address||'';
