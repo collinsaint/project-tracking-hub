@@ -269,14 +269,14 @@ tr.dr:hover td.tcrit-miss,tr.dr.row-permit td.tcrit-miss{background:#fecaca}
 #metrics-close{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;font-size:15px;padding:5px 11px;border-radius:8px;cursor:pointer;transition:background .15s;line-height:1}
 #metrics-close:hover{background:rgba(255,255,255,.25)}
 #metrics-body{flex:1;padding:28px 32px;display:flex;flex-direction:column;gap:0}
-#metrics-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:20px;width:100%}
+#metrics-grid{display:flex;flex-direction:column;gap:20px;width:100%}
 .mcard{background:#fff;border-radius:12px;border:1px solid #e2e8f2;overflow:hidden;box-shadow:0 2px 8px rgba(15,23,42,.07)}
 .mcard-hdr{padding:14px 18px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #f0f3fa}
 .mcard-title{font-size:14px;font-weight:700;color:#0f172a;display:flex;align-items:center;gap:8px}
 .mcard-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
 .mcard-badge{font-size:11px;font-weight:700;padding:2px 9px;border-radius:20px;background:#e8f0fe;color:#1a56db}
 .mcard-badge.zero{background:#f1f5f9;color:#94a3b8}
-.mcard-body{max-height:280px;overflow-y:auto}
+.mcard-body{max-height:400px;overflow-y:auto}
 .mcard-table{width:100%;border-collapse:collapse;font-size:11.5px}
 .mcard-table th{padding:6px 10px;text-align:left;font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.4px;background:#f8faff;border-bottom:1px solid #e8eef8;position:sticky;top:0;z-index:1}
 .mcard-table td{padding:6px 10px;border-bottom:1px solid #f1f5f9;vertical-align:middle;color:#1e293b}
@@ -2768,10 +2768,10 @@ function renderMetricsView(){
   const monthLabel=now.toLocaleString('default',{month:'long',year:'numeric'});
   document.getElementById('metrics-hdr-title').textContent='📊 Monthly Metrics — '+monthLabel;
   const sections=[
+    {label:'Assignment Received',key:'assignmentReceived',color:'#d97706'},
+    {label:'Building Permit Issued',key:'bldgPermitIssued',color:'#059669'},
     {label:'NTP-P',key:'ntpP',color:'#7c3aed'},
     {label:'NTP',key:'ntp',color:'#1a56db'},
-    {label:'Building Permit Issued',key:'bldgPermitIssued',color:'#059669'},
-    {label:'Assignment Received',key:'assignmentReceived',color:'#d97706'},
     {label:'50% Inspection',key:'inspection50',color:'#0891b2'},
     {label:'100% Inspection',key:'inspection100',color:'#16a34a'},
   ];
