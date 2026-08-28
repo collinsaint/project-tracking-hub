@@ -2996,12 +2996,12 @@ function renderPermUpdView(){
   if(puSelMode){
     const chkTh=document.createElement('th');chkTh.className='pu-th pu-chk-col';
     const chkAll=document.createElement('input');chkAll.type='checkbox';chkAll.className='pu-chk';
-    const eligibleAddrs=data.map(p=>p.address||'').filter(a=>(puData[a]||{}).lastWeek);
-    chkAll.checked=eligibleAddrs.length>0&&eligibleAddrs.every(a=>puSelected.has(a));
-    chkAll.indeterminate=!chkAll.checked&&eligibleAddrs.some(a=>puSelected.has(a));
+    const allA=data.map(p=>p.address||'');
+    chkAll.checked=allA.length>0&&allA.every(a=>puSelected.has(a));
+    chkAll.indeterminate=!chkAll.checked&&allA.some(a=>puSelected.has(a));
     chkAll.addEventListener('change',()=>{
-      if(chkAll.checked)eligibleAddrs.forEach(a=>puSelected.add(a));
-      else puSelected.clear();
+      if(chkAll.checked)allA.forEach(a=>puSelected.add(a));
+      else allA.forEach(a=>puSelected.delete(a));
       renderPermUpdView();
     });
     chkTh.appendChild(chkAll);thead.appendChild(chkTh);
@@ -3023,35 +3023,32 @@ function renderPermUpdView(){
   });
   const tb=document.getElementById('pu-tbody');tb.innerHTML='';
   if(!data.length){const tr=document.createElement('tr');const td=document.createElement('td');td.colSpan=PU_COLS.length+(puSelMode?1:0);td.style.cssText='padding:24px;text-align:center;color:#9ca3af';td.textContent='No presale projects found.';tr.appendChild(td);tb.appendChild(tr);return;}
+  const allAddrs=data.map(p=>p.address||'');
   const updateBulkBar=()=>{const bc=document.getElementById('pu-bulk-cnt');if(bc)bc.textContent=puSelected.size+' selected';const ba=document.getElementById('pu-bulk-copy');if(ba)ba.disabled=puSelected.size===0;};
+  const syncSelectAll=()=>{const allChk=thead.querySelector('.pu-chk');if(!allChk)return;allChk.checked=allAddrs.length>0&&allAddrs.every(a=>puSelected.has(a));allChk.indeterminate=!allChk.checked&&allAddrs.some(a=>puSelected.has(a));};
   data.forEach(p=>{
     const idx=proj.indexOf(p);const addr=p.address||'';
     const tr=document.createElement('tr');tr.className='dr'+(puSelMode&&puSelected.has(addr)?' pu-row-selected':'');
     if(puSelMode){
       tr.addEventListener('click',e=>{
-        if(e.target.type==='checkbox')return;
-        const eligible=(puData[addr]||{}).lastWeek;
-        if(!eligible)return;
+        if(e.target.tagName==='INPUT')return;
         if(puSelected.has(addr))puSelected.delete(addr);else puSelected.add(addr);
         tr.classList.toggle('pu-row-selected',puSelected.has(addr));
         const chk=tr.querySelector('.pu-chk');if(chk)chk.checked=puSelected.has(addr);
-        updateBulkBar();
-        const allChk=thead.querySelector('.pu-chk');
-        if(allChk){const el=data.map(p2=>p2.address||'').filter(a=>(puData[a]||{}).lastWeek);allChk.checked=el.length>0&&el.every(a=>puSelected.has(a));allChk.indeterminate=!allChk.checked&&el.some(a=>puSelected.has(a));}
+        updateBulkBar();syncSelectAll();
       });
     } else {
       tr.addEventListener('click',()=>od(idx));
     }
     if(puSelMode){
       const chkTd=document.createElement('td');chkTd.className='pu-chk-col';
-      const eligible=(puData[addr]||{}).lastWeek;
       const chk=document.createElement('input');chk.type='checkbox';chk.className='pu-chk';
-      chk.checked=puSelected.has(addr);chk.disabled=!eligible;chk.title=eligible?'':'No last week data to copy';
+      chk.checked=puSelected.has(addr);
       chk.addEventListener('change',e=>{
         e.stopPropagation();
         if(chk.checked)puSelected.add(addr);else puSelected.delete(addr);
         tr.classList.toggle('pu-row-selected',puSelected.has(addr));
-        updateBulkBar();
+        updateBulkBar();syncSelectAll();
         const allChk=thead.querySelector('.pu-chk');
         if(allChk){const el=data.map(p2=>p2.address||'').filter(a=>(puData[a]||{}).lastWeek);allChk.checked=el.length>0&&el.every(a=>puSelected.has(a));allChk.indeterminate=!allChk.checked&&el.some(a=>puSelected.has(a));}
       });
