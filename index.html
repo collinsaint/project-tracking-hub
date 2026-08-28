@@ -273,7 +273,12 @@ tr.dr:hover td.tcrit-miss,tr.dr.row-permit td.tcrit-miss{background:#fecaca}
 .metrics-toggle-btn{padding:5px 14px;font-size:12px;font-weight:700;color:rgba(255,255,255,.7);background:transparent;border:none;cursor:pointer;transition:all .15s;letter-spacing:.2px}
 .metrics-toggle-btn.active{background:rgba(255,255,255,.28);color:#fff}
 .metrics-toggle-btn:hover:not(.active){background:rgba(255,255,255,.12);color:#fff}
-#metrics-body{flex:1;padding:28px 32px;display:flex;flex-direction:column;gap:0}
+#metrics-body{flex:1;padding:28px 32px;display:flex;flex-direction:column;gap:20px}
+#metrics-totals{display:flex;justify-content:center;gap:0;background:#fff;border-radius:12px;border:1px solid #e2e8f2;overflow:hidden;box-shadow:0 2px 8px rgba(15,23,42,.07);flex-shrink:0}
+.mtot-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:14px 8px;border-right:1px solid #f0f3fa;gap:4px}
+.mtot-item:last-child{border-right:none}
+.mtot-num{font-size:24px;font-weight:800;line-height:1}
+.mtot-lbl{font-size:10px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.4px;text-align:center;line-height:1.3}
 #metrics-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:20px;width:100%}
 .mcard{background:#fff;border-radius:12px;border:1px solid #e2e8f2;overflow:hidden;box-shadow:0 2px 8px rgba(15,23,42,.07)}
 .mcard-hdr{padding:14px 18px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #f0f3fa}
@@ -971,6 +976,7 @@ tr.pu-row-selected:hover{background:#dbeafe!important}
     </div>
   </div>
   <div id="metrics-body">
+    <div id="metrics-totals"></div>
     <div id="metrics-grid"></div>
   </div>
 </div>
@@ -2804,6 +2810,16 @@ function renderMetricsView(){
   const grid=document.getElementById('metrics-grid');
   grid.innerHTML='';
   metricsData={};
+  const totalsBar=document.getElementById('metrics-totals');
+  if(totalsBar){
+    totalsBar.innerHTML=METRICS_SECTIONS.map(sec=>{
+      const cnt=all.filter(p=>{const v=p[sec.key];return v&&v!=='0'&&v.startsWith(monthKey);}).length;
+      return '<div class="mtot-item">'+
+        '<span class="mtot-num" style="color:'+sec.color+'">'+cnt+'</span>'+
+        '<span class="mtot-lbl">'+sec.label+'</span>'+
+      '</div>';
+    }).join('');
+  }
   METRICS_SECTIONS.forEach(sec=>{
     const jobs=all.filter(p=>{const v=p[sec.key];return v&&v!=='0'&&v.startsWith(monthKey);});
     metricsData[sec.key]={jobs,sec};
