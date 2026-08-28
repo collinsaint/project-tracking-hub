@@ -291,6 +291,7 @@ tr.dr:hover td.tcrit-miss,tr.dr.row-permit td.tcrit-miss{background:#fecaca}
 .mcard-name{color:#475569;max-width:110px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .mcard-date{font-weight:600;white-space:nowrap}
 .mcard-empty{padding:20px;text-align:center;color:#94a3b8;font-size:12px}
+.msort-arr{font-size:9px;color:#b0bdd0;margin-left:2px}
 /* ── CONFIRM DIALOG ───────────────────────────── */
 #conf-modal{position:fixed;inset:0;background:rgba(9,30,58,.52);z-index:600;display:none;align-items:center;justify-content:center;backdrop-filter:blur(3px)}
 #conf-modal.open{display:flex}
@@ -2766,8 +2767,18 @@ function openDashboard(){
 function closeDashboard(){
   document.getElementById('dash-view').classList.remove('open');
 }
+let metricsData={},metricsSort={};
+const METRICS_SECTIONS=[
+  {label:'Assignment Received',key:'assignmentReceived',color:'#d97706'},
+  {label:'Building Permit Issued',key:'bldgPermitIssued',color:'#059669'},
+  {label:'NTP-P',key:'ntpP',color:'#7c3aed'},
+  {label:'NTP',key:'ntp',color:'#1a56db'},
+  {label:'50% Inspection',key:'inspection50',color:'#0891b2'},
+  {label:'100% Inspection',key:'inspection100',color:'#16a34a'},
+];
 function openMetricsView(){
   metricsMonthOffset=0;
+  metricsSort={};
   renderMetricsView();
   document.getElementById('metrics-view').classList.add('open');
 }
@@ -2776,6 +2787,7 @@ function closeMetricsView(){
 }
 function setMetricsMonth(offset){
   metricsMonthOffset=offset;
+  metricsSort={};
   const btnThis=document.getElementById('metrics-btn-this');
   const btnLast=document.getElementById('metrics-btn-last');
   if(btnThis)btnThis.classList.toggle('active',offset===0);
@@ -2785,36 +2797,31 @@ function setMetricsMonth(offset){
 function renderMetricsView(){
   const now=new Date();
   const d=new Date(now.getFullYear(),now.getMonth()+metricsMonthOffset,1);
-  const year=d.getFullYear();
-  const month=String(d.getMonth()+1).padStart(2,'0');
-  const monthKey=year+'-'+month;
+  const monthKey=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
   const monthLabel=d.toLocaleString('default',{month:'long',year:'numeric'});
   document.getElementById('metrics-hdr-title').textContent='📊 Monthly Metrics — '+monthLabel;
-  const sections=[
-    {label:'Assignment Received',key:'assignmentReceived',color:'#d97706'},
-    {label:'Building Permit Issued',key:'bldgPermitIssued',color:'#059669'},
-    {label:'NTP-P',key:'ntpP',color:'#7c3aed'},
-    {label:'NTP',key:'ntp',color:'#1a56db'},
-    {label:'50% Inspection',key:'inspection50',color:'#0891b2'},
-    {label:'100% Inspection',key:'inspection100',color:'#16a34a'},
-  ];
   const all=filterProj(proj);
   const grid=document.getElementById('metrics-grid');
   grid.innerHTML='';
-  sections.forEach(sec=>{
-    const jobs=all.filter(p=>{
-      const v=p[sec.key];
-      return v&&v!=='0'&&v.startsWith(monthKey);
-    }).sort((a,b)=>(a[sec.key]||'').localeCompare(b[sec.key]||''));
+  metricsData={};
+  METRICS_SECTIONS.forEach(sec=>{
+    const jobs=all.filter(p=>{const v=p[sec.key];return v&&v!=='0'&&v.startsWith(monthKey);});
+    metricsData[sec.key]={jobs,sec};
+    if(!metricsSort[sec.key])metricsSort[sec.key]={col:'date',dir:1};
+    const badgeCls=jobs.length===0?' zero':'';
+    const cols=[
+      {key:'address',label:'Address'},
+      {key:'projectNumber',label:'App ID'},
+      {key:'program',label:'Program'},
+      {key:'jobStatus',label:'Status'},
+      {key:'date',label:'Date'},
+    ];
     const card=document.createElement('div');
     card.className='mcard';
-    const badgeCls=jobs.length===0?' zero':'';
+    card.id='mcard-'+sec.key;
     card.innerHTML=
       '<div class="mcard-hdr">'+
-        '<div class="mcard-title">'+
-          '<div class="mcard-dot" style="background:'+sec.color+'"></div>'+
-          sec.label+
-        '</div>'+
+        '<div class="mcard-title"><div class="mcard-dot" style="background:'+sec.color+'"></div>'+sec.label+'</div>'+
         '<span class="mcard-badge'+badgeCls+'">'+jobs.length+' job'+(jobs.length===1?'':'s')+'</span>'+
       '</div>'+
       '<div class="mcard-body">'+
@@ -2822,29 +2829,50 @@ function renderMetricsView(){
           ? '<div class="mcard-empty">No jobs this month</div>'
           : '<table class="mcard-table">'+
               '<thead><tr>'+
-                '<th>Address</th>'+
-                '<th>App ID</th>'+
-                '<th>Program</th>'+
-                '<th>Status</th>'+
-                '<th>Date</th>'+
+              cols.map(c=>'<th id="mth-'+sec.key+'-'+c.key+'" onclick="sortMetricsCard(\''+sec.key+'\',\''+c.key+'\')" style="cursor:pointer;user-select:none">'+c.label+' <span class="msort-arr" id="msarr-'+sec.key+'-'+c.key+'">⇅</span></th>').join('')+
               '</tr></thead>'+
-              '<tbody>'+
-              jobs.map(p=>{
-                const name=((p.firstName||'')+' '+(p.lastName||'')).trim();
-                const date=fd2(p[sec.key]);
-                return '<tr>'+
-                  '<td><div class="mcard-addr" title="'+es(p.address||'')+'">'+es(p.address||'')+'</div></td>'+
-                  '<td><div class="mcard-name">'+es(p.projectNumber||'—')+'</div></td>'+
-                  '<td>'+pbdg(p.program||'')+'</td>'+
-                  '<td>'+sbdg(p.jobStatus||'')+'</td>'+
-                  '<td><span class="mcard-date" style="color:'+sec.color+'">'+date+'</span></td>'+
-                '</tr>';
-              }).join('')+
-              '</tbody></table>'
+              '<tbody id="mtbody-'+sec.key+'"></tbody>'+
+            '</table>'
         )+
       '</div>';
     grid.appendChild(card);
+    if(jobs.length>0)renderMetricsTbody(sec.key);
   });
+}
+function renderMetricsTbody(secKey){
+  const entry=metricsData[secKey];if(!entry)return;
+  const {jobs,sec}=entry;
+  const {col,dir}=metricsSort[secKey]||{col:'date',dir:1};
+  const sorted=[...jobs].sort((a,b)=>{
+    let av='',bv='';
+    if(col==='date'){av=a[sec.key]||'';bv=b[sec.key]||'';}
+    else if(col==='projectNumber'){av=a.projectNumber||'';bv=b.projectNumber||'';}
+    else if(col==='program'){av=a.program||'';bv=b.program||'';}
+    else if(col==='jobStatus'){av=a.jobStatus||'';bv=b.jobStatus||'';}
+    else{av=a.address||'';bv=b.address||'';}
+    return av<bv?-dir:av>bv?dir:0;
+  });
+  const tbody=document.getElementById('mtbody-'+secKey);
+  if(!tbody)return;
+  tbody.innerHTML=sorted.map(p=>{
+    const date=fd2(p[sec.key]);
+    return '<tr>'+
+      '<td><div class="mcard-addr" title="'+es(p.address||'')+'">'+es(p.address||'')+'</div></td>'+
+      '<td><div class="mcard-name">'+es(p.projectNumber||'—')+'</div></td>'+
+      '<td>'+pbdg(p.program||'')+'</td>'+
+      '<td>'+sbdg(p.jobStatus||'')+'</td>'+
+      '<td><span class="mcard-date" style="color:'+sec.color+'">'+date+'</span></td>'+
+    '</tr>';
+  }).join('');
+  ['address','projectNumber','program','jobStatus','date'].forEach(c=>{
+    const el=document.getElementById('msarr-'+secKey+'-'+c);
+    if(el)el.textContent=c===col?(dir===1?'▲':'▼'):'⇅';
+  });
+}
+function sortMetricsCard(secKey,col){
+  const s=metricsSort[secKey];if(!s)return;
+  if(s.col===col)s.dir*=-1;else{s.col=col;s.dir=1;}
+  renderMetricsTbody(secKey);
 }
 function toggleJQView(){
   if(coqView)toggleCOQView();
