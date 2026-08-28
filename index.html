@@ -261,6 +261,31 @@ tr.dr:hover td.tcrit-miss,tr.dr.row-permit td.tcrit-miss{background:#fecaca}
 .dash-card-title{font-size:16px;font-weight:700;color:#0f172a}
 .dash-card-desc{font-size:12px;color:#5a6d85;line-height:1.6;flex:1}
 .dash-card-arrow{font-size:13px;color:#94a3b8;font-weight:700;letter-spacing:.3px;text-transform:uppercase;margin-top:6px}
+/* ── MONTHLY METRICS ─────────────────────────── */
+#metrics-view{position:fixed;inset:0;z-index:192;background:#f0f4fa;overflow-y:auto;display:none;flex-direction:column}
+#metrics-view.open{display:flex}
+#metrics-hdr{background:linear-gradient(135deg,#091e3a 0%,#0d3b6e 55%,#1248a0 100%);color:#fff;padding:0 28px;height:64px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;box-shadow:0 2px 16px rgba(0,0,0,.25)}
+#metrics-hdr-title{font-size:18px;font-weight:700;letter-spacing:.1px;display:flex;align-items:center;gap:10px}
+#metrics-close{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;font-size:15px;padding:5px 11px;border-radius:8px;cursor:pointer;transition:background .15s;line-height:1}
+#metrics-close:hover{background:rgba(255,255,255,.25)}
+#metrics-body{flex:1;padding:28px 32px;display:flex;flex-direction:column;gap:0}
+#metrics-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:20px;width:100%}
+.mcard{background:#fff;border-radius:12px;border:1px solid #e2e8f2;overflow:hidden;box-shadow:0 2px 8px rgba(15,23,42,.07)}
+.mcard-hdr{padding:14px 18px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #f0f3fa}
+.mcard-title{font-size:14px;font-weight:700;color:#0f172a;display:flex;align-items:center;gap:8px}
+.mcard-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.mcard-badge{font-size:11px;font-weight:700;padding:2px 9px;border-radius:20px;background:#e8f0fe;color:#1a56db}
+.mcard-badge.zero{background:#f1f5f9;color:#94a3b8}
+.mcard-body{max-height:280px;overflow-y:auto}
+.mcard-table{width:100%;border-collapse:collapse;font-size:11.5px}
+.mcard-table th{padding:6px 10px;text-align:left;font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.4px;background:#f8faff;border-bottom:1px solid #e8eef8;position:sticky;top:0;z-index:1}
+.mcard-table td{padding:6px 10px;border-bottom:1px solid #f1f5f9;vertical-align:middle;color:#1e293b}
+.mcard-table tr:last-child td{border-bottom:none}
+.mcard-table tr:hover td{background:#f8fbff}
+.mcard-addr{font-weight:600;color:#0f172a;max-width:150px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mcard-name{color:#475569;max-width:110px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mcard-date{font-weight:600;white-space:nowrap}
+.mcard-empty{padding:20px;text-align:center;color:#94a3b8;font-size:12px}
 /* ── CONFIRM DIALOG ───────────────────────────── */
 #conf-modal{position:fixed;inset:0;background:rgba(9,30,58,.52);z-index:600;display:none;align-items:center;justify-content:center;backdrop-filter:blur(3px)}
 #conf-modal.open{display:flex}
@@ -919,13 +944,22 @@ tr.pu-row-selected:hover{background:#dbeafe!important}
         <div class="dash-card-desc">View upcoming pre-construction and construction deadlines across all active projects.</div>
         <div class="dash-card-arrow">Open &rarr;</div>
       </div>
-      <div class="dash-card" style="opacity:.65;cursor:default" title="Coming soon">
+      <div class="dash-card" onclick="closeDashboard();openMetricsView()">
         <div class="dash-card-icon">&#128202;</div>
         <div class="dash-card-title">Monthly Metrics</div>
-        <div class="dash-card-desc">Program-level performance metrics and completion trends by month.</div>
-        <div class="dash-card-arrow" style="color:#c8d3e6">Coming Soon</div>
+        <div class="dash-card-desc">Jobs with key milestone dates this month: NTP-P, NTP, Permit Issued, Assignment Received, and inspections.</div>
+        <div class="dash-card-arrow">Open &rarr;</div>
       </div>
     </div>
+  </div>
+</div>
+<div id="metrics-view">
+  <div id="metrics-hdr">
+    <div id="metrics-hdr-title">&#128202; Monthly Metrics</div>
+    <button id="metrics-close" onclick="closeMetricsView()">&#10005; Close</button>
+  </div>
+  <div id="metrics-body">
+    <div id="metrics-grid"></div>
   </div>
 </div>
 <div id="topbar">
@@ -2712,6 +2746,7 @@ function goToTracker(){
   if(reportView)toggleReportView();
   if(wuView)closeWUView();
   if(permUpdView)closePermUpdView();
+  closeMetricsView();
   closeDashboard();
 }
 function openDashboard(){
@@ -2719,6 +2754,74 @@ function openDashboard(){
 }
 function closeDashboard(){
   document.getElementById('dash-view').classList.remove('open');
+}
+function openMetricsView(){
+  renderMetricsView();
+  document.getElementById('metrics-view').classList.add('open');
+}
+function closeMetricsView(){
+  document.getElementById('metrics-view').classList.remove('open');
+}
+function renderMetricsView(){
+  const now=new Date();
+  const monthKey=now.toISOString().slice(0,7);
+  const monthLabel=now.toLocaleString('default',{month:'long',year:'numeric'});
+  document.getElementById('metrics-hdr-title').textContent='📊 Monthly Metrics — '+monthLabel;
+  const sections=[
+    {label:'NTP-P',key:'ntpP',color:'#7c3aed'},
+    {label:'NTP',key:'ntp',color:'#1a56db'},
+    {label:'Building Permit Issued',key:'bldgPermitIssued',color:'#059669'},
+    {label:'Assignment Received',key:'assignmentReceived',color:'#d97706'},
+    {label:'50% Inspection',key:'inspection50',color:'#0891b2'},
+    {label:'100% Inspection',key:'inspection100',color:'#16a34a'},
+  ];
+  const all=filterProj(proj);
+  const grid=document.getElementById('metrics-grid');
+  grid.innerHTML='';
+  sections.forEach(sec=>{
+    const jobs=all.filter(p=>{
+      const v=p[sec.key];
+      return v&&v!=='0'&&v.startsWith(monthKey);
+    }).sort((a,b)=>(a[sec.key]||'').localeCompare(b[sec.key]||''));
+    const card=document.createElement('div');
+    card.className='mcard';
+    const badgeCls=jobs.length===0?' zero':'';
+    card.innerHTML=
+      '<div class="mcard-hdr">'+
+        '<div class="mcard-title">'+
+          '<div class="mcard-dot" style="background:'+sec.color+'"></div>'+
+          sec.label+
+        '</div>'+
+        '<span class="mcard-badge'+badgeCls+'">'+jobs.length+' job'+(jobs.length===1?'':'s')+'</span>'+
+      '</div>'+
+      '<div class="mcard-body">'+
+        (jobs.length===0
+          ? '<div class="mcard-empty">No jobs this month</div>'
+          : '<table class="mcard-table">'+
+              '<thead><tr>'+
+                '<th>Address</th>'+
+                '<th>Homeowner</th>'+
+                '<th>Program</th>'+
+                '<th>Status</th>'+
+                '<th>Date</th>'+
+              '</tr></thead>'+
+              '<tbody>'+
+              jobs.map(p=>{
+                const name=((p.firstName||'')+' '+(p.lastName||'')).trim();
+                const date=fd2(p[sec.key]);
+                return '<tr>'+
+                  '<td><div class="mcard-addr" title="'+es(p.address||'')+'">'+es(p.address||'')+'</div></td>'+
+                  '<td><div class="mcard-name" title="'+es(name)+'">'+es(name)+'</div></td>'+
+                  '<td>'+pbdg(p.program||'')+'</td>'+
+                  '<td>'+sbdg(p.jobStatus||'')+'</td>'+
+                  '<td><span class="mcard-date" style="color:'+sec.color+'">'+date+'</span></td>'+
+                '</tr>';
+              }).join('')+
+              '</tbody></table>'
+        )+
+      '</div>';
+    grid.appendChild(card);
+  });
 }
 function toggleJQView(){
   if(coqView)toggleCOQView();
