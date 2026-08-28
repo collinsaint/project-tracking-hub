@@ -738,8 +738,10 @@ body.mob .edit-bar-inner{flex-wrap:wrap;gap:6px;padding:6px 12px}
 .pu-note-save:hover{background:#15803d}
 .pu-note-cancel{background:#f1f5f9;color:#64748b;border:1px solid #e2e8f0;border-radius:5px;font-size:11px;font-weight:600;padding:4px 10px;cursor:pointer;font-family:inherit;transition:background .12s}
 .pu-note-cancel:hover{background:#e2e8f0}
-.pu-note-edit-btn{position:absolute;top:6px;right:5px;background:none;border:1px solid transparent;border-radius:4px;color:#c8d3e6;font-size:12px;cursor:pointer;padding:1px 4px;line-height:1;transition:all .12s}
-.pu-note-edit-btn:hover{background:#eef4ff;border-color:#c7daf7;color:var(--blue)}
+.pu-note-edit-btn{position:absolute;top:6px;right:5px;background:#eef4ff;border:1.5px solid #c7daf7;border-radius:5px;color:var(--blue);font-size:13px;cursor:pointer;padding:2px 6px;line-height:1;transition:all .12s;box-shadow:0 1px 3px rgba(37,99,235,.12)}
+.pu-note-edit-btn:hover{background:#dbeafe;border-color:#93c5fd;box-shadow:0 2px 6px rgba(37,99,235,.2)}
+.pu-note-copy-btn{display:block;margin-top:6px;background:#f0f9ff;border:1px dashed #7dd3fc;border-radius:5px;color:#0369a1;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;padding:4px 8px;cursor:pointer;width:100%;text-align:center;transition:all .12s}
+.pu-note-copy-btn:hover{background:#e0f2fe;border-color:#38bdf8;color:#0284c7}
 .pu-note-lock{position:absolute;top:7px;right:6px;font-size:10px;color:#d1d5db;cursor:default}
 .wu-topbar{background:#fff;border-bottom:1px solid var(--border);padding:14px 24px;display:flex;align-items:center;justify-content:space-between;gap:12px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
 .wu-topbar-left{display:flex;flex-direction:column;gap:2px}
@@ -2980,9 +2982,20 @@ function renderPermUpdView(){
           const lbl=document.createElement('span');lbl.className='pu-note-week-lbl';lbl.textContent='Week ending '+weekLbl;td.appendChild(lbl);
           const txt=document.createElement('div');txt.className='pu-note-text'+(noteVal?'':' pu-note-empty');txt.textContent=noteVal||'No update entered';td.appendChild(txt);
           if(isThisWeek){
-            const editBtn=document.createElement('button');editBtn.className='pu-note-edit-btn';editBtn.title='Edit';editBtn.textContent='✏';
+            const editBtn=document.createElement('button');editBtn.className='pu-note-edit-btn';editBtn.title='Edit this week\'s update';editBtn.textContent='✏';
             editBtn.addEventListener('click',e=>{e.stopPropagation();showNoteEdit();});
             td.appendChild(editBtn);
+            const lastWeekVal=(puData[addr]||{}).lastWeek||'';
+            if(lastWeekVal){
+              const copyBtn=document.createElement('button');copyBtn.className='pu-note-copy-btn';copyBtn.textContent='↑ Copy from Last Week';
+              copyBtn.addEventListener('click',e=>{
+                e.stopPropagation();
+                showConf('Copy Last Week','Copy last week\'s update into This Week for '+addr+'?','Copy',false,async()=>{
+                  await savePuUpdate(addr,'puThisWeek',lastWeekVal,thisWeekKey);renderNoteCell();
+                });
+              });
+              td.appendChild(copyBtn);
+            }
           } else {
             const lock=document.createElement('span');lock.className='pu-note-lock';lock.title='Read-only — locked after rotation';lock.textContent='🔒';td.appendChild(lock);
           }
