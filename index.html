@@ -1133,6 +1133,14 @@ tr.pu-row-selected:hover{background:#dbeafe!important}
         <select id="puf-jur" class="pu-filter-sel" onchange="applyPuFilter()"><option value="">All</option></select>
       </div>
       <div class="pu-filter-group">
+        <label class="pu-filter-lbl">Bldg Permit Issued</label>
+        <select id="puf-permit" class="pu-filter-sel" onchange="applyPuFilter()">
+          <option value="">All</option>
+          <option value="has">Has date</option>
+          <option value="missing">No date</option>
+        </select>
+      </div>
+      <div class="pu-filter-group">
         <label class="pu-filter-lbl">This Week Note</label>
         <select id="puf-note" class="pu-filter-sel" onchange="applyPuFilter()">
           <option value="">All</option>
@@ -2952,7 +2960,7 @@ function puGetSunday(offset=0){const d=new Date();const day=d.getDay();d.setDate
 function puSundayKey(d){const mm=String(d.getMonth()+1).padStart(2,'0'),dd=String(d.getDate()).padStart(2,'0'),yyyy=d.getFullYear();return mm+dd+yyyy;}
 function puSundayLabel(d){const mm=String(d.getMonth()+1).padStart(2,'0'),dd=String(d.getDate()).padStart(2,'0'),yy=String(d.getFullYear()).slice(2);return mm+'/'+dd+'/'+yy;}
 const PU_COLS=[{key:'_identity',label:'Address',t:'id'},{key:'program',label:'Program',t:'p'},{key:'permittingJurisdiction',label:'Permitting Jurisdiction',t:'tx'},{key:'jobStatus',label:'Job Status',t:'st'},{key:'jobType',label:'Job Type',t:'tx'},{key:'assignmentReceived',label:'Assignment Received',t:'d'},{key:'bldgPermitSubmitted',label:'Bldg Permit Submitted',t:'d'},{key:'bldgPermitIssued',label:'Bldg Permit Issued',t:'d'},{key:'puLastWeek',label:'Last Week',t:'note'},{key:'puThisWeek',label:'This Week',t:'note'}];
-let permUpdView=false,puSort={col:'_identity',dir:1},puSelMode=false,puSelected=new Set(),puFilterOpen=false,puFilter={search:'',program:'',status:'',jur:'',note:''};
+let permUpdView=false,puSort={col:'_identity',dir:1},puSelMode=false,puSelected=new Set(),puFilterOpen=false,puFilter={search:'',program:'',status:'',jur:'',permit:'',note:''};
 let puNotes={};try{const _pn=localStorage.getItem('pu_notes_v1');if(_pn)puNotes=JSON.parse(_pn);}catch(e){}
 let puData={};
 async function initPU(){
@@ -3047,12 +3055,13 @@ function applyPuFilter(){
   puFilter.program=(document.getElementById('puf-program')||{}).value||'';
   puFilter.status=(document.getElementById('puf-status')||{}).value||'';
   puFilter.jur=(document.getElementById('puf-jur')||{}).value||'';
+  puFilter.permit=(document.getElementById('puf-permit')||{}).value||'';
   puFilter.note=(document.getElementById('puf-note')||{}).value||'';
   renderPermUpdView();
 }
 function clearPuFilter(){
-  puFilter={search:'',program:'',status:'',jur:'',note:''};
-  const ids=['puf-search','puf-program','puf-status','puf-jur','puf-note'];
+  puFilter={search:'',program:'',status:'',jur:'',permit:'',note:''};
+  const ids=['puf-search','puf-program','puf-status','puf-jur','puf-permit','puf-note'];
   ids.forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   renderPermUpdView();
 }
@@ -3067,7 +3076,7 @@ function closePermUpdView(){
   permUpdView=false;
   if(puSelMode){puSelMode=false;puSelected.clear();const bar=document.getElementById('pu-bulk-bar');if(bar)bar.classList.remove('visible');const btn=document.getElementById('pu-sel-toggle');if(btn){btn.classList.remove('active');btn.textContent='☑ Select';}}
   if(puFilterOpen){puFilterOpen=false;const fb=document.getElementById('pu-filter-bar');if(fb)fb.classList.remove('open');const ftb=document.getElementById('pu-filter-toggle');if(ftb)ftb.classList.remove('active');}
-  puFilter={search:'',program:'',status:'',jur:'',note:''};
+  puFilter={search:'',program:'',status:'',jur:'',permit:'',note:''};
   document.getElementById('main').style.display='flex';document.getElementById('topbar').style.display='';document.getElementById('jnav').style.display='';
   document.getElementById('permview').style.display='none';
 }
@@ -3083,8 +3092,9 @@ function renderPermUpdView(){
   const fProg=(document.getElementById('puf-program')||{}).value||puFilter.program||'';
   const fSt=(document.getElementById('puf-status')||{}).value||puFilter.status||'';
   const fJur=(document.getElementById('puf-jur')||{}).value||puFilter.jur||'';
+  const fPermit=(document.getElementById('puf-permit')||{}).value||puFilter.permit||'';
   const fNote=(document.getElementById('puf-note')||{}).value||puFilter.note||'';
-  const hasFilter=fSearch||fProg||fSt||fJur||fNote;
+  const hasFilter=fSearch||fProg||fSt||fJur||fPermit||fNote;
   // update filter button indicator
   const ftBtn=document.getElementById('pu-filter-toggle');
   if(ftBtn){const dot=ftBtn.querySelector('.pu-filter-active-dot');if(hasFilter&&!dot){const d=document.createElement('span');d.className='pu-filter-active-dot';ftBtn.appendChild(d);}else if(!hasFilter&&dot)dot.remove();}
@@ -3093,6 +3103,8 @@ function renderPermUpdView(){
     if(fProg&&p.program!==fProg)return false;
     if(fSt&&p.jobStatus!==fSt)return false;
     if(fJur&&p.permittingJurisdiction!==fJur)return false;
+    if(fPermit==='has'&&(!p.bldgPermitIssued||p.bldgPermitIssued==='0'))return false;
+    if(fPermit==='missing'&&p.bldgPermitIssued&&p.bldgPermitIssued!=='0')return false;
     if(fNote==='has'&&!(puData[p.address||'']||{}).thisWeek)return false;
     if(fNote==='missing'&&(puData[p.address||'']||{}).thisWeek)return false;
     if(sq){const hay=(p.address||'')+' '+(p.firstName||'')+' '+(p.lastName||'');if(!hay.toLowerCase().includes(sq))return false;}
