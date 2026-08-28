@@ -1522,6 +1522,7 @@ async function init(){
   });
   setInterval(()=>{sbSyncJQ();sbSyncCOQ();},60000);
   setupRealtime();
+  restoreViewFromHash();
 }
 
 let _importInProgress=false;
@@ -2672,6 +2673,7 @@ function togglePermView(){
   document.getElementById('jnav').style.display=permView?'none':'';
   document.getElementById('permqueue').style.display=permView?'block':'none';
   if(btn)btn.textContent=permView?'◄ Back to Tracker':'● Permitting';
+  setViewHash(permView?'perm':'');
   if(permView)renderPerm();
 }
 function renderPerm(){
@@ -2755,6 +2757,7 @@ function renderPerm(){
     tb.appendChild(tr);
   });
 }
+function setViewHash(h){history.replaceState(null,'',h?('#'+h):(location.pathname+location.search));}
 function goToTracker(){
   if(jqView)toggleJQView();
   if(coqView)toggleCOQView();
@@ -2765,12 +2768,25 @@ function goToTracker(){
   if(permUpdView)closePermUpdView();
   closeMetricsView();
   closeDashboard();
+  setViewHash('');
 }
 function openDashboard(){
   document.getElementById('dash-view').classList.add('open');
+  setViewHash('dashboard');
 }
 function closeDashboard(){
   document.getElementById('dash-view').classList.remove('open');
+}
+function restoreViewFromHash(){
+  const h=(location.hash||'').replace('#','');
+  if(h==='dashboard')openDashboard();
+  else if(h==='metrics'){openDashboard();openMetricsView();}
+  else if(h==='jq'&&!jqView)toggleJQView();
+  else if(h==='coq'&&!coqView)toggleCOQView();
+  else if(h==='perm'&&!permView)togglePermView();
+  else if(h==='perm-updates')openPermUpdView();
+  else if(h==='tasks'&&!taskView)toggleTaskView();
+  else if(h==='report'&&!reportView)toggleReportView();
 }
 let metricsData={},metricsSort={};
 const METRICS_SECTIONS=[
@@ -2786,6 +2802,7 @@ function openMetricsView(){
   metricsSort={};
   renderMetricsView();
   document.getElementById('metrics-view').classList.add('open');
+  setViewHash('metrics');
 }
 function closeMetricsView(){
   document.getElementById('metrics-view').classList.remove('open');
@@ -2903,6 +2920,7 @@ function toggleJQView(){
   document.getElementById('jnav').style.display=jqView?'none':'';
   document.getElementById('jqueue').style.display=jqView?'block':'none';
   if(btn)btn.textContent=jqView?'◄ Back to Tracker':'★ Job Start Queue';
+  setViewHash(jqView?'jq':'');
   if(jqView)renderJQ();
 }
 
@@ -2920,6 +2938,7 @@ function toggleCOQView(){
   document.getElementById('jnav').style.display=coqView?'none':'';
   document.getElementById('coqueue').style.display=coqView?'block':'none';
   if(btn)btn.textContent=coqView?'◄ Back to Tracker':'△ Change Order Queue';
+  setViewHash(coqView?'coq':'');
   if(coqView)renderCOQ();
 }
 
@@ -3039,6 +3058,7 @@ function toggleTaskView(){
   document.getElementById('jnav').style.display=taskView?'none':'';
   document.getElementById('tboard').style.display=taskView?'flex':'none';
   btn.textContent=taskView?'◄ Back to Tracker':'≡ Task Board';
+  setViewHash(taskView?'tasks':'');
   if(taskView){
     const sel=document.getElementById('tb-fproj');
     const cur=sel.value;
@@ -3264,6 +3284,7 @@ function openPermUpdView(){
   permUpdView=true;
   document.getElementById('main').style.display='none';document.getElementById('topbar').style.display='none';document.getElementById('jnav').style.display='none';
   document.getElementById('permview').style.display='block';
+  setViewHash('perm-updates');
   renderPermUpdView();
 }
 function closePermUpdView(){
@@ -3455,6 +3476,7 @@ function toggleReportView(){
   document.getElementById('jnav').style.display=reportView?'none':'';
   document.getElementById('reports').style.display=reportView?'block':'none';
   if(btn)btn.textContent=reportView?'◄ Back to Tracker':'📊 Reports';
+  setViewHash(reportView?'report':'');
   if(reportView)renderReport();
 }
 
