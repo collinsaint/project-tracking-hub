@@ -268,6 +268,11 @@ tr.dr:hover td.tcrit-miss,tr.dr.row-permit td.tcrit-miss{background:#fecaca}
 #metrics-hdr-title{font-size:18px;font-weight:700;letter-spacing:.1px;display:flex;align-items:center;gap:10px}
 #metrics-close{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;font-size:15px;padding:5px 11px;border-radius:8px;cursor:pointer;transition:background .15s;line-height:1}
 #metrics-close:hover{background:rgba(255,255,255,.25)}
+#metrics-hdr-right{display:flex;align-items:center;gap:10px}
+.metrics-toggle{display:flex;background:rgba(255,255,255,.12);border-radius:8px;overflow:hidden;border:1px solid rgba(255,255,255,.2)}
+.metrics-toggle-btn{padding:5px 14px;font-size:12px;font-weight:700;color:rgba(255,255,255,.7);background:transparent;border:none;cursor:pointer;transition:all .15s;letter-spacing:.2px}
+.metrics-toggle-btn.active{background:rgba(255,255,255,.28);color:#fff}
+.metrics-toggle-btn:hover:not(.active){background:rgba(255,255,255,.12);color:#fff}
 #metrics-body{flex:1;padding:28px 32px;display:flex;flex-direction:column;gap:0}
 #metrics-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:20px;width:100%}
 .mcard{background:#fff;border-radius:12px;border:1px solid #e2e8f2;overflow:hidden;box-shadow:0 2px 8px rgba(15,23,42,.07)}
@@ -956,7 +961,13 @@ tr.pu-row-selected:hover{background:#dbeafe!important}
 <div id="metrics-view">
   <div id="metrics-hdr">
     <div id="metrics-hdr-title">&#128202; Monthly Metrics</div>
-    <button id="metrics-close" onclick="closeMetricsView()">&#10005; Close</button>
+    <div id="metrics-hdr-right">
+      <div class="metrics-toggle">
+        <button class="metrics-toggle-btn active" id="metrics-btn-this" onclick="setMetricsMonth(0)">This Month</button>
+        <button class="metrics-toggle-btn" id="metrics-btn-last" onclick="setMetricsMonth(-1)">Last Month</button>
+      </div>
+      <button id="metrics-close" onclick="closeMetricsView()">&#10005; Close</button>
+    </div>
   </div>
   <div id="metrics-body">
     <div id="metrics-grid"></div>
@@ -2756,16 +2767,28 @@ function closeDashboard(){
   document.getElementById('dash-view').classList.remove('open');
 }
 function openMetricsView(){
+  metricsMonthOffset=0;
   renderMetricsView();
   document.getElementById('metrics-view').classList.add('open');
 }
 function closeMetricsView(){
   document.getElementById('metrics-view').classList.remove('open');
 }
+function setMetricsMonth(offset){
+  metricsMonthOffset=offset;
+  const btnThis=document.getElementById('metrics-btn-this');
+  const btnLast=document.getElementById('metrics-btn-last');
+  if(btnThis)btnThis.classList.toggle('active',offset===0);
+  if(btnLast)btnLast.classList.toggle('active',offset===-1);
+  renderMetricsView();
+}
 function renderMetricsView(){
   const now=new Date();
-  const monthKey=now.toISOString().slice(0,7);
-  const monthLabel=now.toLocaleString('default',{month:'long',year:'numeric'});
+  const d=new Date(now.getFullYear(),now.getMonth()+metricsMonthOffset,1);
+  const year=d.getFullYear();
+  const month=String(d.getMonth()+1).padStart(2,'0');
+  const monthKey=year+'-'+month;
+  const monthLabel=d.toLocaleString('default',{month:'long',year:'numeric'});
   document.getElementById('metrics-hdr-title').textContent='📊 Monthly Metrics — '+monthLabel;
   const sections=[
     {label:'Assignment Received',key:'assignmentReceived',color:'#d97706'},
@@ -3088,6 +3111,7 @@ function puSundayKey(d){const mm=String(d.getMonth()+1).padStart(2,'0'),dd=Strin
 function puSundayLabel(d){const mm=String(d.getMonth()+1).padStart(2,'0'),dd=String(d.getDate()).padStart(2,'0'),yy=String(d.getFullYear()).slice(2);return mm+'/'+dd+'/'+yy;}
 const PU_COLS=[{key:'_identity',label:'Address',t:'id'},{key:'program',label:'Program',t:'p'},{key:'permittingJurisdiction',label:'Permitting Jurisdiction',t:'tx'},{key:'jobStatus',label:'Job Status',t:'st'},{key:'jobType',label:'Job Type',t:'tx'},{key:'assignmentReceived',label:'Assignment Received',t:'d'},{key:'bldgPermitSubmitted',label:'Bldg Permit Submitted',t:'d'},{key:'bldgPermitIssued',label:'Bldg Permit Issued',t:'d'},{key:'puLastWeek',label:'Last Week',t:'note'},{key:'puThisWeek',label:'This Week',t:'note'}];
 let permUpdView=false,puSort={col:'_identity',dir:1},puSelMode=false,puSelected=new Set(),puFilterOpen=false,puFilter={search:'',program:'',status:'',jur:'',permit:'',note:''};
+let metricsMonthOffset=0;
 let puNotes={};try{const _pn=localStorage.getItem('pu_notes_v1');if(_pn)puNotes=JSON.parse(_pn);}catch(e){}
 let puData={};
 async function initPU(){
