@@ -1759,7 +1759,7 @@ function rse(sec){
   const data=filt.filter(p=>p.constructionStage===sec.stage);
   const s=srt[sec.k];
   data.sort((a,b)=>{
-    const _sv=(p,c)=>c==='_identity'?pname(p):c==='_meta'?p.jobStatus||'':c==='_assign'?p.superintendent||'':c==='_name'?((p.firstName||'')+(p.lastName||'')):p[c]||'';
+    const _sv=(p,c)=>c==='_identity'?pname(p):c==='_meta'?p.jobStatus||'':c==='_assign'?p.superintendent||'':c==='_name'?((p.firstName||'')+(p.lastName||'')):c==='ntpP'?(p.ntpP||p.costEstimateApproved||''):p[c]||'';
     let av=_sv(a,s.col);
     let bv=_sv(b,s.col);
     const ae=av==='',be=bv==='';
@@ -2717,7 +2717,7 @@ function renderPerm(){
     pending=[...pending].sort((a,b)=>{
       let av,bv;
       if(sc==='_permDays'){av=(_permDaysVal(a)?.days)??-1;bv=(_permDaysVal(b)?.days)??-1;return sd*(av-bv);}
-      av=sc==='_identity'?pname(a):a[sc]||'';bv=sc==='_identity'?pname(b):b[sc]||'';
+      av=sc==='_identity'?pname(a):sc==='ntpP'?(a.ntpP||a.costEstimateApproved||''):a[sc]||'';bv=sc==='_identity'?pname(b):sc==='ntpP'?(b.ntpP||b.costEstimateApproved||''):b[sc]||'';
       const ae=av==='',be=bv==='';if(ae&&be)return 0;if(ae)return 1;if(be)return -1;
       if(!isNaN(av)&&!isNaN(bv))return sd*(parseFloat(av)-parseFloat(bv));
       return sd*String(av).localeCompare(String(bv));
