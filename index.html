@@ -1642,7 +1642,7 @@ function af(){
     if(ty&&p.jobType!==ty)return false;
     if(su&&p.superintendent!==su)return false;
     if(ci&&p.city!==ci)return false;
-    if(q){const h=[p.address,p.jobName,p.firstName,p.lastName,p.city,p.program,p.jobStatus,p.superintendent,p.notes,p.projectNumber].join(' ').toLowerCase();if(!h.includes(q))return false;}
+    if(q){const h=[p.address,p.jobName,p.firstName,p.lastName,p.city,p.program,p.jobStatus,p.superintendent,p.notes,p.projectNumber,p.applicantPhone].join(' ').toLowerCase();if(!h.includes(q))return false;}
     return true;
   });
   pgn={p:1,o:1,w:1,c:1};
