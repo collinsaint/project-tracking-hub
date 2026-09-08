@@ -421,6 +421,9 @@ tr.dr:hover td.tcrit-miss,tr.dr.row-permit td.tcrit-miss{background:#fecaca}
 .jq-pc-val.no-permit{color:#dc2626}
 .jq-pc-val.tot{color:var(--blue)}
 .jq-pc-lbl{font-size:10px;color:var(--gray);font-weight:500;text-transform:uppercase;letter-spacing:.3px;white-space:nowrap}
+.jq-vb{background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.35);color:rgba(255,255,255,.85);border-radius:5px;font-size:11px;font-weight:600;padding:4px 11px;cursor:pointer;transition:background .12s,color .12s}
+.jq-vb:hover{background:rgba(255,255,255,.28)}
+.jq-vb.act{background:#fff;color:var(--blue);border-color:#fff}
 .jq-row-btn{background:none;border:none;cursor:pointer;font-size:15px;color:#9ca3af;padding:2px 5px;border-radius:var(--radius);transition:color .12s,background .12s;line-height:1}
 .jq-row-btn:hover{color:#f59e0b;background:#fef3c7}
 .jq-row-btn.jq-in{color:#f59e0b}
@@ -1060,9 +1063,17 @@ tr.pu-row-selected:hover{background:#dbeafe!important}
     <div id="jq-prog-breakdown" class="jq-prog-cards"></div>
   </div>
   <div class="sc" style="border-radius:0;box-shadow:0 1px 4px rgba(0,0,0,.1)">
-    <div class="sh bgp" style="cursor:default"><div class="shl"><div class="sht">Job Start Queue</div><div class="shc" id="jq-count">0 projects</div></div></div>
+    <div class="sh bgp" style="cursor:default">
+      <div class="shl"><div class="sht">Job Start Queue</div><div class="shc" id="jq-count">0 projects</div></div>
+      <div style="display:flex;gap:6px;align-items:center;margin-left:auto;">
+        <button class="jq-vb act" id="jqvb-all" onclick="setJQView('all')">All</button>
+        <button class="jq-vb" id="jqvb-rts" onclick="setJQView('rts')">Ready to Start</button>
+        <button class="jq-vb" id="jqvb-prog" onclick="setJQView('prog')">Program View</button>
+      </div>
+    </div>
     <div class="sbody" id="jq-sbody"><div class="tw"><table><thead id="jq-th"></thead><tbody id="jq-tb"></tbody></table></div><div class="mob-clist" id="jq-cl"></div><div class="sft" id="jq-sft"></div></div>
   </div>
+  <div id="jq-sections" style="display:none;flex-direction:column;gap:10px;"></div>
 </div>
 
 <div id="coqueue">
@@ -1413,7 +1424,7 @@ const sb=window.supabase.createClient(SB_URL,SB_KEY);
 
 let proj=[],filt=[],selI=null;
 let pnotes={},_activeTab='details';
-let jqView=false,jqAddrs=[],jqLoaded=false,jqSort={col:'_identity',dir:1},jqPgn=1,jqShowAll=false;
+let jqView=false,jqAddrs=[],jqLoaded=false,jqSort={col:'_identity',dir:1},jqPgn=1,jqShowAll=false,jqViewMode='all';
 const JQ_AUTO_STATUSES=new Set(['19.6 - Program Approved (PO/NTP, Pending Permit)','19.7 - Pending Start (HO Moveout)','20 - Pending Construction Start','19.3 - Pending Start (NTP Issued)','10.1 - Pre-Construction Meeting Completed','11 - Pending Program Approval']);
 function isJQAuto(p){return JQ_AUTO_STATUSES.has(p.jobStatus||'')||(p.ntpP&&p.ntpP!=='0');}
 function isInJQOrAuto(p){return isInJQ(p.address)||isJQAuto(p);}
@@ -2632,6 +2643,81 @@ async function sbSyncJQ(){
 function isInJQ(addr){return jqAddrs.includes(addr);}
 function addToJQ(addr){if(!isInJQ(addr)){jqAddrs.push(addr);saveJQ();}}
 function removeFromJQ(addr){jqAddrs=jqAddrs.filter(a=>a!==addr);saveJQ();}
+function setJQView(mode){
+  jqViewMode=mode;
+  ['all','rts','prog'].forEach(m=>{const b=document.getElementById('jqvb-'+m);if(b)b.classList.toggle('act',m===mode);});
+  renderJQ();
+}
+function buildJQSection(title,projects){
+  const presale=SECS.find(s=>s.k==='p');
+  const all=[...CMN,...presale.ec];
+  const pxW={id:'150px',p:'115px',st:'125px',tx:'105px',n:'70px',d:'90px',ai:'80px'};
+  const wrap=document.createElement('div');wrap.className='sc';wrap.style.cssText='border-radius:0;box-shadow:0 1px 4px rgba(0,0,0,.1)';
+  const sh=document.createElement('div');sh.className='sh bgp';sh.style.cursor='default';
+  sh.innerHTML='<div class="shl"><div class="sht">'+es(title)+'</div><div class="shc">'+projects.length+' project'+(projects.length===1?'':'s')+'</div></div>';
+  wrap.appendChild(sh);
+  const sbody=document.createElement('div');sbody.className='sbody';
+  const tw=document.createElement('div');tw.className='tw';
+  const table=document.createElement('table');
+  const cg=document.createElement('colgroup');
+  all.forEach(c=>{const col=document.createElement('col');col.style.width=pxW[c.t]||'90px';cg.appendChild(col);});
+  const cqcol=document.createElement('col');cqcol.style.width='40px';cg.appendChild(cqcol);
+  table.appendChild(cg);
+  const thead=document.createElement('thead');
+  const htr=document.createElement('tr');
+  all.forEach(col=>{
+    const th=document.createElement('th');th.className='thp';th.textContent=col.label;th.dataset.key=col.key;
+    th.classList.toggle('sa',jqSort.col===col.key&&jqSort.dir===1);
+    th.classList.toggle('sd',jqSort.col===col.key&&jqSort.dir===-1);
+    th.onclick=()=>{if(jqSort.col===col.key)jqSort.dir*=-1;else{jqSort.col=col.key;jqSort.dir=1;}renderJQ();};
+    htr.appendChild(th);
+  });
+  const thCQ=document.createElement('th');thCQ.className='thp';thCQ.style.width='40px';htr.appendChild(thCQ);
+  thead.appendChild(htr);table.appendChild(thead);
+  const tbody=document.createElement('tbody');
+  if(projects.length===0){
+    const etr=document.createElement('tr');etr.className='erow';
+    const etd=document.createElement('td');etd.colSpan=all.length+1;etd.textContent='No projects.';
+    etr.appendChild(etd);tbody.appendChild(etr);
+  } else {
+    projects.forEach(p=>{
+      const idx=proj.indexOf(p);
+      const tr=document.createElement('tr');tr.className='dr';
+      if(selI===idx)tr.classList.add('sel');
+      tr.addEventListener('click',()=>od(idx));
+      all.forEach(col=>{
+        const td=document.createElement('td');
+        const k=col.key,tp=col.t;
+        let v=p[k]||'';
+        if(k==='ntpP'&&!v)v=p.costEstimateApproved||'';
+        let miss=false;
+        if(tp==='id'){
+          td.className='tc-id';td.style.whiteSpace='normal';
+          const addr=pname(p);const hm=((p.firstName||'')+' '+(p.lastName||'')).trim();const cy=p.city||'';
+          td.innerHTML='<div class="ci-addr">'+(addr?es(addr):'<span class="ci-miss">No address</span>')+'</div>'+(cy?'<div class="ci-city">'+es(cy)+'</div>':'')+(hm?'<div class="ci-nm">'+es(hm)+'</div>':'');
+          miss=!addr;
+        }
+        else if(tp==='ai'){td.className='tc-ai';td.innerHTML=v?'<span class="ci-appid">'+es(v)+'</span>':'<span class="ci-appid-miss">—</span>';miss=!v;}
+        else if(tp==='p'){td.className='tpg';td.innerHTML=pbdg(p.program);miss=!p.program;}
+        else if(tp==='st'){td.innerHTML=sbdg(p.jobStatus);miss=!p.jobStatus;}
+        else if(tp==='tx'){td.textContent=v;miss=!v;}
+        else if(tp==='d'){if(!v){td.className='tem';td.textContent='--';miss=true;}else{td.className='tdt';td.textContent=fd2(v);}}
+        else if(tp==='n'){if(!v||v==='0'){td.className='tem';td.textContent='--';miss=true;}else{td.className='tnu';td.textContent=v;}}
+        else{td.textContent=v;miss=!v;}
+        if(miss)td.classList.add('tmiss');
+        tr.appendChild(td);
+      });
+      const tdcq=document.createElement('td');tdcq.style.cssText='text-align:center;padding:4px';
+      const bcq=document.createElement('button');bcq.className='coq-row-btn'+(isInCOQ(p.address)?' coq-active':'');
+      bcq.textContent=isInCOQ(p.address)?'▲':'△';bcq.title=isInCOQ(p.address)?'Remove from Change Order Queue':'Add to Change Order Queue';
+      bcq.addEventListener('click',(e)=>{e.stopPropagation();toggleCOQAddr(p.address);});
+      tdcq.appendChild(bcq);tr.appendChild(tdcq);
+      tbody.appendChild(tr);
+    });
+  }
+  table.appendChild(tbody);tw.appendChild(table);sbody.appendChild(tw);wrap.appendChild(sbody);
+  return wrap;
+}
 function renderJQHeader(){
   const th=document.getElementById('jq-th');th.innerHTML='';
   const presale=SECS.find(s=>s.k==='p');
@@ -2694,6 +2780,26 @@ function renderJQ(){
       '</div>';
     }).join('');
   }
+  // Route to split views
+  const jqSbody=document.getElementById('jq-sbody');
+  const jqSecs=document.getElementById('jq-sections');
+  if(jqViewMode!=='all'){
+    if(jqSbody)jqSbody.style.display='none';
+    if(jqSecs){jqSecs.style.display='flex';jqSecs.innerHTML='';}
+    if(jqViewMode==='rts'){
+      const withPerm=queued.filter(p=>!!(p.bldgPermitIssued&&p.bldgPermitIssued!=='0'));
+      const noPerm=queued.filter(p=>!(p.bldgPermitIssued&&p.bldgPermitIssued!=='0'));
+      if(jqSecs){jqSecs.appendChild(buildJQSection('Permit Issued',withPerm));jqSecs.appendChild(buildJQSection('No Permit Issued',noPerm));}
+    } else if(jqViewMode==='prog'){
+      const groups={};
+      queued.forEach(p=>{const pr=p.program||'(No Program)';if(!groups[pr])groups[pr]=[];groups[pr].push(p);});
+      const sorted=Object.entries(groups).sort((a,b)=>b[1].length-a[1].length);
+      if(jqSecs)sorted.forEach(([pr,ps])=>jqSecs.appendChild(buildJQSection(pr,ps)));
+    }
+    return;
+  }
+  if(jqSbody)jqSbody.style.display='';
+  if(jqSecs)jqSecs.style.display='none';
   const pg2=jqPgn;
   const pd2=jqShowAll?queued:queued.slice((pg2-1)*PGS,pg2*PGS);
   const tb=document.getElementById('jq-tb');tb.innerHTML='';
