@@ -2672,7 +2672,17 @@ function renderJQ(){
       const hasPerm=!!(p.bldgPermitIssued&&p.bldgPermitIssued!=='0');
       if(hasPerm)pc[pr].permitted++;else pc[pr].nopermit++;
     });
-    pb.innerHTML=Object.entries(pc).sort((a,b)=>(b[1].permitted+b[1].nopermit)-(a[1].permitted+a[1].nopermit)).map(([pr,ct])=>{
+    const allPerm=Object.values(pc).reduce((s,v)=>s+v.permitted,0);
+    const allNo=Object.values(pc).reduce((s,v)=>s+v.nopermit,0);
+    const totalCard='<div class="jq-pc" style="border-color:var(--blue);background:var(--blue-light,#eff6ff)">'+
+      '<div class="jq-pc-badge" style="font-size:12px;font-weight:700;color:var(--blue);letter-spacing:-.2px">All Programs</div>'+
+      '<div class="jq-pc-stats">'+
+        '<div class="jq-pc-stat"><span class="jq-pc-val has-permit">'+allPerm+'</span><span class="jq-pc-lbl">Permitted</span></div>'+
+        '<div class="jq-pc-stat"><span class="jq-pc-val no-permit">'+allNo+'</span><span class="jq-pc-lbl">No Permit</span></div>'+
+        '<div class="jq-pc-stat"><span class="jq-pc-val tot">'+(allPerm+allNo)+'</span><span class="jq-pc-lbl">Total</span></div>'+
+      '</div>'+
+    '</div>';
+    pb.innerHTML=totalCard+Object.entries(pc).sort((a,b)=>(b[1].permitted+b[1].nopermit)-(a[1].permitted+a[1].nopermit)).map(([pr,ct])=>{
       const tot=ct.permitted+ct.nopermit;
       return'<div class="jq-pc">'+
         '<div class="jq-pc-badge">'+pbdg(pr)+'</div>'+
