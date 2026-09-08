@@ -1404,6 +1404,9 @@ const sb=window.supabase.createClient(SB_URL,SB_KEY);
 let proj=[],filt=[],selI=null;
 let pnotes={},_activeTab='details';
 let jqView=false,jqAddrs=[],jqLoaded=false;
+const JQ_AUTO_STATUSES=new Set(['19.6 - Program Approved (PO/NTP, Pending Permit)','19.7 - Pending Start (HO Moveout)','20 - Pending Construction Start','19.3 - Pending Start (NTP Issued)','10.1 - Pre-Construction Meeting Completed','11 - Pending Program Approval']);
+function isJQAuto(p){return JQ_AUTO_STATUSES.has(p.jobStatus||'')||(p.ntpP&&p.ntpP!=='0');}
+function isInJQOrAuto(p){return isInJQ(p.address)||isJQAuto(p);}
 let coqView=false,coqAddrs=[],coqLoaded=false;
 let permView=false,permSort={col:'',dir:1};
 let editMode=false,editQueue={},editPopCtx=null;
@@ -2668,7 +2671,7 @@ function renderJQ(){
   const tb=document.getElementById('jq-tb');tb.innerHTML='';
   const presale=SECS.find(s=>s.k==='p');
   const all=[...CMN,...presale.ec];
-  const queued=proj.filter(p=>isInJQ(p.address));
+  const queued=proj.filter(p=>isInJQOrAuto(p));
   document.getElementById('jq-count').textContent=queued.length+' project'+(queued.length===1?'':'s');
   if(queued.length===0){
     const tr=document.createElement('tr');tr.className='erow';
@@ -2698,12 +2701,17 @@ function renderJQ(){
       tr.appendChild(td);
     });
     const tdRm=document.createElement('td');tdRm.style.textAlign='center';tdRm.style.padding='4px';
-    const btn=document.createElement('button');btn.className='jq-rm-btn';btn.textContent='✕';btn.title='Remove from queue';
-    btn.addEventListener('click',(e)=>{e.stopPropagation();removeFromJQ(p.address);renderJQ();
-      document.querySelectorAll('.jq-row-btn').forEach(b=>{const c=b.closest('tr')?.querySelector('.ci-addr');if(c&&c.textContent.trim()===pname(p)){b.textContent='☆';b.className='jq-row-btn';b.title='Add to Job Start Queue';}});
-      const dhdrBtn=document.getElementById('dhdr-jq-btn');if(dhdrBtn&&detailAddr===p.address){dhdrBtn.textContent='☆ Add to Queue';dhdrBtn.className='dhdr-jq-btn';}
-    });
-    tdRm.appendChild(btn);tr.appendChild(tdRm);
+    if(isJQAuto(p)){
+      const lbl=document.createElement('span');lbl.style.cssText='font-size:9px;color:#9ca3af;font-weight:600;text-transform:uppercase;letter-spacing:.3px';lbl.textContent='Auto';tdRm.appendChild(lbl);
+    } else {
+      const btn=document.createElement('button');btn.className='jq-rm-btn';btn.textContent='✕';btn.title='Remove from queue';
+      btn.addEventListener('click',(e)=>{e.stopPropagation();removeFromJQ(p.address);renderJQ();
+        document.querySelectorAll('.jq-row-btn').forEach(b=>{const c=b.closest('tr')?.querySelector('.ci-addr');if(c&&c.textContent.trim()===pname(p)){b.textContent='☆';b.className='jq-row-btn';b.title='Add to Job Start Queue';}});
+        const dhdrBtn=document.getElementById('dhdr-jq-btn');if(dhdrBtn&&detailAddr===p.address){dhdrBtn.textContent='☆ Add to Queue';dhdrBtn.className='dhdr-jq-btn';}
+      });
+      tdRm.appendChild(btn);
+    }
+    tr.appendChild(tdRm);
     tb.appendChild(tr);
   });
 }
