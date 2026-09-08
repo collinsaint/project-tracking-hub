@@ -1050,8 +1050,8 @@ tr.pu-row-selected:hover{background:#dbeafe!important}
     <div class="jq-top-left"><div class="jq-title">&#9733; Job Start Queue</div><div class="jq-sub">Projects with pre-construction status or NTP-P date</div></div>
   </div>
   <div class="sc" style="border-radius:0;box-shadow:0 1px 4px rgba(0,0,0,.1)">
-    <div class="sh bgp" style="cursor:default"><div class="shl"><div class="sht">Queued Projects</div><div class="shc" id="jq-count">0 projects</div></div></div>
-    <div class="sbody"><div class="tw"><table><thead id="jq-th"></thead><tbody id="jq-tb"></tbody></table></div></div>
+    <div class="sh bgp" style="cursor:default"><div class="shl"><div class="sht">Job Start Queue</div><div class="shc" id="jq-count">0 projects</div></div></div>
+    <div class="sbody" id="jq-sbody"><div class="tw"><table><thead id="jq-th"></thead><tbody id="jq-tb"></tbody></table></div><div class="mob-clist" id="jq-cl"></div><div class="sft" id="jq-sft"></div></div>
   </div>
 </div>
 
@@ -1403,7 +1403,7 @@ const sb=window.supabase.createClient(SB_URL,SB_KEY);
 
 let proj=[],filt=[],selI=null;
 let pnotes={},_activeTab='details';
-let jqView=false,jqAddrs=[],jqLoaded=false,jqSort={col:'_identity',dir:1};
+let jqView=false,jqAddrs=[],jqLoaded=false,jqSort={col:'_identity',dir:1},jqPgn=1,jqShowAll=false;
 const JQ_AUTO_STATUSES=new Set(['19.6 - Program Approved (PO/NTP, Pending Permit)','19.7 - Pending Start (HO Moveout)','20 - Pending Construction Start','19.3 - Pending Start (NTP Issued)','10.1 - Pre-Construction Meeting Completed','11 - Pending Program Approval']);
 function isJQAuto(p){return JQ_AUTO_STATUSES.has(p.jobStatus||'')||(p.ntpP&&p.ntpP!=='0');}
 function isInJQOrAuto(p){return isInJQ(p.address)||isJQAuto(p);}
@@ -2628,58 +2628,107 @@ function renderJQHeader(){
   const all=[...CMN,...presale.ec];
   const tr=document.createElement('tr');
   all.forEach(col=>{
-    const th2=document.createElement('th');th2.className='thp';th2.dataset.key=col.key;
-    const arrow=jqSort.col===col.key?(jqSort.dir===1?' ▲':' ▼'):'';
-    th2.textContent=col.label+arrow;
-    th2.style.cursor='pointer';
+    const th2=document.createElement('th');
+    th2.className='thp';th2.textContent=col.label;th2.dataset.key=col.key;
     th2.onclick=()=>{if(jqSort.col===col.key)jqSort.dir*=-1;else{jqSort.col=col.key;jqSort.dir=1;}renderJQ();};
     tr.appendChild(th2);
   });
+  const thCQ=document.createElement('th');thCQ.className='thp';thCQ.style.width='40px';thCQ.textContent='';tr.appendChild(thCQ);
   th.appendChild(tr);
 }
 function renderJQ(){
   renderJQHeader();
-  const tb=document.getElementById('jq-tb');tb.innerHTML='';
   const presale=SECS.find(s=>s.k==='p');
   const all=[...CMN,...presale.ec];
-  const queued=proj.filter(p=>isJQAuto(p));
+  const queued=proj.filter(p=>p.constructionStage==='PRESALE'&&isJQAuto(p));
   queued.sort((a,b)=>{
-    const _sv=(p,c)=>c==='_identity'?pname(p):c==='ntpP'?(p.ntpP||p.costEstimateApproved||''):p[c]||'';
+    const _sv=(p,c)=>c==='_identity'?pname(p):c==='_meta'?p.jobStatus||'':c==='_assign'?p.superintendent||'':c==='_name'?((p.firstName||'')+(p.lastName||'')):c==='ntpP'?(p.ntpP||p.costEstimateApproved||''):p[c]||'';
     const av=_sv(a,jqSort.col),bv=_sv(b,jqSort.col);
     const ae=av==='',be=bv==='';if(ae&&be)return 0;if(ae)return 1;if(be)return -1;
     if(!isNaN(av)&&!isNaN(bv))return jqSort.dir*(parseFloat(av)-parseFloat(bv));
     return jqSort.dir*String(av).localeCompare(String(bv));
   });
-  document.getElementById('jq-count').textContent=queued.length+' project'+(queued.length===1?'':'s');
-  if(queued.length===0){
-    const tr=document.createElement('tr');tr.className='erow';
-    const td=document.createElement('td');td.colSpan=all.length;td.textContent='No projects qualify for the Job Start Queue.';
-    tr.appendChild(td);tb.appendChild(tr);return;
-  }
-  queued.forEach(p=>{
-    const idx=proj.indexOf(p);
-    const tr=document.createElement('tr');tr.className='dr';
-    tr.addEventListener('click',()=>od(idx));
-    all.forEach(col=>{
-      const td=document.createElement('td');
-      const k=col.key,tp=col.t;
-      let v=p[k]||'';
-      if(k==='ntpP'&&!v)v=p.costEstimateApproved||'';
-      if(tp==='id'){
-        td.className='tc-id';td.style.whiteSpace='normal';
-        const addr=pname(p);const hm=((p.firstName||'')+' '+(p.lastName||'')).trim();const cy=p.city||'';
-        td.innerHTML='<div class="ci-addr">'+(addr?es(addr):'<span class="ci-miss">No address</span>')+'</div>'+(cy?'<div class="ci-city">'+es(cy)+'</div>':'')+(hm?'<div class="ci-nm">'+es(hm)+'</div>':'');
-      }
-      else if(tp==='p'){td.className='tpg';td.innerHTML=pbdg(p.program);}
-      else if(tp==='st'){td.innerHTML=sbdg(p.jobStatus);}
-      else if(tp==='tx'){td.textContent=v;}
-      else if(tp==='d'){if(!v){td.className='tem';td.textContent='--';}else{td.className='tdt';td.textContent=fd2(v);}}
-      else if(tp==='n'){if(!v||v==='0'){td.className='tem';td.textContent='--';}else{td.className='tnu';td.textContent=v;}}
-      else{td.textContent=v;}
-      tr.appendChild(td);
-    });
-    tb.appendChild(tr);
+  document.getElementById('jq-th').querySelectorAll('th').forEach(th=>{
+    th.classList.remove('sa','sd');if(th.dataset.key===jqSort.col)th.classList.add(jqSort.dir===1?'sa':'sd');
   });
+  const tot=queued.length;
+  document.getElementById('jq-count').textContent=tot+' project'+(tot===1?'':'s');
+  const pg2=jqPgn;
+  const pd2=jqShowAll?queued:queued.slice((pg2-1)*PGS,pg2*PGS);
+  const tb=document.getElementById('jq-tb');tb.innerHTML='';
+  const tbl=tb.parentNode;
+  let cg=tbl.querySelector('colgroup');
+  if(!cg){cg=document.createElement('colgroup');tbl.insertBefore(cg,tbl.firstChild);}
+  cg.innerHTML='';
+  const pxW={id:'150px',p:'115px',st:'125px',tx:'105px',n:'70px',d:'90px',ai:'80px'};
+  all.forEach(c=>{const col=document.createElement('col');col.style.width=pxW[c.t]||'90px';cg.appendChild(col);});
+  const cqc=document.createElement('col');cqc.style.width='40px';cg.appendChild(cqc);
+  if(tot===0){
+    const tr=document.createElement('tr');tr.className='erow';
+    const td=document.createElement('td');td.colSpan=all.length+1;td.textContent='No Presale projects qualify for the Job Start Queue.';
+    tr.appendChild(td);tb.appendChild(tr);
+  } else {
+    pd2.forEach(p=>{
+      const idx=proj.indexOf(p);
+      const tr=document.createElement('tr');tr.className='dr';
+      if(selI===idx)tr.classList.add('sel');
+      tr.addEventListener('click',()=>od(idx));
+      all.forEach(col=>{
+        const td=document.createElement('td');
+        const k=col.key,tp=col.t;
+        let v=p[k]||'';
+        if(k==='ntpP'&&!v)v=p.costEstimateApproved||'';
+        let miss=false;
+        if(tp==='id'){
+          td.className='tc-id';td.style.whiteSpace='normal';
+          const addr=pname(p);const hm=((p.firstName||'')+' '+(p.lastName||'')).trim();const cy=p.city||'';
+          td.innerHTML='<div class="ci-addr">'+(addr?es(addr):'<span class="ci-miss">No address</span>')+'</div>'+(cy?'<div class="ci-city">'+es(cy)+'</div>':'')+(hm?'<div class="ci-nm">'+es(hm)+'</div>':'');
+          miss=!addr;
+        }
+        else if(tp==='ai'){td.className='tc-ai';td.innerHTML=v?'<span class="ci-appid">'+es(v)+'</span>':'<span class="ci-appid-miss">—</span>';miss=!v;}
+        else if(tp==='p'){td.className='tpg';td.innerHTML=pbdg(p.program);miss=!p.program;}
+        else if(tp==='st'){td.innerHTML=sbdg(p.jobStatus);miss=!p.jobStatus;}
+        else if(tp==='tx'){td.textContent=v;miss=!v;}
+        else if(tp==='d'){if(!v){td.className='tem';td.textContent='--';miss=true;}else{td.className='tdt';td.textContent=fd2(v);}}
+        else if(tp==='n'){if(!v||v==='0'){td.className='tem';td.textContent='--';miss=true;}else{td.className='tnu';td.textContent=v;}}
+        else{td.textContent=v;miss=!v;}
+        if(miss)td.classList.add('tmiss');
+        tr.appendChild(td);
+      });
+      const tdcq=document.createElement('td');tdcq.style.textAlign='center';tdcq.style.padding='4px';
+      const bcq=document.createElement('button');bcq.className='coq-row-btn'+(isInCOQ(p.address)?' coq-active':'');
+      bcq.textContent=isInCOQ(p.address)?'▲':'△';bcq.title=isInCOQ(p.address)?'Remove from Change Order Queue':'Add to Change Order Queue';
+      bcq.addEventListener('click',(e)=>{e.stopPropagation();toggleCOQAddr(p.address);});
+      tdcq.appendChild(bcq);tr.appendChild(tdcq);
+      tb.appendChild(tr);
+    });
+  }
+  rfotJQ(tot,pg2);
+}
+function mpJQ(lb,tgt,dis){
+  const act=typeof lb==='number'&&lb===jqPgn;
+  return'<button class="pgx'+(act?' act':'')+'"'+(dis?' disabled':'')+(!dis?' onclick="gpJQ('+tgt+')"':'')+'>'+lb+'</button>';
+}
+function gpJQ(p){jqPgn=p;renderJQ();document.getElementById('jqueue').scrollIntoView({behavior:'smooth',block:'start'});}
+function toggleJQShowAll(){jqShowAll=!jqShowAll;if(!jqShowAll)jqPgn=1;renderJQ();}
+function rfotJQ(tot,pg2){
+  const ft=document.getElementById('jq-sft');if(!ft)return;
+  const sa=jqShowAll;
+  if(tot<=PGS&&!sa){ft.classList.remove('vis');return;}
+  ft.classList.add('vis');
+  const saBtn='<button class="sa-btn" onclick="toggleJQShowAll()">'+(sa?'Show Less':'Show All '+tot+'</button>');
+  if(sa){ft.innerHTML='<div class="sfi">Showing all '+tot+' projects</div>'+saBtn;return;}
+  const pages=Math.ceil(tot/PGS);
+  const s=(pg2-1)*PGS+1,e=Math.min(pg2*PGS,tot);
+  let h='<div class="sfi">'+s+'–'+e+' of '+tot+'</div><div style="display:flex;align-items:center;gap:6px"><div class="pgb">';
+  h+=mpJQ('&#8249;',pg2-1,pg2===1);
+  let ns=[];
+  if(pages<=7){for(let i=1;i<=pages;i++)ns.push(i);}
+  else{ns=[1];if(pg2>3)ns.push('...');for(let i=Math.max(2,pg2-1);i<=Math.min(pages-1,pg2+1);i++)ns.push(i);if(pg2<pages-2)ns.push('...');ns.push(pages);}
+  ns.forEach(n=>{if(n==='...')h+='<span style="padding:3px 6px;color:var(--gray)">...</span>';else h+=mpJQ(n,n,n===pg2);});
+  h+=mpJQ('&#8250;',pg2+1,pg2===pages);
+  h+='</div>'+saBtn+'</div>';
+  ft.innerHTML=h;
 }
 
 function genId(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7);}
