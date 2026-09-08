@@ -1048,6 +1048,7 @@ tr.pu-row-selected:hover{background:#dbeafe!important}
 <div id="jqueue">
   <div class="jq-top">
     <div class="jq-top-left"><div class="jq-title">&#9733; Job Start Queue</div><div class="jq-sub">Projects with pre-construction status or NTP-P date</div></div>
+    <div id="jq-prog-breakdown" style="display:flex;flex-wrap:wrap;align-items:center;gap:6px;"></div>
   </div>
   <div class="sc" style="border-radius:0;box-shadow:0 1px 4px rgba(0,0,0,.1)">
     <div class="sh bgp" style="cursor:default"><div class="shl"><div class="sht">Job Start Queue</div><div class="shc" id="jq-count">0 projects</div></div></div>
@@ -2653,6 +2654,11 @@ function renderJQ(){
   });
   const tot=queued.length;
   document.getElementById('jq-count').textContent=tot+' project'+(tot===1?'':'s');
+  const pb=document.getElementById('jq-prog-breakdown');
+  if(pb){
+    const pc={};queued.forEach(p=>{const pr=p.program||'(No Program)';pc[pr]=(pc[pr]||0)+1;});
+    pb.innerHTML=Object.entries(pc).sort((a,b)=>b[1]-a[1]).map(([pr,ct])=>pbdg(pr)+'<span style="font-size:11px;font-weight:700;color:var(--gray);margin-left:2px;margin-right:4px;">'+ct+'</span>').join('');
+  }
   const pg2=jqPgn;
   const pd2=jqShowAll?queued:queued.slice((pg2-1)*PGS,pg2*PGS);
   const tb=document.getElementById('jq-tb');tb.innerHTML='';
