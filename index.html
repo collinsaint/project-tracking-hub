@@ -407,10 +407,20 @@ tr.dr:hover td.tcrit-miss,tr.dr.row-permit td.tcrit-miss{background:#fecaca}
 
 /* ── JOB START QUEUE ────────────────────────────── */
 #jqueue{padding:12px 0;display:none;flex-direction:column;gap:10px}
-.jq-top{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;background:#fff;padding:14px 20px;box-shadow:var(--shadow-md);border-bottom:1px solid var(--border)}
-.jq-top-left{display:flex;flex-direction:column;gap:2px}
+.jq-top{display:flex;flex-direction:column;align-items:center;gap:12px;background:#fff;padding:16px 20px 14px;box-shadow:var(--shadow-md);border-bottom:1px solid var(--border)}
+.jq-top-left{display:flex;flex-direction:column;align-items:center;gap:2px}
 .jq-title{font-size:17px;font-weight:700;color:var(--blue);letter-spacing:-.2px}
 .jq-sub{font-size:12px;color:var(--gray)}
+.jq-prog-cards{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;width:100%}
+.jq-pc{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 14px;display:flex;flex-direction:column;align-items:center;gap:6px;min-width:130px}
+.jq-pc-badge{display:flex;align-items:center;justify-content:center}
+.jq-pc-stats{display:flex;gap:14px;align-items:flex-end}
+.jq-pc-stat{display:flex;flex-direction:column;align-items:center;gap:1px}
+.jq-pc-val{font-size:18px;font-weight:700;line-height:1;color:var(--text)}
+.jq-pc-val.has-permit{color:#16a34a}
+.jq-pc-val.no-permit{color:#dc2626}
+.jq-pc-val.tot{color:var(--blue)}
+.jq-pc-lbl{font-size:10px;color:var(--gray);font-weight:500;text-transform:uppercase;letter-spacing:.3px;white-space:nowrap}
 .jq-row-btn{background:none;border:none;cursor:pointer;font-size:15px;color:#9ca3af;padding:2px 5px;border-radius:var(--radius);transition:color .12s,background .12s;line-height:1}
 .jq-row-btn:hover{color:#f59e0b;background:#fef3c7}
 .jq-row-btn.jq-in{color:#f59e0b}
@@ -1048,7 +1058,7 @@ tr.pu-row-selected:hover{background:#dbeafe!important}
 <div id="jqueue">
   <div class="jq-top">
     <div class="jq-top-left"><div class="jq-title">&#9733; Job Start Queue</div><div class="jq-sub">Projects with pre-construction status or NTP-P date</div></div>
-    <div id="jq-prog-breakdown" style="display:flex;flex-wrap:wrap;align-items:center;gap:6px;"></div>
+    <div id="jq-prog-breakdown" class="jq-prog-cards"></div>
   </div>
   <div class="sc" style="border-radius:0;box-shadow:0 1px 4px rgba(0,0,0,.1)">
     <div class="sh bgp" style="cursor:default"><div class="shl"><div class="sht">Job Start Queue</div><div class="shc" id="jq-count">0 projects</div></div></div>
@@ -2656,8 +2666,24 @@ function renderJQ(){
   document.getElementById('jq-count').textContent=tot+' project'+(tot===1?'':'s');
   const pb=document.getElementById('jq-prog-breakdown');
   if(pb){
-    const pc={};queued.forEach(p=>{const pr=p.program||'(No Program)';pc[pr]=(pc[pr]||0)+1;});
-    pb.innerHTML=Object.entries(pc).sort((a,b)=>b[1]-a[1]).map(([pr,ct])=>pbdg(pr)+'<span style="font-size:11px;font-weight:700;color:var(--gray);margin-left:2px;margin-right:4px;">'+ct+'</span>').join('');
+    const pc={};
+    queued.forEach(p=>{
+      const pr=p.program||'(No Program)';
+      if(!pc[pr])pc[pr]={permitted:0,nopermit:0};
+      const hasPerm=!!(p.bldgPermitIssued&&p.bldgPermitIssued!=='0');
+      if(hasPerm)pc[pr].permitted++;else pc[pr].nopermit++;
+    });
+    pb.innerHTML=Object.entries(pc).sort((a,b)=>(b[1].permitted+b[1].nopermit)-(a[1].permitted+a[1].nopermit)).map(([pr,ct])=>{
+      const tot=ct.permitted+ct.nopermit;
+      return'<div class="jq-pc">'+
+        '<div class="jq-pc-badge">'+pbdg(pr)+'</div>'+
+        '<div class="jq-pc-stats">'+
+          '<div class="jq-pc-stat"><span class="jq-pc-val has-permit">'+ct.permitted+'</span><span class="jq-pc-lbl">Permitted</span></div>'+
+          '<div class="jq-pc-stat"><span class="jq-pc-val no-permit">'+ct.nopermit+'</span><span class="jq-pc-lbl">No Permit</span></div>'+
+          '<div class="jq-pc-stat"><span class="jq-pc-val tot">'+tot+'</span><span class="jq-pc-lbl">Total</span></div>'+
+        '</div>'+
+      '</div>';
+    }).join('');
   }
   const pg2=jqPgn;
   const pd2=jqShowAll?queued:queued.slice((pg2-1)*PGS,pg2*PGS);
