@@ -2444,9 +2444,14 @@ function exportCSV(){
 function toggleExportDrop(e){e.stopPropagation();document.getElementById('export-pop').classList.toggle('open');}
 function closeExportDrop(){document.getElementById('export-pop').classList.remove('open');}
 function exportPermittingCSV(){
-  const cs=[['address','Address'],['program','Program'],['permittingJurisdiction','Permitting Jurisdiction'],['constructionStage','Stage'],['jobStatus','Job Status'],['jobType','Job Type'],['assignmentReceived','Assignment Received'],['costEstimateSubmitted','Cost Est. Submitted'],['demoPermitSubmitted','Demo Permit Submitted'],['demoPermitIssued','Demo Permit Issued'],['bldgPermitSubmitted','Bldg Permit Submitted'],['bldgPermitIssued','Bldg Permit Issued']];
-  const rows=[cs.map(c=>c[1]).join(',')];
-  filt.forEach(p=>{rows.push(cs.map(([k])=>{const v=p[k]||'';return(v.includes(',')||v.includes('"')||v.includes('\n'))?'"'+v.replace(/"/g,'""')+'"':v;}).join(','));});
+  const base=proj.filter(p=>p.constructionStage==='PRESALE');
+  const headers=['Project Name','Program','Permitting Jurisdiction','Job Status','Job Type','Assignment Received','Bldg Permit Submitted','Bldg Permit Issued','Last Week','This Week'];
+  const ec=v=>{const s=String(v||'');return(s.includes(',')||s.includes('"')||s.includes('\n'))?'"'+s.replace(/"/g,'""')+'"':s;};
+  const rows=[headers.join(',')];
+  base.forEach(p=>{
+    const pd=puData[p.address||'']||{};
+    rows.push([pname(p),p.program||'',p.permittingJurisdiction||'',p.jobStatus||'',p.jobType||'',p.assignmentReceived||'',p.bldgPermitSubmitted||'',p.bldgPermitIssued||'',pd.lastWeek||'',pd.thisWeek||''].map(ec).join(','));
+  });
   const blob=new Blob([rows.join('\n')],{type:'text/csv'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='FL_Permitting_'+new Date().toISOString().slice(0,10)+'.csv';a.click();
   st2('Permitting CSV exported!');
