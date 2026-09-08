@@ -1162,6 +1162,8 @@ tr.pu-row-selected:hover{background:#dbeafe!important}
       <span id="pu-cnt" style="font-size:12px;color:#6b7280;font-weight:500"></span>
       <div class="pu-search-wrap"><span class="pu-search-icon">&#128269;</span><input id="pu-search" class="pu-search-inp" type="text" placeholder="Search address or name…" oninput="applyPuFilter()"></div>
       <button id="pu-filter-toggle" class="pu-sel-btn" onclick="togglePuFilterBar()">&#9776; Filter</button>
+      <button class="pu-sel-btn" onclick="document.getElementById('pu-import-input').click()">&#8593; Import</button>
+      <input type="file" id="pu-import-input" accept=".csv" style="display:none" onchange="handlePermittingImport(this.files[0]);this.value=''">
       <button id="pu-sel-toggle" class="pu-sel-btn" onclick="togglePuSelMode()">&#9745; Select</button>
     </div>
   </div>
@@ -2455,6 +2457,46 @@ function exportPermittingCSV(){
   const blob=new Blob([rows.join('\n')],{type:'text/csv'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='FL_Permitting_'+new Date().toISOString().slice(0,10)+'.csv';a.click();
   st2('Permitting CSV exported!');
+}
+function _parseCSVRow(line){
+  const cols=[];let cur='',inQ=false;
+  for(let i=0;i<line.length;i++){
+    const c=line[i];
+    if(c==='"'){if(inQ&&line[i+1]==='"'){cur+='"';i++;}else inQ=!inQ;}
+    else if(c===','&&!inQ){cols.push(cur);cur='';}
+    else cur+=c;
+  }
+  cols.push(cur);
+  return cols;
+}
+async function handlePermittingImport(file){
+  if(!file)return;
+  const text=await file.text();
+  const lines=text.split('\n').map(l=>l.trim()).filter(Boolean);
+  if(lines.length<2){st2('Import failed: empty file');return;}
+  const headers=_parseCSVRow(lines[0]);
+  const nameIdx=headers.findIndex(h=>h.trim()==='Project Name');
+  const twIdx=headers.findIndex(h=>h.trim()==='This Week');
+  if(nameIdx===-1||twIdx===-1){st2('Import failed: missing required columns');return;}
+  const nameMap={};
+  proj.forEach(p=>{
+    const n=pname(p).toLowerCase();if(n)nameMap[n]=p.address;
+    const a=(p.address||'').toLowerCase();if(a)nameMap[a]=p.address;
+  });
+  const thisSun=puGetSunday(0);const thisWeekKey=puSundayKey(thisSun);
+  let updated=0,skipped=0;
+  for(let i=1;i<lines.length;i++){
+    const cols=_parseCSVRow(lines[i]);
+    const name=(cols[nameIdx]||'').trim();
+    const tw=(cols[twIdx]||'').trim();
+    if(!name||!tw){if(name)skipped++;continue;}
+    const addr=nameMap[name.toLowerCase()];
+    if(!addr){skipped++;continue;}
+    await savePuUpdate(addr,'puThisWeek',tw,thisWeekKey);
+    updated++;
+  }
+  if(permUpdView)renderPermUpdView();
+  st2('Import complete: '+updated+' updated'+(skipped?' ('+skipped+' unmatched)':''));
 }
 function st2(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3000);}
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){cd();ci();closeProgDrop();closeTaskModal();document.getElementById('chlog-modal').classList.remove('open');}});
