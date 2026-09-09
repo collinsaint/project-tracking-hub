@@ -2911,6 +2911,7 @@ function exportJQExcel(){
 function genId(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7);}
 
 function togglePermView(){
+  document.getElementById('dash-view').classList.remove('open');
   if(jqView)toggleJQView();
   if(coqView)toggleCOQView();
   if(taskView)toggleTaskView();
@@ -3168,6 +3169,7 @@ function sortMetricsCard(secKey,col){
   renderMetricsTbody(secKey);
 }
 function toggleJQView(){
+  document.getElementById('dash-view').classList.remove('open');
   if(coqView)toggleCOQView();
   if(taskView)toggleTaskView();
   if(permView)togglePermView();
@@ -3187,6 +3189,7 @@ function toggleJQView(){
 }
 
 function toggleCOQView(){
+  document.getElementById('dash-view').classList.remove('open');
   if(jqView)toggleJQView();
   if(taskView)toggleTaskView();
   if(permView)togglePermView();
@@ -3308,6 +3311,7 @@ function renderCOQ(){
 }
 
 function toggleTaskView(){
+  document.getElementById('dash-view').classList.remove('open');
   if(jqView)toggleJQView();
   if(coqView)toggleCOQView();
   if(permView)togglePermView();
@@ -3421,6 +3425,7 @@ function renderWU(){
 function toggleWUDrop(e){e.stopPropagation();document.getElementById('wu-pop').classList.toggle('open');}
 function closeWUDrop(){document.getElementById('wu-pop').classList.remove('open');}
 function openWUView(){
+  document.getElementById('dash-view').classList.remove('open');
   if(jqView)toggleJQView();if(coqView)toggleCOQView();if(permView)togglePermView();if(taskView)toggleTaskView();if(reportView)toggleReportView();if(permUpdView)closePermUpdView();
   wuView=true;
   document.getElementById('main').style.display='none';document.getElementById('topbar').style.display='none';document.getElementById('jnav').style.display='none';
@@ -3546,6 +3551,7 @@ function clearPuFilter(){
   renderPermUpdView();
 }
 function openPermUpdView(){
+  document.getElementById('dash-view').classList.remove('open');
   if(jqView)toggleJQView();if(coqView)toggleCOQView();if(permView)togglePermView();if(taskView)toggleTaskView();if(reportView)toggleReportView();if(wuView)closeWUView();
   permUpdView=true;
   document.getElementById('main').style.display='none';document.getElementById('topbar').style.display='none';document.getElementById('jnav').style.display='none';
