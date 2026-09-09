@@ -3030,6 +3030,13 @@ function goToTracker(){
   syncNavActive();
 }
 function openDashboard(){
+  if(jqView)toggleJQView();
+  if(coqView)toggleCOQView();
+  if(permView)togglePermView();
+  if(taskView)toggleTaskView();
+  if(reportView)toggleReportView();
+  if(wuView)closeWUView();
+  if(permUpdView)closePermUpdView();
   document.getElementById('dash-view').classList.add('open');
   setViewHash('dashboard');
   syncNavActive();
