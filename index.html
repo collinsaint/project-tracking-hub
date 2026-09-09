@@ -791,8 +791,7 @@ body.mob .edit-bar-inner{flex-wrap:wrap;gap:6px;padding:6px 12px}
 .pu-note-edit-btn{position:absolute;top:6px;right:5px;background:#eef4ff;border:1.5px solid #c7daf7;border-radius:5px;color:var(--blue);font-size:13px;cursor:pointer;padding:2px 6px;line-height:1;transition:all .12s;box-shadow:0 1px 3px rgba(37,99,235,.12)}
 .pu-note-edit-btn:hover{background:#dbeafe;border-color:#93c5fd;box-shadow:0 2px 6px rgba(37,99,235,.2)}
 .pu-attn-cell{text-align:center;vertical-align:middle;padding:8px 6px}
-.pu-attn-btn{width:22px;height:22px;border-radius:50%;border:2px solid #d1d5db;background:transparent;cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;justify-content:center;padding:0}
-.pu-attn-btn:hover{border-color:#f87171}
+.pu-attn-btn{width:22px;height:22px;border-radius:50%;border:2px solid #d1d5db;background:transparent;display:inline-flex;align-items:center;justify-content:center}
 .pu-attn-btn.attn-yes{background:#ef4444;border-color:#ef4444}
 .pu-attn-btn.attn-yes::after{content:'';display:block;width:8px;height:8px;border-radius:50%;background:#fff}
 .pu-note-copy-btn{display:block;margin-top:6px;background:#f0f9ff;border:1px dashed #7dd3fc;border-radius:5px;color:#0369a1;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;padding:4px 8px;cursor:pointer;width:100%;text-align:center;transition:all .12s}
@@ -3770,16 +3769,9 @@ function renderPermUpdView(){
       else if(tp==='attn'){
         td.className='pu-attn-cell';
         const attnVal=!!(puData[addr]||{}).needsAttention;
-        const btn=document.createElement('button');
+        const btn=document.createElement('div');
         btn.className='pu-attn-btn'+(attnVal?' attn-yes':'');
-        btn.title=attnVal?'Needs Attention — click to clear':'No attention needed — click to flag';
-        btn.addEventListener('click',e=>{
-          e.stopPropagation();
-          const nv=!(puData[addr]||{}).needsAttention;
-          savePuAttention(addr,nv);
-          btn.classList.toggle('attn-yes',nv);
-          btn.title=nv?'Needs Attention — click to clear':'No attention needed — click to flag';
-        });
+        btn.title=attnVal?'Needs Attention':'';
         td.appendChild(btn);
       }
       else{td.textContent=v;}
