@@ -2499,6 +2499,7 @@ async function handlePermittingImport(file){
   const headers=_parseCSVRow(lines[0]);
   const nameIdx=headers.findIndex(h=>h.trim()==='Project Name');
   const twIdx=headers.findIndex(h=>h.trim()==='This Week');
+  const attnIdx=headers.findIndex(h=>h.trim()==='Needs Attention');
   if(nameIdx===-1||twIdx===-1){st2('Import failed: missing required columns');return;}
   const nameMap={};
   proj.forEach(p=>{
@@ -2511,11 +2512,12 @@ async function handlePermittingImport(file){
     const cols=_parseCSVRow(lines[i]);
     const name=(cols[nameIdx]||'').trim();
     const tw=(cols[twIdx]||'').trim();
-    if(!name||!tw){if(name)skipped++;continue;}
+    if(!name){skipped++;continue;}
     const addr=nameMap[name.toLowerCase()];
     if(!addr){skipped++;continue;}
-    await savePuUpdate(addr,'puThisWeek',tw,thisWeekKey);
-    updated++;
+    if(tw)await savePuUpdate(addr,'puThisWeek',tw,thisWeekKey);
+    if(attnIdx!==-1){const attnVal=(cols[attnIdx]||'').trim().toLowerCase();if(attnVal==='yes'||attnVal==='no')await savePuAttention(addr,attnVal==='yes');}
+    if(tw)updated++;else skipped++;
   }
   if(permUpdView)renderPermUpdView();
   st2('Import complete: '+updated+' updated'+(skipped?' ('+skipped+' unmatched)':''));
@@ -3504,7 +3506,7 @@ async function savePuUpdate(addr,field,value,weekKey){
   try{localStorage.setItem('pu_notes_v1',JSON.stringify(puNotes));}catch(e){}
   showSaveStatus('saving');
   try{
-    await sb.from('permitting_updates').upsert({address:addr,last_week:puData[addr].lastWeek,this_week:puData[addr].thisWeek,this_week_saved_at:puData[addr].thisWeekSavedAt,last_rotated_at:puData[addr].lastRotatedAt,needs_attention:puData[addr].needsAttention||false,updated_at:new Date().toISOString()});
+    await sb.from('permitting_updates').upsert({address:addr,last_week:puData[addr].lastWeek,this_week:puData[addr].thisWeek,this_week_saved_at:puData[addr].thisWeekSavedAt,last_rotated_at:puData[addr].lastRotatedAt,updated_at:new Date().toISOString()});
     if(weekKey&&value){
       const colName='PermitNotesWeekEnding'+weekKey;
       try{await sb.from('projects').update({[colName]:value}).eq('address',addr);}catch(e){}
