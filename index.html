@@ -2323,12 +2323,11 @@ function pf(file){
       const renames=[];// {oldAddr, newAddr}
       const pm={};proj.forEach((p,i)=>{if(p.address)pm[nmFuzzy(p.address)]=i;});
       const allImportedNd=[];
-      const _psKey=Object.keys(cm).find(k=>k.toLowerCase()==='permit status')||'';
-      const _psVals=new Set();
+      const _psKey=Object.keys(cm).find(k=>k.toLowerCase().replace(/\*$/,'')==='permit status')||'';
       rows.forEach(r=>{
         const addr=g(r,'Street Address')||g(r,'Job Name');if(!addr){sk++;return;}
         const nd={address:addr,jobName:g(r,'Job Name'),program:g(r,'Groups'),city:g(r,'City'),jobType:g(r,'Job Type *'),permittingJurisdiction:g(r,'Permitting Jurisdiction*'),jobStatus:g(r,'Job Status*'),assignmentReceived:gd3(r,'Assignment Received*'),surveyOrdered:gd3(r,'Survey / EC Ordered*'),surveyReceived:gd3(r,'Survey / EC Received*'),plansOrdered:gd3(r,'Plans Ordered*'),plansReceived:gd3(r,'Plans Received*'),septicOrdered:gd3(r,'Septic Design Ordered*'),septicReceived:gd3(r,'Septic Design Received*'),isvCompleted:gd3(r,'ISV Completed*'),costEstimateSubmitted:gd3(r,'Cost Estimate Submitted*'),costEstimateApproved:gd3(r,'Cost Estimate Approved*'),bldgPermitSubmitted:gd3(r,'Building Permit Submitted*'),bldgPermitIssued:gd3(r,'Building Permit Issued*'),ntp:gd3(r,'NTP*'),constructionStart:gd3(r,'Actual Start'),inspection50:gd3(r,'50% Complete Date*'),inspection100:gd3(r,'100% Complete Date*'),superintendent:gd3(r,'Superintendent*'),constructionDeadline:gd3(r,'Construction Deadline*'),approvedConstrDelays:g(r,'Construction Delay Days*'),demoPermitIssued:gd3(r,'Demo Permit Issued*'),demoPermitNumber:g(r,'Demo Permit Number*'),demoPermitSubmitted:gd3(r,'Demo Permit Submitted*'),bldgPermitNumber:g(r,'Building Permit Number*'),ntpP:gd3(r,'NTP-P*'),approvedPreConDelays:g(r,'Pre-Con Delay Days*'),preConDeadline:gd3(r,'Pre-Construction Deadline*'),firstName:g(r,'Applicant First Name*'),lastName:g(r,'Applicant Last Name*'),applicantPhone:g(r,'Applicant Phone Number*'),applicantEmail:g(r,'Applicant Email*'),projectNumber:g(r,'Prefix'),contractAmount:g(r,'Contract Price')==='0'?'':g(r,'Contract Price'),projectedStart:gd3(r,'Proj. Start'),projectedCompletion:gd3(r,'Proj. Completion'),constructionStage:g(r,'Status')};
-        const permitSt=_psKey?g(r,_psKey):'';if(permitSt)_psVals.add(permitSt);
+        const permitSt=_psKey?g(r,_psKey):'';
         if(permitSt.toLowerCase()==='not required'){nd.bldgPermitSubmitted='N/A';nd.bldgPermitIssued='N/A';naSet++;}
         allImportedNd.push(nd);
         const k=nmFuzzy(addr);
@@ -2360,8 +2359,7 @@ function pf(file){
       const totalChanged=changes.length+renames.length+added.length;
       let renameHtml='';
       if(renames.length){renameHtml='<div class="import-renames"><strong>&#9888; Address updates noted:</strong>'+renames.map(r=>'<div class="rename-row">&#x2192; <em>'+r.oldAddr+'</em> &rarr; <b>'+r.newAddr+'</b></div>').join('')+'</div>';}
-      const _psDebug='[col: '+(_psKey||'NOT FOUND')+'] [vals: '+([..._psVals].join(', ')||'none')+'] [N/A set: '+naSet+']';
-      sir('success','<strong>Import complete:</strong> '+up+' updated &nbsp;·&nbsp; '+added.length+' added &nbsp;·&nbsp; '+sk+' skipped &nbsp;·&nbsp; <em>'+_psDebug+'</em>.&nbsp;'+renameHtml+'<div class="iact" style="margin-top:12px;padding:0;border:none;display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-primary" id="imod-save-btn" onclick="doImportSave()">&#128190; Save to Cloud</button><button class="btn btn-ol" id="cloud-refresh-btn" onclick="refreshFromCloud()">&#8635; Refresh from Cloud</button>'+(totalChanged?'<button class="btn btn-ol" onclick="openChangeLog()">&#128203; View Change Log ('+totalChanged+' changed)</button>':'')+'</div>');
+      sir('success','<strong>Import complete:</strong> '+up+' updated &nbsp;·&nbsp; '+added.length+' added &nbsp;·&nbsp; '+sk+' skipped'+(naSet?' &nbsp;·&nbsp; '+naSet+' set N/A permit':'')+'.&nbsp;'+renameHtml+'<div class="iact" style="margin-top:12px;padding:0;border:none;display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-primary" id="imod-save-btn" onclick="doImportSave()">&#128190; Save to Cloud</button><button class="btn btn-ol" id="cloud-refresh-btn" onclick="refreshFromCloud()">&#8635; Refresh from Cloud</button>'+(totalChanged?'<button class="btn btn-ol" onclick="openChangeLog()">&#128203; View Change Log ('+totalChanged+' changed)</button>':'')+'</div>');
       st2('Imported: '+up+' updated, '+added.length+' added');
       doImportSave(true);
     }catch(err){sir('error','Error: '+err.message);}
