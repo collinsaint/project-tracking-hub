@@ -1102,9 +1102,23 @@ tr.pu-row-green td.tmiss{background:#86efac!important}
 <div id="permqueue">
   <div class="perm-top">
     <div class="perm-top-left"><div class="perm-title">&#9679; Permitting</div><div class="perm-sub">Projects awaiting building permit issuance</div></div>
+    <div class="wu-topbar-right">
+      <span id="perm-count" style="font-size:12px;color:#6b7280;font-weight:500">0 projects</span>
+      <div class="pu-search-wrap"><span class="pu-search-icon">&#128269;</span><input id="perm-search" class="pu-search-inp" type="text" placeholder="Search address or name…" oninput="applyPermFilter()"></div>
+      <button id="perm-filter-toggle" class="pu-sel-btn" onclick="togglePermFilterBar()">&#9776; Filter</button>
+    </div>
+  </div>
+  <div id="perm-filter-bar" class="pu-filter-bar">
+    <div class="pu-filter-row">
+      <div class="pu-filter-group"><label class="pu-filter-lbl">Program</label><select id="pf-program" class="pu-filter-sel" onchange="applyPermFilter()"><option value="">All</option></select></div>
+      <div class="pu-filter-group"><label class="pu-filter-lbl">Job Status</label><select id="pf-status" class="pu-filter-sel" onchange="applyPermFilter()"><option value="">All</option></select></div>
+      <div class="pu-filter-group"><label class="pu-filter-lbl">Jurisdiction</label><select id="pf-jur" class="pu-filter-sel" onchange="applyPermFilter()"><option value="">All</option></select></div>
+      <div class="pu-filter-group"><label class="pu-filter-lbl">Permit Status</label><select id="pf-permit" class="pu-filter-sel" onchange="applyPermFilter()"><option value="">All</option><option value="none">No Permit</option><option value="submitted">Submitted</option><option value="issued">Issued / N/A</option></select></div>
+      <div class="pu-filter-group"><label class="pu-filter-lbl">Needs Attention</label><select id="pf-attn" class="pu-filter-sel" onchange="applyPermFilter()"><option value="">All</option><option value="yes">Yes</option><option value="no">No</option></select></div>
+      <button class="pu-filter-clear" onclick="clearPermFilter()">&#10005; Clear</button>
+    </div>
   </div>
   <div class="sc" style="border-radius:0;box-shadow:0 1px 4px rgba(0,0,0,.1)">
-    <div class="sh" style="background:#0d9488;cursor:default"><div class="shl"><div class="sht" style="color:#fff">Pending Permit</div><div class="shc" id="perm-count" style="color:rgba(255,255,255,.75)">0 projects</div></div></div>
     <div class="sbody"><div class="tw"><table><thead id="perm-th"></thead><tbody id="perm-tb"></tbody></table></div></div>
   </div>
 </div>
@@ -1443,7 +1457,7 @@ const JQ_AUTO_STATUSES=new Set(['19.6 - Program Approved (PO/NTP, Pending Permit
 function isJQAuto(p){return JQ_AUTO_STATUSES.has(p.jobStatus||'')||(p.ntpP&&p.ntpP!=='0');}
 function isInJQOrAuto(p){return isInJQ(p.address)||isJQAuto(p);}
 let coqView=false,coqAddrs=[],coqLoaded=false;
-let permView=false,permSort={col:'',dir:1};
+let permView=false,permSort={col:'_permitStatus',dir:1},permFilterOpen=false,permFilter={search:'',program:'',status:'',jur:'',permit:'',attn:''};
 let editMode=false,editQueue={},editPopCtx=null;
 const WU_PROGRAMS=[
   {key:'pasco',label:'Pasco Better Futures',day:'Tuesday',time:'Morning'},
@@ -2952,62 +2966,119 @@ function togglePermView(){
   document.getElementById('permqueue').style.display=permView?'block':'none';
   if(btn)btn.textContent=permView?'Permitting':'Permitting';
   setViewHash(permView?'perm':'');
+  if(!permView){permFilter={search:'',program:'',status:'',jur:'',permit:'',attn:''};permFilterOpen=false;const fb=document.getElementById('perm-filter-bar');if(fb)fb.classList.remove('open');const psi=document.getElementById('perm-search');if(psi)psi.value='';}
   if(permView)renderPerm();
   syncNavActive();
+}
+function togglePermFilterBar(){
+  permFilterOpen=!permFilterOpen;
+  const bar=document.getElementById('perm-filter-bar');if(bar)bar.classList.toggle('open',permFilterOpen);
+  const btn=document.getElementById('perm-filter-toggle');if(btn)btn.classList.toggle('active',permFilterOpen);
+}
+function applyPermFilter(){
+  permFilter.search=(document.getElementById('perm-search')||{}).value||'';
+  permFilter.program=(document.getElementById('pf-program')||{}).value||'';
+  permFilter.status=(document.getElementById('pf-status')||{}).value||'';
+  permFilter.jur=(document.getElementById('pf-jur')||{}).value||'';
+  permFilter.permit=(document.getElementById('pf-permit')||{}).value||'';
+  permFilter.attn=(document.getElementById('pf-attn')||{}).value||'';
+  renderPerm();
+}
+function clearPermFilter(){
+  permFilter={search:'',program:'',status:'',jur:'',permit:'',attn:''};
+  ['perm-search','pf-program','pf-status','pf-jur','pf-permit','pf-attn'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  renderPerm();
 }
 function renderPerm(){
   const presale=SECS.find(s=>s.k==='p');
   const _permDaysCol={key:'_permDays',label:'Days Waiting',t:'_permDays'};
-  const baseAll=[...CMN,...presale.ec];
+  const _twCol={key:'_thisWeek',label:'This Week',t:'_note'};
+  const _attnCol={key:'_needsAttn',label:'Needs Attention',t:'_attn'};
+  const baseEc=presale.ec.filter(c=>c.key!=='isvCompleted');
+  const baseAll=[...CMN,...baseEc];
   const submIdx=baseAll.findIndex(c=>c.key==='bldgPermitSubmitted');
   const all=[...baseAll];
   if(submIdx>=0)all.splice(submIdx+1,0,_permDaysCol);
+  all.push(_twCol,_attnCol);
   const _permDaysVal=p=>{
     const sub=p.bldgPermitSubmitted,asgn=p.assignmentReceived;
     const src=sub||asgn;if(!src)return null;
     const diff=Math.floor((Date.now()-new Date(src))/86400000);
     return diff>=0?{days:diff,fromAssignment:!sub}:null;
   };
-  const th=document.getElementById('perm-th');th.innerHTML='';
-  const tr=document.createElement('tr');
+  const _permCat=p=>{
+    if((puData[p.address]||{}).needsAttention)return 0;
+    const s=p.bldgPermitSubmitted||'';const i=p.bldgPermitIssued||'';
+    const hs=s&&s!=='0';const hi=i&&i!=='0';const na=i==='N/A'||s==='N/A';
+    return(na||(hs&&hi))?3:hs?2:1;
+  };
+  const _rowClr=p=>{
+    const addr=p.address||'';
+    const _ps=p.bldgPermitSubmitted||'';const _pi=p.bldgPermitIssued||'';
+    const _hs=_ps&&_ps!=='0';const _hi=_pi&&_pi!=='0';const _na=_pi==='N/A'||_ps==='N/A';
+    const _attn=!!(puData[addr]||{}).needsAttention;
+    return _attn?'pu-row-red':(_na||(_hs&&_hi))?'pu-row-green':(_hs?'pu-row-blue':'pu-row-yellow');
+  };
+  // populate filter dropdowns
+  const populateSel=(id,vals)=>{const s=document.getElementById(id);if(!s)return;const cur=s.value;s.innerHTML='<option value="">All</option>';[...new Set(vals.filter(Boolean))].sort().forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent=v;if(v===cur)o.selected=true;s.appendChild(o);});if(cur&&s.value!==cur)s.value='';};
+  const base=proj.filter(p=>{
+    const js=(p.jobStatus||'').toUpperCase();if(js==='COMPLETE')return false;
+    const m=(p.jobStatus||'').match(/^(\d+)/);if(m&&parseInt(m[1],10)>=21)return false;
+    return p.constructionStage==='PRESALE';
+  });
+  populateSel('pf-program',base.map(p=>p.program));
+  populateSel('pf-status',base.map(p=>p.jobStatus));
+  populateSel('pf-jur',base.map(p=>p.permittingJurisdiction));
+  // apply filters
+  const fSearch=permFilter.search.toLowerCase();
+  let pending=base.filter(p=>{
+    if(p.bldgPermitIssued&&p.bldgPermitIssued!==''&&p.bldgPermitIssued!=='0'&&p.bldgPermitIssued!=='N/A')return false;
+    if(permFilter.program&&p.program!==permFilter.program)return false;
+    if(permFilter.status&&p.jobStatus!==permFilter.status)return false;
+    if(permFilter.jur&&p.permittingJurisdiction!==permFilter.jur)return false;
+    if(permFilter.permit){const _s=p.bldgPermitSubmitted||'';const _i=p.bldgPermitIssued||'';const _hs=_s&&_s!=='0';const _hi=_i&&_i!=='0';const _na=_i==='N/A'||_s==='N/A';const _cat=(_na||(_hs&&_hi))?'issued':(_hs?'submitted':'none');if(permFilter.permit!==_cat)return false;}
+    if(permFilter.attn==='yes'&&!(puData[p.address]||{}).needsAttention)return false;
+    if(permFilter.attn==='no'&&(puData[p.address]||{}).needsAttention)return false;
+    if(fSearch){const hay=(p.address||'')+' '+(p.firstName||'')+' '+(p.lastName||'');if(!hay.toLowerCase().includes(fSearch))return false;}
+    return true;
+  });
+  // filter active indicator
+  const hasFilter=permFilter.search||permFilter.program||permFilter.status||permFilter.jur||permFilter.permit||permFilter.attn;
+  const ftBtn=document.getElementById('perm-filter-toggle');
+  if(ftBtn){const dot=ftBtn.querySelector('.pu-filter-active-dot');if(hasFilter&&!dot){const d=document.createElement('span');d.className='pu-filter-active-dot';ftBtn.appendChild(d);}else if(!hasFilter&&dot)dot.remove();}
+  // sort
+  pending=[...pending].sort((a,b)=>{
+    const sc=permSort.col,sd=permSort.dir;
+    if(sc==='_permitStatus'||!sc)return _permCat(a)-_permCat(b);
+    if(sc==='_permDays'){const av=(_permDaysVal(a)?.days)??-1;const bv=(_permDaysVal(b)?.days)??-1;return sd*(av-bv);}
+    if(sc==='_needsAttn'){const av=!!(puData[a.address]||{}).needsAttention?1:0;const bv=!!(puData[b.address]||{}).needsAttention?1:0;return sd*(bv-av);}
+    if(sc==='_thisWeek'){const av=(puData[a.address]||{}).thisWeek||'';const bv=(puData[b.address]||{}).thisWeek||'';return sd*av.localeCompare(bv);}
+    const av=sc==='_identity'?pname(a):sc==='ntpP'?(a.ntpP||a.costEstimateApproved||''):a[sc]||'';
+    const bv=sc==='_identity'?pname(b):sc==='ntpP'?(b.ntpP||b.costEstimateApproved||''):b[sc]||'';
+    const ae=av==='',be=bv==='';if(ae&&be)return 0;if(ae)return 1;if(be)return -1;
+    if(!isNaN(av)&&!isNaN(bv))return sd*(parseFloat(av)-parseFloat(bv));
+    return sd*String(av).localeCompare(String(bv));
+  });
+  document.getElementById('perm-count').textContent=pending.length+(hasFilter?'/'+base.length:'')+' project'+(pending.length===1?'':'s');
+  const thead=document.getElementById('perm-th');thead.innerHTML='';
+  const htr=document.createElement('tr');
   all.forEach(col=>{
     const th2=document.createElement('th');th2.className='thp';th2.textContent=col.label;
     th2.dataset.key=col.key;th2.style.cursor='pointer';
     if(permSort.col===col.key)th2.classList.add(permSort.dir===1?'sa':'sd');
-    th2.onclick=()=>{
-      if(permSort.col===col.key)permSort.dir*=-1;else{permSort.col=col.key;permSort.dir=1;}
-      renderPerm();
-    };
-    tr.appendChild(th2);
+    th2.onclick=()=>{if(permSort.col===col.key)permSort.dir*=-1;else{permSort.col=col.key;permSort.dir=1;}renderPerm();};
+    htr.appendChild(th2);
   });
-  th.appendChild(tr);
+  thead.appendChild(htr);
   const tb=document.getElementById('perm-tb');tb.innerHTML='';
-  let pending=proj.filter(p=>{
-    if(p.bldgPermitIssued&&p.bldgPermitIssued!==''&&p.bldgPermitIssued!=='0'&&p.bldgPermitIssued!=='N/A')return false;
-    const js=(p.jobStatus||'').toUpperCase();if(js==='COMPLETE')return false;
-    const m=(p.jobStatus||'').match(/^(\d+)/);if(m&&parseInt(m[1],10)>=21)return false;
-    return true;
-  });
-  if(permSort.col){
-    const sc=permSort.col,sd=permSort.dir;
-    pending=[...pending].sort((a,b)=>{
-      let av,bv;
-      if(sc==='_permDays'){av=(_permDaysVal(a)?.days)??-1;bv=(_permDaysVal(b)?.days)??-1;return sd*(av-bv);}
-      av=sc==='_identity'?pname(a):sc==='ntpP'?(a.ntpP||a.costEstimateApproved||''):a[sc]||'';bv=sc==='_identity'?pname(b):sc==='ntpP'?(b.ntpP||b.costEstimateApproved||''):b[sc]||'';
-      const ae=av==='',be=bv==='';if(ae&&be)return 0;if(ae)return 1;if(be)return -1;
-      if(!isNaN(av)&&!isNaN(bv))return sd*(parseFloat(av)-parseFloat(bv));
-      return sd*String(av).localeCompare(String(bv));
-    });
-  }
-  document.getElementById('perm-count').textContent=pending.length+' project'+(pending.length===1?'':'s');
-  if(pending.length===0){
+  if(!pending.length){
     const er=document.createElement('tr');er.className='erow';
-    const ed=document.createElement('td');ed.colSpan=all.length;ed.textContent='All projects have a building permit issued.';
+    const ed=document.createElement('td');ed.colSpan=all.length;ed.textContent='No matching projects found.';
     er.appendChild(ed);tb.appendChild(er);return;
   }
   pending.forEach(p=>{
-    const idx=proj.indexOf(p);
-    const tr=document.createElement('tr');tr.className='dr';
+    const idx=proj.indexOf(p);const addr=p.address||'';
+    const tr=document.createElement('tr');tr.className='dr '+_rowClr(p);
     tr.addEventListener('click',()=>od(idx));
     all.forEach(col=>{
       const td=document.createElement('td');
@@ -3020,15 +3091,27 @@ function renderPerm(){
         else if(r.fromAssignment){td.className='tnu';td.style.fontWeight='700';td.style.background='#fef08a';td.style.color='#854d0e';td.textContent=r.days+'d';}
         else{td.className='tnu';td.style.fontWeight='700';td.style.color=r.days>60?'#dc2626':r.days>30?'#d97706':'#16a34a';td.textContent=r.days+'d';}
       }
+      else if(tp==='_note'){
+        td.style.cssText='max-width:200px;white-space:normal;font-size:11px;color:#374151;padding:5px 6px';
+        const tw=(puData[addr]||{}).thisWeek||'';
+        td.textContent=tw||'';
+        if(!tw){td.style.color='#9ca3af';}
+      }
+      else if(tp==='_attn'){
+        td.className='pu-attn-cell';
+        const attnVal=!!(puData[addr]||{}).needsAttention;
+        const btn=document.createElement('div');btn.className='pu-attn-btn'+(attnVal?' attn-yes':'');btn.title=attnVal?'Needs Attention':'';
+        td.appendChild(btn);
+      }
       else if(tp==='id'){
         td.className='tc-id';td.style.whiteSpace='normal';
-        const addr=pname(p);const hm=((p.firstName||'')+' '+(p.lastName||'')).trim();const cy=p.city||'';
-        td.innerHTML='<div class="ci-addr">'+(addr?es(addr):'<span class="ci-miss">No address</span>')+'</div>'+(cy?'<div class="ci-city">'+es(cy)+'</div>':'')+(hm?'<div class="ci-nm">'+es(hm)+'</div>':'');
+        const addr2=pname(p);const hm=((p.firstName||'')+' '+(p.lastName||'')).trim();const cy=p.city||'';
+        td.innerHTML='<div class="ci-addr">'+(addr2?es(addr2):'<span class="ci-miss">No address</span>')+'</div>'+(cy?'<div class="ci-city">'+es(cy)+'</div>':'')+(hm?'<div class="ci-nm">'+es(hm)+'</div>':'');
       }
       else if(tp==='p'){td.className='tpg';td.innerHTML=pbdg(p.program);}
       else if(tp==='st'){td.innerHTML=sbdg(p.jobStatus);}
       else if(tp==='tx'){td.textContent=v;}
-      else if(tp==='d'){if(!v){td.className='tem';td.textContent='--';if((k==='ntp'&&['WARRANTY','CLOSED','OPEN'].includes(p.constructionStage))||(k==='inspection100'&&['WARRANTY','CLOSED'].includes(p.constructionStage)))td.classList.add('tcrit-miss');}else{td.className='tdt';td.textContent=fd2(v);}}
+      else if(tp==='d'){if(!v){td.className='tem';td.textContent='--';}else{td.className='tdt';td.textContent=fd2(v);}}
       else if(tp==='n'){if(!v||v==='0'){td.className='tem';td.textContent='--';}else{td.className='tnu';td.textContent=v;}}
       else{td.textContent=v;}
       tr.appendChild(td);
