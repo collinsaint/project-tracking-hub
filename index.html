@@ -831,9 +831,15 @@ body.mob .edit-bar-inner{flex-wrap:wrap;gap:6px;padding:6px 12px}
 .pu-bulk-apply-btn:disabled{background:#9ca3af;cursor:not-allowed}
 tr.pu-row-selected{background:#eff6ff!important}
 tr.pu-row-selected:hover{background:#dbeafe!important}
-tr.pu-row-issued td{background:#f0fdf4!important}
-tr.pu-row-issued:hover td{background:#dcfce7!important}
-tr.pu-row-issued td.tmiss{background:#d1fae5!important}
+tr.pu-row-yellow td{background:#fefce8!important}
+tr.pu-row-yellow:hover td{background:#fef9c3!important}
+tr.pu-row-yellow td.tmiss{background:#fef08a!important}
+tr.pu-row-blue td{background:#eff6ff!important}
+tr.pu-row-blue:hover td{background:#dbeafe!important}
+tr.pu-row-blue td.tmiss{background:#bfdbfe!important}
+tr.pu-row-green td{background:#f0fdf4!important}
+tr.pu-row-green:hover td{background:#dcfce7!important}
+tr.pu-row-green td.tmiss{background:#d1fae5!important}
 .pu-chk-col{width:36px;padding:4px 8px!important;text-align:center;vertical-align:middle}
 .pu-chk{width:15px;height:15px;cursor:pointer;accent-color:var(--blue)}
 .pu-note-lock{position:absolute;top:7px;right:6px;font-size:10px;color:#d1d5db;cursor:default}
@@ -1207,11 +1213,12 @@ tr.pu-row-issued td.tmiss{background:#d1fae5!important}
         <select id="puf-jur" class="pu-filter-sel" onchange="applyPuFilter()"><option value="">All</option></select>
       </div>
       <div class="pu-filter-group">
-        <label class="pu-filter-lbl">Bldg Permit Issued</label>
+        <label class="pu-filter-lbl">Permit Status</label>
         <select id="puf-permit" class="pu-filter-sel" onchange="applyPuFilter()">
           <option value="">All</option>
-          <option value="has">Has date</option>
-          <option value="missing">No date</option>
+          <option value="none">No Permit</option>
+          <option value="submitted">Submitted</option>
+          <option value="issued">Issued / N/A</option>
         </select>
       </div>
       <div class="pu-filter-group">
@@ -3629,15 +3636,14 @@ function renderPermUpdView(){
     if(fProg&&p.program!==fProg)return false;
     if(fSt&&p.jobStatus!==fSt)return false;
     if(fJur&&p.permittingJurisdiction!==fJur)return false;
-    if(fPermit==='has'&&(!p.bldgPermitIssued||p.bldgPermitIssued==='0'||p.bldgPermitIssued==='N/A'))return false;
-    if(fPermit==='missing'&&p.bldgPermitIssued&&p.bldgPermitIssued!=='0'&&p.bldgPermitIssued!=='N/A')return false;
+    if(fPermit){const _s=p.bldgPermitSubmitted||'';const _i=p.bldgPermitIssued||'';const _hs=_s&&_s!=='0';const _hi=_i&&_i!=='0';const _na=_i==='N/A'||_s==='N/A';const _cat=(_na||(_hs&&_hi))?'issued':(_hs?'submitted':'none');if(fPermit!==_cat)return false;}
     if(fNote==='has'&&!(puData[p.address||'']||{}).thisWeek)return false;
     if(fNote==='missing'&&(puData[p.address||'']||{}).thisWeek)return false;
     if(sq){const hay=(p.address||'')+' '+(p.firstName||'')+' '+(p.lastName||'');if(!hay.toLowerCase().includes(sq))return false;}
     return true;
   });
   data.sort((a,b)=>{
-    if(puSort.col==='puLastWeek'||puSort.col==='puThisWeek'){const av=(puNotes[a.address]||{})[puSort.col]||'';const bv=(puNotes[b.address]||{})[puSort.col]||'';return puSort.dir*av.localeCompare(bv);}
+    if(puSort.col==='puLastWeek'||puSort.col==='puThisWeek'){const fld=puSort.col==='puThisWeek'?'thisWeek':'lastWeek';const av=(puData[a.address]||{})[fld]||'';const bv=(puData[b.address]||{})[fld]||'';return puSort.dir*av.localeCompare(bv);}
     const sv=p=>puSort.col==='_identity'?pname(p):p[puSort.col]||'';
     const av=sv(a),bv=sv(b);const ae=av==='',be=bv==='';if(ae&&be)return 0;if(ae)return 1;if(be)return -1;
     return puSort.dir*String(av).localeCompare(String(bv));
@@ -3671,7 +3677,7 @@ function renderPermUpdView(){
       th.textContent=col.label;
     }
     th.dataset.key=col.key;
-    if(!puSelMode&&col.t!=='note'){th.onclick=()=>{if(puSort.col===col.key)puSort.dir*=-1;else{puSort.col=col.key;puSort.dir=1;}renderPermUpdView();};}
+    if(!puSelMode){th.onclick=()=>{if(puSort.col===col.key)puSort.dir*=-1;else{puSort.col=col.key;puSort.dir=1;}renderPermUpdView();};th.style.cursor='pointer';}
     if(puSort.col===col.key)th.classList.add(puSort.dir===1?'sa':'sd');
     thead.appendChild(th);
     const c=document.createElement('col');c.style.width=pxW[col.t]||'95px';cg.appendChild(c);
@@ -3683,7 +3689,7 @@ function renderPermUpdView(){
   const syncSelectAll=()=>{const allChk=thead.querySelector('.pu-chk');if(!allChk)return;allChk.checked=allAddrs.length>0&&allAddrs.every(a=>puSelected.has(a));allChk.indeterminate=!allChk.checked&&allAddrs.some(a=>puSelected.has(a));};
   data.forEach(p=>{
     const idx=proj.indexOf(p);const addr=p.address||'';
-    const tr=document.createElement('tr');const _piIssued=p.bldgPermitIssued&&p.bldgPermitIssued!=='0';tr.className='dr'+(_piIssued?' pu-row-issued':'')+(puSelMode&&puSelected.has(addr)?' pu-row-selected':'');
+    const tr=document.createElement('tr');const _ps=p.bldgPermitSubmitted||'';const _pi=p.bldgPermitIssued||'';const _hs=_ps&&_ps!=='0';const _hi=_pi&&_pi!=='0';const _na=_pi==='N/A'||_ps==='N/A';const _rowClr=(_na||(_hs&&_hi))?'pu-row-green':(_hs?'pu-row-blue':'pu-row-yellow');tr.className='dr '+_rowClr+(puSelMode&&puSelected.has(addr)?' pu-row-selected':'');
     if(puSelMode){
       tr.addEventListener('click',e=>{
         if(e.target.tagName==='INPUT')return;
