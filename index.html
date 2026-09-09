@@ -1981,16 +1981,21 @@ function buildTracker(p){
     return html+'</div>';
   }
   // Permit bar: 2-cell slim bar above main bar, aligned over steps 2-6 (flex 1:5:2)
-  const sub=p.bldgPermitSubmitted&&p.bldgPermitSubmitted!=='0'&&p.bldgPermitSubmitted!=='N/A';
-  const iss=p.bldgPermitIssued&&p.bldgPermitIssued!=='0'&&p.bldgPermitIssued!=='N/A';
+  const isPermitNA=p.bldgPermitSubmitted==='N/A'||p.bldgPermitIssued==='N/A';
+  const sub=!isPermitNA&&p.bldgPermitSubmitted&&p.bldgPermitSubmitted!=='0';
+  const iss=!isPermitNA&&p.bldgPermitIssued&&p.bldgPermitIssued!=='0';
   const c1=iss?'tp-green':sub?'tp-yellow':'tp-flash';
   const c2=iss?'tp-green':sub?'tp-flash':'tp-gray';
   const t1='Bldg Permit Submitted'+(sub?' — '+fd2(p.bldgPermitSubmitted):'');
   const t2='Bldg Permit Issued'+(iss?' — '+fd2(p.bldgPermitIssued):'');
   let out='<div id="dtrack-permit-wrap" style="margin-bottom:4px;visibility:hidden">';
   out+='<div class="dtrack-bar dtrack-permit-slim">';
-  out+='<div class="dtrack-permit-cell '+c1+'" title="'+t1+'">Bldg Permit Submitted</div>';
-  out+='<div class="dtrack-permit-cell '+c2+'" title="'+t2+'">Bldg Permit Issued</div>';
+  if(isPermitNA){
+    out+='<div class="dtrack-permit-cell" style="flex:1;background:#111;color:#fff;font-weight:700;letter-spacing:.5px">PERMIT NOT REQUIRED</div>';
+  }else{
+    out+='<div class="dtrack-permit-cell '+c1+'" title="'+t1+'">Bldg Permit Submitted</div>';
+    out+='<div class="dtrack-permit-cell '+c2+'" title="'+t2+'">Bldg Permit Issued</div>';
+  }
   out+='</div></div>';
   out+=makeSteps(mainSteps,50,'dtrack-main-bar');
   out+='<div class="dtrack-phases">'+
