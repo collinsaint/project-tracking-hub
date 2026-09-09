@@ -3032,7 +3032,7 @@ function renderPerm(){
   // apply filters
   const fSearch=permFilter.search.toLowerCase();
   let pending=base.filter(p=>{
-    if(p.bldgPermitIssued&&p.bldgPermitIssued!==''&&p.bldgPermitIssued!=='0'&&p.bldgPermitIssued!=='N/A')return false;
+    if(p.bldgPermitIssued&&p.bldgPermitIssued!==''&&p.bldgPermitIssued!=='0')return false;
     if(permFilter.program&&p.program!==permFilter.program)return false;
     if(permFilter.status&&p.jobStatus!==permFilter.status)return false;
     if(permFilter.jur&&p.permittingJurisdiction!==permFilter.jur)return false;
