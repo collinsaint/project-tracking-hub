@@ -3475,7 +3475,7 @@ function puGetSunday(offset=0){const d=new Date();const day=d.getDay();d.setDate
 function puSundayKey(d){const mm=String(d.getMonth()+1).padStart(2,'0'),dd=String(d.getDate()).padStart(2,'0'),yyyy=d.getFullYear();return mm+dd+yyyy;}
 function puSundayLabel(d){const mm=String(d.getMonth()+1).padStart(2,'0'),dd=String(d.getDate()).padStart(2,'0'),yy=String(d.getFullYear()).slice(2);return mm+'/'+dd+'/'+yy;}
 const PU_COLS=[{key:'_identity',label:'Address',t:'id'},{key:'program',label:'Program',t:'p'},{key:'permittingJurisdiction',label:'Permitting Jurisdiction',t:'tx'},{key:'jobStatus',label:'Job Status',t:'st'},{key:'jobType',label:'Job Type',t:'tx'},{key:'assignmentReceived',label:'Assignment Received',t:'d'},{key:'bldgPermitSubmitted',label:'Bldg Permit Submitted',t:'d'},{key:'bldgPermitIssued',label:'Bldg Permit Issued',t:'d'},{key:'puLastWeek',label:'Last Week',t:'note'},{key:'puThisWeek',label:'This Week',t:'note'},{key:'needsAttention',label:'Needs Attention',t:'attn'}];
-let permUpdView=false,puSort={col:'_identity',dir:1},puSelMode=false,puSelected=new Set(),puFilterOpen=false,puFilter={search:'',program:'',status:'',jur:'',permit:'',note:''};
+let permUpdView=false,puSort={col:'_permitStatus',dir:1},puSelMode=false,puSelected=new Set(),puFilterOpen=false,puFilter={search:'',program:'',status:'',jur:'',permit:'',note:''};
 let metricsMonthOffset=0;
 let puNotes={};try{const _pn=localStorage.getItem('pu_notes_v1');if(_pn)puNotes=JSON.parse(_pn);}catch(e){}
 let puData={};
@@ -3645,6 +3645,7 @@ function renderPermUpdView(){
   data.sort((a,b)=>{
     if(puSort.col==='puLastWeek'||puSort.col==='puThisWeek'){const fld=puSort.col==='puThisWeek'?'thisWeek':'lastWeek';const av=(puData[a.address]||{})[fld]||'';const bv=(puData[b.address]||{})[fld]||'';return puSort.dir*av.localeCompare(bv);}
     if(puSort.col==='needsAttention'){const av=!!(puData[a.address]||{}).needsAttention?1:0;const bv=!!(puData[b.address]||{}).needsAttention?1:0;return puSort.dir*(bv-av);}
+    if(puSort.col==='_permitStatus'){const cat=p=>{const s=p.bldgPermitSubmitted||'';const i=p.bldgPermitIssued||'';const hs=s&&s!=='0';const hi=i&&i!=='0';const na=i==='N/A'||s==='N/A';return(na||(hs&&hi))?2:hs?1:0;};return puSort.dir*(cat(a)-cat(b));}
     const sv=p=>puSort.col==='_identity'?pname(p):p[puSort.col]||'';
     const av=sv(a),bv=sv(b);const ae=av==='',be=bv==='';if(ae&&be)return 0;if(ae)return 1;if(be)return -1;
     return puSort.dir*String(av).localeCompare(String(bv));
