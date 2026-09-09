@@ -912,14 +912,14 @@ tr.pu-row-selected:hover{background:#dbeafe!important}
   </div>
   <div id="hdr-sep"></div>
   <div id="hdr-views">
-    <button class="btn btn-ol" id="tracker-home-btn" onclick="goToTracker()">&#8962; Tracker</button>
-    <button class="btn btn-ol" id="dash-view-btn" onclick="openDashboard()">&#9632; Dashboard</button>
-    <button class="btn btn-ol" id="task-view-btn" onclick="toggleTaskView()">&#9776; Tasks</button>
-    <button class="btn btn-ol" id="jq-view-btn" onclick="toggleJQView()">&#9733; Job Queue</button>
-    <button class="btn btn-ol" id="coq-view-btn" onclick="toggleCOQView()">&#9651; Change Orders</button>
-    <button class="btn btn-ol" id="perm-view-btn" onclick="togglePermView()">&#9679; Permitting</button>
+    <button class="btn btn-ol" id="tracker-home-btn" onclick="goToTracker()">Tracker</button>
+    <button class="btn btn-ol" id="dash-view-btn" onclick="openDashboard()">Dashboard</button>
+    <button class="btn btn-ol" id="task-view-btn" onclick="toggleTaskView()">Tasks</button>
+    <button class="btn btn-ol" id="jq-view-btn" onclick="toggleJQView()">Job Queue</button>
+    <button class="btn btn-ol" id="coq-view-btn" onclick="toggleCOQView()">Change Orders</button>
+    <button class="btn btn-ol" id="perm-view-btn" onclick="togglePermView()">Permitting</button>
     <div id="wu-wrap">
-      <button class="btn btn-ol" id="wu-view-btn" onclick="toggleWUDrop(event)">&#128197; Weekly Updates &#9660;</button>
+      <button class="btn btn-ol" id="wu-view-btn" onclick="toggleWUDrop(event)">Weekly Updates &#9660;</button>
       <div id="wu-pop">
         <button class="exp-opt" onclick="openWUView();closeWUDrop()"><span class="exp-opt-title">Update Tracker</span><span class="exp-opt-sub">Weekly program reporting</span></button>
         <button class="exp-opt" onclick="openPermUpdView();closeWUDrop()"><span class="exp-opt-title">Permitting Updates</span><span class="exp-opt-sub">Presale permit status table</span></button>
@@ -928,10 +928,10 @@ tr.pu-row-selected:hover{background:#dbeafe!important}
   </div>
   <div id="hdr-sep2"></div>
   <div id="hdr-actions">
-    <button class="btn" onclick="openTaskModal()">+ Add Task</button>
-    <button class="btn" onclick="openImport()">&#8679; Import</button>
+    <button class="btn" onclick="openTaskModal()">Add Task</button>
+    <button class="btn" onclick="openImport()">Import</button>
     <div id="export-wrap">
-      <button class="btn" onclick="toggleExportDrop(event)">&#8681; Export &#9660;</button>
+      <button class="btn" onclick="toggleExportDrop(event)">Export &#9660;</button>
       <div id="export-pop">
         <button class="exp-opt" onclick="exportCSV();closeExportDrop()"><span class="exp-opt-title">Full Export</span><span class="exp-opt-sub">All columns, all projects</span></button>
         <button class="exp-opt" onclick="exportPermittingCSV();closeExportDrop()"><span class="exp-opt-title">Permitting Export</span><span class="exp-opt-sub">Permit dates &amp; jurisdiction</span></button>
@@ -2930,7 +2930,7 @@ function togglePermView(){
   document.getElementById('topbar').style.display=permView?'none':'';
   document.getElementById('jnav').style.display=permView?'none':'';
   document.getElementById('permqueue').style.display=permView?'block':'none';
-  if(btn)btn.textContent=permView?'◄ Back to Tracker':'● Permitting';
+  if(btn)btn.textContent=permView?'Permitting':'Permitting';
   setViewHash(permView?'perm':'');
   if(permView)renderPerm();
   syncNavActive();
@@ -3188,7 +3188,7 @@ function toggleJQView(){
   ;
   document.getElementById('jnav').style.display=jqView?'none':'';
   document.getElementById('jqueue').style.display=jqView?'block':'none';
-  if(btn)btn.textContent=jqView?'◄ Back to Tracker':'★ Job Start Queue';
+  if(btn)btn.textContent='Job Queue';
   setViewHash(jqView?'jq':'');
   if(jqView)renderJQ();
   syncNavActive();
@@ -3207,7 +3207,7 @@ function toggleCOQView(){
   ;
   document.getElementById('jnav').style.display=coqView?'none':'';
   document.getElementById('coqueue').style.display=coqView?'block':'none';
-  if(btn)btn.textContent=coqView?'◄ Back to Tracker':'△ Change Order Queue';
+  if(btn)btn.textContent='Change Orders';
   setViewHash(coqView?'coq':'');
   if(coqView)renderCOQ();
   syncNavActive();
@@ -3328,7 +3328,7 @@ function toggleTaskView(){
   ;
   document.getElementById('jnav').style.display=taskView?'none':'';
   document.getElementById('tboard').style.display=taskView?'flex':'none';
-  btn.textContent=taskView?'◄ Back to Tracker':'≡ Task Board';
+  btn.textContent='Tasks';
   setViewHash(taskView?'tasks':'');
   if(taskView){
     const sel=document.getElementById('tb-fproj');
