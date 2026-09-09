@@ -790,6 +790,11 @@ body.mob .edit-bar-inner{flex-wrap:wrap;gap:6px;padding:6px 12px}
 .pu-note-cancel:hover{background:#e2e8f0}
 .pu-note-edit-btn{position:absolute;top:6px;right:5px;background:#eef4ff;border:1.5px solid #c7daf7;border-radius:5px;color:var(--blue);font-size:13px;cursor:pointer;padding:2px 6px;line-height:1;transition:all .12s;box-shadow:0 1px 3px rgba(37,99,235,.12)}
 .pu-note-edit-btn:hover{background:#dbeafe;border-color:#93c5fd;box-shadow:0 2px 6px rgba(37,99,235,.2)}
+.pu-attn-cell{text-align:center;vertical-align:middle;padding:8px 6px}
+.pu-attn-btn{width:22px;height:22px;border-radius:50%;border:2px solid #d1d5db;background:transparent;cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;justify-content:center;padding:0}
+.pu-attn-btn:hover{border-color:#f87171}
+.pu-attn-btn.attn-yes{background:#ef4444;border-color:#ef4444}
+.pu-attn-btn.attn-yes::after{content:'';display:block;width:8px;height:8px;border-radius:50%;background:#fff}
 .pu-note-copy-btn{display:block;margin-top:6px;background:#f0f9ff;border:1px dashed #7dd3fc;border-radius:5px;color:#0369a1;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;padding:4px 8px;cursor:pointer;width:100%;text-align:center;transition:all .12s}
 .pu-note-copy-btn:hover{background:#e0f2fe;border-color:#38bdf8;color:#0284c7}
 .pu-sel-btn{height:30px;padding:0 13px;border:1.5px solid #7dd3fc;border-radius:7px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:#0369a1;background:#f0f9ff;cursor:pointer;transition:all .15s}
@@ -2464,12 +2469,12 @@ function toggleExportDrop(e){e.stopPropagation();document.getElementById('export
 function closeExportDrop(){document.getElementById('export-pop').classList.remove('open');}
 function exportPermittingCSV(){
   const base=proj.filter(p=>p.constructionStage==='PRESALE');
-  const headers=['Project Name','Program','Permitting Jurisdiction','Job Status','Job Type','Assignment Received','Bldg Permit Submitted','Bldg Permit Issued','Last Week','This Week'];
+  const headers=['Project Name','Program','Permitting Jurisdiction','Job Status','Job Type','Assignment Received','Bldg Permit Submitted','Bldg Permit Issued','Last Week','This Week','Needs Attention'];
   const ec=v=>{const s=String(v||'');return(s.includes(',')||s.includes('"')||s.includes('\n'))?'"'+s.replace(/"/g,'""')+'"':s;};
   const rows=[headers.join(',')];
   base.forEach(p=>{
     const pd=puData[p.address||'']||{};
-    rows.push([pname(p),p.program||'',p.permittingJurisdiction||'',p.jobStatus||'',p.jobType||'',p.assignmentReceived||'',p.bldgPermitSubmitted||'',p.bldgPermitIssued||'',pd.lastWeek||'',pd.thisWeek||''].map(ec).join(','));
+    rows.push([pname(p),p.program||'',p.permittingJurisdiction||'',p.jobStatus||'',p.jobType||'',p.assignmentReceived||'',p.bldgPermitSubmitted||'',p.bldgPermitIssued||'',pd.lastWeek||'',pd.thisWeek||'',pd.needsAttention?'Yes':'No'].map(ec).join(','));
   });
   const blob=new Blob([rows.join('\n')],{type:'text/csv'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='FL_Permitting_'+new Date().toISOString().slice(0,10)+'.csv';a.click();
@@ -3461,7 +3466,7 @@ function toggleWUView(){if(wuView)closeWUView();else openWUView();}
 function puGetSunday(offset=0){const d=new Date();const day=d.getDay();d.setDate(d.getDate()+(day===0?0:7-day)+(offset*7));d.setHours(0,0,0,0);return d;}
 function puSundayKey(d){const mm=String(d.getMonth()+1).padStart(2,'0'),dd=String(d.getDate()).padStart(2,'0'),yyyy=d.getFullYear();return mm+dd+yyyy;}
 function puSundayLabel(d){const mm=String(d.getMonth()+1).padStart(2,'0'),dd=String(d.getDate()).padStart(2,'0'),yy=String(d.getFullYear()).slice(2);return mm+'/'+dd+'/'+yy;}
-const PU_COLS=[{key:'_identity',label:'Address',t:'id'},{key:'program',label:'Program',t:'p'},{key:'permittingJurisdiction',label:'Permitting Jurisdiction',t:'tx'},{key:'jobStatus',label:'Job Status',t:'st'},{key:'jobType',label:'Job Type',t:'tx'},{key:'assignmentReceived',label:'Assignment Received',t:'d'},{key:'bldgPermitSubmitted',label:'Bldg Permit Submitted',t:'d'},{key:'bldgPermitIssued',label:'Bldg Permit Issued',t:'d'},{key:'puLastWeek',label:'Last Week',t:'note'},{key:'puThisWeek',label:'This Week',t:'note'}];
+const PU_COLS=[{key:'_identity',label:'Address',t:'id'},{key:'program',label:'Program',t:'p'},{key:'permittingJurisdiction',label:'Permitting Jurisdiction',t:'tx'},{key:'jobStatus',label:'Job Status',t:'st'},{key:'jobType',label:'Job Type',t:'tx'},{key:'assignmentReceived',label:'Assignment Received',t:'d'},{key:'bldgPermitSubmitted',label:'Bldg Permit Submitted',t:'d'},{key:'bldgPermitIssued',label:'Bldg Permit Issued',t:'d'},{key:'puLastWeek',label:'Last Week',t:'note'},{key:'puThisWeek',label:'This Week',t:'note'},{key:'needsAttention',label:'Needs Attention',t:'attn'}];
 let permUpdView=false,puSort={col:'_identity',dir:1},puSelMode=false,puSelected=new Set(),puFilterOpen=false,puFilter={search:'',program:'',status:'',jur:'',permit:'',note:''};
 let metricsMonthOffset=0;
 let puNotes={};try{const _pn=localStorage.getItem('pu_notes_v1');if(_pn)puNotes=JSON.parse(_pn);}catch(e){}
@@ -3469,7 +3474,7 @@ let puData={};
 async function initPU(){
   try{
     const{data,error}=await sb.from('permitting_updates').select('*');
-    if(!error&&data){data.forEach(r=>{puData[r.address]={lastWeek:r.last_week||'',thisWeek:r.this_week||'',thisWeekSavedAt:r.this_week_saved_at||null,lastRotatedAt:r.last_rotated_at||null};});}
+    if(!error&&data){data.forEach(r=>{puData[r.address]={lastWeek:r.last_week||'',thisWeek:r.this_week||'',thisWeekSavedAt:r.this_week_saved_at||null,lastRotatedAt:r.last_rotated_at||null,needsAttention:!!r.needs_attention};});}
   }catch(e){}
   Object.entries(puNotes).forEach(([addr,fields])=>{
     if(!puData[addr])puData[addr]={lastWeek:'',thisWeek:'',thisWeekSavedAt:null,lastRotatedAt:null};
@@ -3499,11 +3504,23 @@ async function savePuUpdate(addr,field,value,weekKey){
   try{localStorage.setItem('pu_notes_v1',JSON.stringify(puNotes));}catch(e){}
   showSaveStatus('saving');
   try{
-    await sb.from('permitting_updates').upsert({address:addr,last_week:puData[addr].lastWeek,this_week:puData[addr].thisWeek,this_week_saved_at:puData[addr].thisWeekSavedAt,last_rotated_at:puData[addr].lastRotatedAt,updated_at:new Date().toISOString()});
+    await sb.from('permitting_updates').upsert({address:addr,last_week:puData[addr].lastWeek,this_week:puData[addr].thisWeek,this_week_saved_at:puData[addr].thisWeekSavedAt,last_rotated_at:puData[addr].lastRotatedAt,needs_attention:puData[addr].needsAttention||false,updated_at:new Date().toISOString()});
     if(weekKey&&value){
       const colName='PermitNotesWeekEnding'+weekKey;
       try{await sb.from('projects').update({[colName]:value}).eq('address',addr);}catch(e){}
     }
+    showSaveStatus('saved');
+  }catch(e){showSaveStatus('saved');}
+}
+async function savePuAttention(addr,val){
+  if(!puData[addr])puData[addr]={lastWeek:'',thisWeek:'',thisWeekSavedAt:null,lastRotatedAt:null,needsAttention:false};
+  puData[addr].needsAttention=val;
+  if(!puNotes[addr])puNotes[addr]={};
+  puNotes[addr].needsAttention=val;
+  try{localStorage.setItem('pu_notes_v1',JSON.stringify(puNotes));}catch(e){}
+  showSaveStatus('saving');
+  try{
+    await sb.from('permitting_updates').upsert({address:addr,last_week:puData[addr].lastWeek,this_week:puData[addr].thisWeek,this_week_saved_at:puData[addr].thisWeekSavedAt,last_rotated_at:puData[addr].lastRotatedAt,needs_attention:val,updated_at:new Date().toISOString()});
     showSaveStatus('saved');
   }catch(e){showSaveStatus('saved');}
 }
@@ -3628,7 +3645,7 @@ function renderPermUpdView(){
   const thisSun=puGetSunday(0);const lastSun=puGetSunday(-1);
   const thisWeekKey=puSundayKey(thisSun);
   const thead=document.getElementById('pu-thead');thead.innerHTML='';
-  const pxW={id:'9%',p:'9%',st:'13%',tx:'7%',d:'90px',note:'auto'};
+  const pxW={id:'9%',p:'9%',st:'13%',tx:'7%',d:'90px',note:'auto',attn:'90px'};
   const cg=document.getElementById('pu-cg');cg.innerHTML='';
   if(puSelMode){
     const chkTh=document.createElement('th');chkTh.className='pu-th pu-chk-col';
@@ -3748,8 +3765,23 @@ function renderPermUpdView(){
         };
         renderNoteCell();
       }
+      else if(tp==='attn'){
+        td.className='pu-attn-cell';
+        const attnVal=!!(puData[addr]||{}).needsAttention;
+        const btn=document.createElement('button');
+        btn.className='pu-attn-btn'+(attnVal?' attn-yes':'');
+        btn.title=attnVal?'Needs Attention — click to clear':'No attention needed — click to flag';
+        btn.addEventListener('click',e=>{
+          e.stopPropagation();
+          const nv=!(puData[addr]||{}).needsAttention;
+          savePuAttention(addr,nv);
+          btn.classList.toggle('attn-yes',nv);
+          btn.title=nv?'Needs Attention — click to clear':'No attention needed — click to flag';
+        });
+        td.appendChild(btn);
+      }
       else{td.textContent=v;}
-      if(miss&&tp!=='note')td.classList.add('tmiss');
+      if(miss&&tp!=='note'&&tp!=='attn')td.classList.add('tmiss');
       tr.appendChild(td);
     });
     tb.appendChild(tr);
