@@ -32,7 +32,9 @@ body{font-family:var(--font);background:#eef1f6;color:#1f2937;min-height:100vh;f
 #hdr-brand{display:flex;align-items:center;gap:10px;flex-shrink:0;margin-right:16px}
 #hdr-sep,#hdr-sep2{display:none}
 #hdr-views{display:flex;align-items:center;gap:2px;flex-shrink:0;background:rgba(0,0,0,.25);border-radius:8px;padding:4px}
-#hdr-actions{display:flex;align-items:center;gap:4px;margin-left:auto;padding-left:14px;border-left:1px solid rgba(255,255,255,.12)}
+#hdr-actions{display:flex;align-items:center;gap:2px;margin-left:auto;background:rgba(0,0,0,.25);border-radius:8px;padding:4px}
+#hdr-actions .btn{background:transparent;border:none;color:rgba(255,255,255,.72);border-radius:5px;transition:background .12s,color .12s}
+#hdr-actions .btn:hover{background:rgba(255,255,255,.12);color:#fff}
 #hdr .btn{padding:5px 11px;font-size:11px;gap:4px;border-radius:6px;font-weight:600;letter-spacing:.1px}
 #hdr .btn-icon{padding:5px 9px;font-size:13px;line-height:1;border-radius:6px}
 #hdr-views .btn{background:transparent;border:none;color:rgba(255,255,255,.72);border-radius:5px;transition:background .12s,color .12s}
@@ -926,17 +928,16 @@ tr.pu-row-selected:hover{background:#dbeafe!important}
   </div>
   <div id="hdr-sep2"></div>
   <div id="hdr-actions">
-    <button class="btn btn-ol" onclick="openTaskModal()">+ Add Task</button>
-    <button class="btn btn-ol" onclick="openImport()">&#8679; Import</button>
+    <button class="btn" onclick="openTaskModal()">+ Add Task</button>
+    <button class="btn" onclick="openImport()">&#8679; Import</button>
     <div id="export-wrap">
-      <button class="btn btn-ol" onclick="toggleExportDrop(event)">&#8681; Export &#9660;</button>
+      <button class="btn" onclick="toggleExportDrop(event)">&#8681; Export &#9660;</button>
       <div id="export-pop">
         <button class="exp-opt" onclick="exportCSV();closeExportDrop()"><span class="exp-opt-title">Full Export</span><span class="exp-opt-sub">All columns, all projects</span></button>
         <button class="exp-opt" onclick="exportPermittingCSV();closeExportDrop()"><span class="exp-opt-title">Permitting Export</span><span class="exp-opt-sub">Permit dates &amp; jurisdiction</span></button>
       </div>
     </div>
-    <button class="btn btn-ol" id="edit-mode-btn" onclick="toggleEditMode()">&#9998; Edit</button>
-    <button class="btn btn-icon btn-ol" id="mob-btn" onclick="toggleMobView()" title="Mobile View">&#128241;</button>
+    <button class="btn btn-icon" id="mob-btn" onclick="toggleMobView()" title="Mobile View">&#128241;</button>
   </div>
   <button id="mob-ham" onclick="toggleMobMenu()">&#9776;</button>
 </div>
