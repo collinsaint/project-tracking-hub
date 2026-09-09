@@ -249,12 +249,8 @@ tr.dr:hover td.tcrit-miss,tr.dr.row-permit td.tcrit-miss{background:#fecaca}
 .pn-empty{text-align:center;padding:36px 16px;color:var(--gray);font-size:13px}
 .pn-loading{text-align:center;padding:28px;color:var(--gray);font-size:13px}
 /* ── DASHBOARD ────────────────────────────────── */
-#dash-view{position:fixed;inset:0;z-index:190;background:#eef4ff;overflow-y:auto;display:none;flex-direction:column}
+#dash-view{position:fixed;inset:0;top:56px;z-index:90;background:#eef4ff;overflow-y:auto;display:none;flex-direction:column}
 #dash-view.open{display:flex}
-#dash-hdr{background:linear-gradient(135deg,#091e3a 0%,#0d3b6e 55%,#1248a0 100%);color:#fff;padding:0 28px;height:64px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;box-shadow:0 2px 16px rgba(0,0,0,.25)}
-#dash-hdr-title{font-size:18px;font-weight:700;letter-spacing:.1px;display:flex;align-items:center;gap:10px}
-#dash-close{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;font-size:15px;padding:5px 11px;border-radius:8px;cursor:pointer;transition:background .15s;line-height:1}
-#dash-close:hover{background:rgba(255,255,255,.25)}
 #dash-body{flex:1;padding:40px 32px;display:flex;flex-direction:column;align-items:center;gap:28px}
 #dash-welcome{text-align:center}
 #dash-welcome h2{font-size:22px;font-weight:700;color:#0f172a;margin:0 0 6px}
@@ -943,10 +939,6 @@ tr.pu-row-selected:hover{background:#dbeafe!important}
 </div>
 
 <div id="dash-view">
-  <div id="dash-hdr">
-    <div id="dash-hdr-title">&#9632; Dashboard</div>
-    <button id="dash-close" onclick="closeDashboard()">&#10005; Close</button>
-  </div>
   <div id="dash-body">
     <div id="dash-welcome">
       <h2>What would you like to do?</h2>
