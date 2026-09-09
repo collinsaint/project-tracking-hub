@@ -1069,6 +1069,7 @@ tr.pu-row-selected:hover{background:#dbeafe!important}
         <button class="jq-vb act" id="jqvb-all" onclick="setJQView('all')">All</button>
         <button class="jq-vb" id="jqvb-rts" onclick="setJQView('rts')">Ready to Start</button>
         <button class="jq-vb" id="jqvb-prog" onclick="setJQView('prog')">Program View</button>
+        <button class="jq-vb" onclick="exportJQExcel()" style="margin-left:6px;background:rgba(255,255,255,.92);color:var(--blue);border-color:rgba(255,255,255,.92);">&#8595; Export</button>
       </div>
     </div>
     <div class="sbody" id="jq-sbody"><div class="tw"><table><thead id="jq-th"></thead><tbody id="jq-tb"></tbody></table></div><div class="mob-clist" id="jq-cl"></div><div class="sft" id="jq-sft"></div></div>
@@ -2878,6 +2879,39 @@ function rfotJQ(tot,pg2){
   ft.innerHTML=h;
 }
 
+function exportJQExcel(){
+  if(typeof XLSX==='undefined'){st2('Export failed: XLSX library not loaded');return;}
+  const presale=SECS.find(s=>s.k==='p');
+  const cols=[...CMN,...presale.ec];
+  const queued=proj.filter(p=>p.constructionStage==='PRESALE'&&isJQAuto(p));
+  queued.sort((a,b)=>{
+    const _sv=(p,c)=>c==='_identity'?pname(p):c==='_meta'?p.jobStatus||'':c==='_assign'?p.superintendent||'':c==='_name'?((p.firstName||'')+(p.lastName||'')):c==='ntpP'?(p.ntpP||p.costEstimateApproved||''):p[c]||'';
+    const av=_sv(a,jqSort.col),bv=_sv(b,jqSort.col);
+    const ae=av==='',be=bv==='';if(ae&&be)return 0;if(ae)return 1;if(be)return -1;
+    if(!isNaN(av)&&!isNaN(bv))return jqSort.dir*(parseFloat(av)-parseFloat(bv));
+    return jqSort.dir*String(av).localeCompare(String(bv));
+  });
+  const headers=cols.map(c=>c.label);
+  const rows=queued.map(p=>cols.map(col=>{
+    const k=col.key,tp=col.t;
+    let v=p[k]||'';
+    if(k==='ntpP'&&!v)v=p.costEstimateApproved||'';
+    if(tp==='id')return pname(p);
+    if(tp==='d')return v?fd2(v):'';
+    if(tp==='n')return(!v||v==='0')?'':v;
+    if(tp==='p')return p.program||'';
+    if(tp==='st')return p.jobStatus||'';
+    return v;
+  }));
+  const ws=XLSX.utils.aoa_to_sheet([headers,...rows]);
+  // Column widths
+  const wch=[30,...cols.slice(1).map(c=>c.t==='d'?14:c.t==='st'?32:c.t==='p'?28:16)];
+  ws['!cols']=wch.map(w=>({wch:w}));
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,'Job Start Queue',ws);
+  XLSX.writeFile(wb,'Job_Start_Queue_'+new Date().toISOString().slice(0,10)+'.xlsx');
+  st2('Job Start Queue exported!');
+}
 function genId(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7);}
 
 function togglePermView(){
