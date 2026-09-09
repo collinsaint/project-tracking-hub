@@ -3644,6 +3644,7 @@ function renderPermUpdView(){
   });
   data.sort((a,b)=>{
     if(puSort.col==='puLastWeek'||puSort.col==='puThisWeek'){const fld=puSort.col==='puThisWeek'?'thisWeek':'lastWeek';const av=(puData[a.address]||{})[fld]||'';const bv=(puData[b.address]||{})[fld]||'';return puSort.dir*av.localeCompare(bv);}
+    if(puSort.col==='needsAttention'){const av=!!(puData[a.address]||{}).needsAttention?1:0;const bv=!!(puData[b.address]||{}).needsAttention?1:0;return puSort.dir*(bv-av);}
     const sv=p=>puSort.col==='_identity'?pname(p):p[puSort.col]||'';
     const av=sv(a),bv=sv(b);const ae=av==='',be=bv==='';if(ae&&be)return 0;if(ae)return 1;if(be)return -1;
     return puSort.dir*String(av).localeCompare(String(bv));
