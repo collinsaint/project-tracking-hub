@@ -3049,7 +3049,7 @@ function renderPerm(){
   // sort
   pending=[...pending].sort((a,b)=>{
     const sc=permSort.col,sd=permSort.dir;
-    if(sc==='_permitStatus'||!sc)return _permCat(a)-_permCat(b);
+    if(sc==='_permitStatus'||!sc){const cd=_permCat(a)-_permCat(b);if(cd!==0)return cd;return (a.jobStatus||'').localeCompare(b.jobStatus||'');}
     if(sc==='_permDays'){const av=(_permDaysVal(a)?.days)??-1;const bv=(_permDaysVal(b)?.days)??-1;return sd*(av-bv);}
     if(sc==='_needsAttn'){const av=!!(puData[a.address]||{}).needsAttention?1:0;const bv=!!(puData[b.address]||{}).needsAttention?1:0;return sd*(bv-av);}
     if(sc==='_thisWeek'){const av=(puData[a.address]||{}).thisWeek||'';const bv=(puData[b.address]||{}).thisWeek||'';return sd*av.localeCompare(bv);}
