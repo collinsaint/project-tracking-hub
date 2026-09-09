@@ -827,6 +827,9 @@ body.mob .edit-bar-inner{flex-wrap:wrap;gap:6px;padding:6px 12px}
 .pu-bulk-apply-btn:disabled{background:#9ca3af;cursor:not-allowed}
 tr.pu-row-selected{background:#eff6ff!important}
 tr.pu-row-selected:hover{background:#dbeafe!important}
+tr.pu-row-issued td{background:#f0fdf4!important}
+tr.pu-row-issued:hover td{background:#dcfce7!important}
+tr.pu-row-issued td.tmiss{background:#d1fae5!important}
 .pu-chk-col{width:36px;padding:4px 8px!important;text-align:center;vertical-align:middle}
 .pu-chk{width:15px;height:15px;cursor:pointer;accent-color:var(--blue)}
 .pu-note-lock{position:absolute;top:7px;right:6px;font-size:10px;color:#d1d5db;cursor:default}
@@ -3662,7 +3665,7 @@ function renderPermUpdView(){
   const syncSelectAll=()=>{const allChk=thead.querySelector('.pu-chk');if(!allChk)return;allChk.checked=allAddrs.length>0&&allAddrs.every(a=>puSelected.has(a));allChk.indeterminate=!allChk.checked&&allAddrs.some(a=>puSelected.has(a));};
   data.forEach(p=>{
     const idx=proj.indexOf(p);const addr=p.address||'';
-    const tr=document.createElement('tr');tr.className='dr'+(puSelMode&&puSelected.has(addr)?' pu-row-selected':'');
+    const tr=document.createElement('tr');const _piIssued=p.bldgPermitIssued&&p.bldgPermitIssued!=='0';tr.className='dr'+(_piIssued?' pu-row-issued':'')+(puSelMode&&puSelected.has(addr)?' pu-row-selected':'');
     if(puSelMode){
       tr.addEventListener('click',e=>{
         if(e.target.tagName==='INPUT')return;
