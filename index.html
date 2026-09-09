@@ -1759,7 +1759,7 @@ function rs(){
   document.getElementById('s8').textContent=proj.filter(p=>p.constructionStage==='PRESALE'||p.constructionStage==='OPEN').length;
   document.getElementById('s1').textContent=proj.filter(p=>p.constructionStage==='PRESALE').length;
   document.getElementById('s3').textContent=proj.filter(p=>/^2[1-9]|^30/.test(p.jobStatus||'')).length;
-  document.getElementById('s4').textContent=proj.filter(p=>p.constructionStage==='PRESALE'&&(!p.bldgPermitIssued||p.bldgPermitIssued==='0')).length;
+  document.getElementById('s4').textContent=proj.filter(p=>p.constructionStage==='PRESALE'&&(!p.bldgPermitIssued||p.bldgPermitIssued==='0'||p.bldgPermitIssued==='N/A')).length;
   document.getElementById('s5').textContent=proj.filter(p=>/^4|^99/.test(p.jobStatus||'')||(p.jobStatus||'')==='COMPLETE').length;
   document.getElementById('s6').textContent=proj.filter(p=>p.constructionStage==='WARRANTY').length;
   document.getElementById('s7').textContent=proj.filter(p=>p.constructionStage==='CLOSED').length;
@@ -1981,8 +1981,8 @@ function buildTracker(p){
     return html+'</div>';
   }
   // Permit bar: 2-cell slim bar above main bar, aligned over steps 2-6 (flex 1:5:2)
-  const sub=p.bldgPermitSubmitted&&p.bldgPermitSubmitted!=='0';
-  const iss=p.bldgPermitIssued&&p.bldgPermitIssued!=='0';
+  const sub=p.bldgPermitSubmitted&&p.bldgPermitSubmitted!=='0'&&p.bldgPermitSubmitted!=='N/A';
+  const iss=p.bldgPermitIssued&&p.bldgPermitIssued!=='0'&&p.bldgPermitIssued!=='N/A';
   const c1=iss?'tp-green':sub?'tp-yellow':'tp-flash';
   const c2=iss?'tp-green':sub?'tp-flash':'tp-gray';
   const t1='Bldg Permit Submitted'+(sub?' — '+fd2(p.bldgPermitSubmitted):'');
@@ -2326,6 +2326,7 @@ function pf(file){
       rows.forEach(r=>{
         const addr=g(r,'Street Address')||g(r,'Job Name');if(!addr){sk++;return;}
         const nd={address:addr,jobName:g(r,'Job Name'),program:g(r,'Groups'),city:g(r,'City'),jobType:g(r,'Job Type *'),permittingJurisdiction:g(r,'Permitting Jurisdiction*'),jobStatus:g(r,'Job Status*'),assignmentReceived:gd3(r,'Assignment Received*'),surveyOrdered:gd3(r,'Survey / EC Ordered*'),surveyReceived:gd3(r,'Survey / EC Received*'),plansOrdered:gd3(r,'Plans Ordered*'),plansReceived:gd3(r,'Plans Received*'),septicOrdered:gd3(r,'Septic Design Ordered*'),septicReceived:gd3(r,'Septic Design Received*'),isvCompleted:gd3(r,'ISV Completed*'),costEstimateSubmitted:gd3(r,'Cost Estimate Submitted*'),costEstimateApproved:gd3(r,'Cost Estimate Approved*'),bldgPermitSubmitted:gd3(r,'Building Permit Submitted*'),bldgPermitIssued:gd3(r,'Building Permit Issued*'),ntp:gd3(r,'NTP*'),constructionStart:gd3(r,'Actual Start'),inspection50:gd3(r,'50% Complete Date*'),inspection100:gd3(r,'100% Complete Date*'),superintendent:gd3(r,'Superintendent*'),constructionDeadline:gd3(r,'Construction Deadline*'),approvedConstrDelays:g(r,'Construction Delay Days*'),demoPermitIssued:gd3(r,'Demo Permit Issued*'),demoPermitNumber:g(r,'Demo Permit Number*'),demoPermitSubmitted:gd3(r,'Demo Permit Submitted*'),bldgPermitNumber:g(r,'Building Permit Number*'),ntpP:gd3(r,'NTP-P*'),approvedPreConDelays:g(r,'Pre-Con Delay Days*'),preConDeadline:gd3(r,'Pre-Construction Deadline*'),firstName:g(r,'Applicant First Name*'),lastName:g(r,'Applicant Last Name*'),applicantPhone:g(r,'Applicant Phone Number*'),applicantEmail:g(r,'Applicant Email*'),projectNumber:g(r,'Prefix'),contractAmount:g(r,'Contract Price')==='0'?'':g(r,'Contract Price'),projectedStart:gd3(r,'Proj. Start'),projectedCompletion:gd3(r,'Proj. Completion'),constructionStage:g(r,'Status')};
+        const permitSt=g(r,'Permit Status');if(permitSt==='Not Required'){nd.bldgPermitSubmitted='N/A';nd.bldgPermitIssued='N/A';}
         allImportedNd.push(nd);
         const k=nmFuzzy(addr);
         if(pm[k]!==undefined){
@@ -2752,7 +2753,7 @@ function renderJQ(){
     queued.forEach(p=>{
       const pr=p.program||'(No Program)';
       if(!pc[pr])pc[pr]={permitted:0,nopermit:0};
-      const hasPerm=!!(p.bldgPermitIssued&&p.bldgPermitIssued!=='0');
+      const hasPerm=!!(p.bldgPermitIssued&&p.bldgPermitIssued!=='0'&&p.bldgPermitIssued!=='N/A');
       if(hasPerm)pc[pr].permitted++;else pc[pr].nopermit++;
     });
     const allPerm=Object.values(pc).reduce((s,v)=>s+v.permitted,0);
@@ -2956,7 +2957,7 @@ function renderPerm(){
   th.appendChild(tr);
   const tb=document.getElementById('perm-tb');tb.innerHTML='';
   let pending=proj.filter(p=>{
-    if(p.bldgPermitIssued&&p.bldgPermitIssued!==''&&p.bldgPermitIssued!=='0')return false;
+    if(p.bldgPermitIssued&&p.bldgPermitIssued!==''&&p.bldgPermitIssued!=='0'&&p.bldgPermitIssued!=='N/A')return false;
     const js=(p.jobStatus||'').toUpperCase();if(js==='COMPLETE')return false;
     const m=(p.jobStatus||'').match(/^(\d+)/);if(m&&parseInt(m[1],10)>=21)return false;
     return true;
@@ -3600,8 +3601,8 @@ function renderPermUpdView(){
     if(fProg&&p.program!==fProg)return false;
     if(fSt&&p.jobStatus!==fSt)return false;
     if(fJur&&p.permittingJurisdiction!==fJur)return false;
-    if(fPermit==='has'&&(!p.bldgPermitIssued||p.bldgPermitIssued==='0'))return false;
-    if(fPermit==='missing'&&p.bldgPermitIssued&&p.bldgPermitIssued!=='0')return false;
+    if(fPermit==='has'&&(!p.bldgPermitIssued||p.bldgPermitIssued==='0'||p.bldgPermitIssued==='N/A'))return false;
+    if(fPermit==='missing'&&p.bldgPermitIssued&&p.bldgPermitIssued!=='0'&&p.bldgPermitIssued!=='N/A')return false;
     if(fNote==='has'&&!(puData[p.address||'']||{}).thisWeek)return false;
     if(fNote==='missing'&&(puData[p.address||'']||{}).thisWeek)return false;
     if(sq){const hay=(p.address||'')+' '+(p.firstName||'')+' '+(p.lastName||'');if(!hay.toLowerCase().includes(sq))return false;}
