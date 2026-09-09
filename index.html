@@ -2995,7 +2995,7 @@ function renderPerm(){
   const _twCol={key:'_thisWeek',label:'This Week',t:'_note'};
   const _attnCol={key:'_needsAttn',label:'Needs Attention',t:'_attn'};
   const baseEc=presale.ec.filter(c=>c.key!=='isvCompleted');
-  const baseAll=[...CMN,...baseEc];
+  const baseAll=[...CMN.filter(c=>c.key!=='superintendent'),...baseEc];
   const submIdx=baseAll.findIndex(c=>c.key==='bldgPermitSubmitted');
   const all=[...baseAll];
   if(submIdx>=0)all.splice(submIdx+1,0,_permDaysCol);
