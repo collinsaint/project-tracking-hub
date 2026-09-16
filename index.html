@@ -4207,7 +4207,8 @@ function renderTaskBoard(preserveTagSel){
     const tagBar=document.getElementById('tb-tag-bar');
     if(altView){
       altView.innerHTML='';
-      altView.style.cssText='display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:14px;align-items:start';
+      const singleTag=!!tbTagQuickSel;
+      altView.style.cssText=singleTag?'display:block':'display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:14px;align-items:start';
       const openTks=tks.filter(t=>t.status!=='done');
       const allRawTags=[...new Set(openTks.flatMap(t=>t.tags&&t.tags.length?t.tags:[]))].sort();
       const tagColors=['#6366f1','#0ea5e9','#10b981','#f59e0b','#ef4444','#8b5cf6','#ec4899','#14b8a6','#f97316','#84cc16'];
@@ -4240,8 +4241,10 @@ function renderTaskBoard(preserveTagSel){
         const clr=tagColorMap[tag]||'#6366f1';
         const group=openTks.filter(t=>t.tags&&t.tags.includes(tag)).sort(sortFn);
         const col2=document.createElement('div');col2.className='tk-col';
+        if(singleTag)col2.style.cssText='width:100%';
         col2.innerHTML='<div class="tk-col-hdr" style="background:#f8f9fb;border-color:'+clr+'"><div class="tk-col-title" style="color:'+clr+'">&#127991; '+es(tag)+' <span class="tk-cnt" style="background:'+clr+'22;color:'+clr+'">'+group.length+'</span></div></div>';
         const list2=document.createElement('div');list2.className='tk-list';
+        if(singleTag)list2.style.cssText='display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:12px';
         if(group.length===0){const emp2=document.createElement('div');emp2.style.cssText='color:var(--gray);font-style:italic;text-align:center;padding:22px 12px;font-size:12px;grid-column:1/-1';emp2.textContent='No tasks';list2.appendChild(emp2);}
         else{group.forEach(t=>list2.appendChild(buildCard(t,t.status)));}
         col2.appendChild(list2);altView.appendChild(col2);
