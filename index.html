@@ -1482,6 +1482,7 @@ const WU_PROGRAMS=[
 const WU_STEP_LABELS=['Tracker Done','Submitted','Notes Entered'];
 let wuView=false,wuData={weekOf:'',state:{}};
 let tasks=[],taskView=false,reportView=false,editTaskId=null,tbProjFilter='',tbPriFilter='',tbTagFilter='',tbSortBy='dueDate',tbSortDir=1,tbDoneOpen=false,detailAddr='',tbViewMode='board',tbTagQuickSel='';
+let wbUndoStack=[];
 let col={p:false,o:false,w:false,c:false};
 let srt={p:{col:'address',dir:1},o:{col:'address',dir:1},w:{col:'address',dir:1},c:{col:'address',dir:1}};
 let pgn={p:1,o:1,w:1,c:1};
@@ -4320,9 +4321,17 @@ function renderTaskBoard(preserveTagSel){
     if(wbView){
       wbView.style.display='block';
       wbView.innerHTML='';
-      const hint=document.createElement('div');hint.className='tk-wb-hint';
-      hint.textContent='Hold left-click and drag across a card multiple times to erase it — card completes when fully crossed out';
-      wbView.appendChild(hint);
+      const hintBar=document.createElement('div');
+      hintBar.style.cssText='display:flex;align-items:center;justify-content:center;gap:12px;padding:4px 0 10px';
+      const hintTxt=document.createElement('span');hintTxt.className='tk-wb-hint';hintTxt.style.padding='0';
+      hintTxt.textContent='Hold left-click and drag across a card to erase it — completes when fully crossed out';
+      const undoBtn=document.createElement('button');
+      undoBtn.id='wb-undo-btn';undoBtn.textContent='↩ Undo';
+      undoBtn.style.cssText='height:26px;padding:0 11px;border:1px solid #d1d5db;border-radius:20px;font-size:12px;font-weight:600;color:#374151;background:#fff;cursor:pointer;transition:all .15s;flex-shrink:0;'+(wbUndoStack.length?'':'opacity:.35;pointer-events:none');
+      undoBtn.title=wbUndoStack.length?'Undo: '+wbUndoStack[wbUndoStack.length-1].title:'Nothing to undo';
+      undoBtn.onclick=wbUndo;
+      hintBar.appendChild(hintTxt);hintBar.appendChild(undoBtn);
+      wbView.appendChild(hintBar);
       const openTks=tks.filter(t=>t.status!=='done');
       if(openTks.length===0){
         const emp=document.createElement('div');emp.className='tk-wb-empty';emp.textContent='✓ All clear — no open tasks!';wbView.appendChild(emp);
@@ -4360,6 +4369,7 @@ function renderTaskBoard(preserveTagSel){
             if(covered.size>=ROWS*COLS*0.55&&!completed){
               completed=true;wrap.style.transition='opacity .6s,transform .6s';
               wrap.style.opacity='0';wrap.style.transform='scale(0.9)';
+              wbUndoStack.push({id:t.id,title:t.title});
               setTimeout(()=>moveTask(t.id,'done'),600);
             }
           };
@@ -4400,9 +4410,16 @@ function renderTaskBoard(preserveTagSel){
 
 function setTbView(mode){
   if(mode!=='tag')tbTagQuickSel='';
+  if(mode!=='whiteboard')wbUndoStack=[];
   tbViewMode=mode;
   ['board','tag','list','whiteboard'].forEach(m=>{const b=document.getElementById('tbvbtn-'+m);if(b)b.classList.toggle('active',m===mode);});
   renderTaskBoard();
+}
+
+function wbUndo(){
+  if(!wbUndoStack.length)return;
+  const last=wbUndoStack.pop();
+  moveTask(last.id,'todo');
 }
 
 function renderDetailTasks(addr){
