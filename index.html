@@ -4204,11 +4204,12 @@ function renderTaskBoard(preserveTagSel){
     if(altView){
       altView.innerHTML='';
       altView.style.cssText='display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:14px;align-items:start';
-      const rawTags=[...new Set(tks.flatMap(t=>t.tags&&t.tags.length?t.tags:[]))].sort();
-      const hasUntagged=tks.some(t=>!t.tags||t.tags.length===0);
+      const openTks=tks.filter(t=>t.status!=='done');
+      const rawTags=[...new Set(openTks.flatMap(t=>t.tags&&t.tags.length?t.tags:[]))].sort();
+      const hasUntagged=openTks.some(t=>!t.tags||t.tags.length===0);
       const tagColors=['#6366f1','#0ea5e9','#10b981','#f59e0b','#ef4444','#8b5cf6','#ec4899','#14b8a6','#f97316','#84cc16'];
       rawTags.forEach((tag,i)=>{
-        const group=tks.filter(t=>t.tags&&t.tags.includes(tag)).sort(sortFn);
+        const group=openTks.filter(t=>t.tags&&t.tags.includes(tag)).sort(sortFn);
         const col2=document.createElement('div');col2.className='tk-col';
         const clr=tagColors[i%tagColors.length];
         col2.innerHTML='<div class="tk-col-hdr" style="background:#f8f9fb;border-color:'+clr+'"><div class="tk-col-title" style="color:'+clr+'">&#127991; '+es(tag)+' <span class="tk-cnt" style="background:'+clr+'22;color:'+clr+'">'+group.length+'</span></div></div>';
@@ -4218,7 +4219,7 @@ function renderTaskBoard(preserveTagSel){
         col2.appendChild(list2);altView.appendChild(col2);
       });
       if(hasUntagged){
-        const group=tks.filter(t=>!t.tags||t.tags.length===0).sort(sortFn);
+        const group=openTks.filter(t=>!t.tags||t.tags.length===0).sort(sortFn);
         const col2=document.createElement('div');col2.className='tk-col';
         col2.innerHTML='<div class="tk-col-hdr" style="background:#f8f9fb;border-color:#9ca3af"><div class="tk-col-title" style="color:#6b7280">&#8709; No Tag <span class="tk-cnt" style="background:#f3f4f6;color:#6b7280">'+group.length+'</span></div></div>';
         const list2=document.createElement('div');list2.className='tk-list';
