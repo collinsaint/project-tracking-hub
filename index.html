@@ -4330,6 +4330,48 @@ function renderTaskBoard(preserveTagSel){
         const tagColors=['#6366f1','#0ea5e9','#10b981','#f59e0b','#ef4444','#8b5cf6','#ec4899','#14b8a6','#f97316','#84cc16'];
         const allTags=[...new Set(openTks.flatMap(t=>t.tags&&t.tags.length?t.tags:[]))].sort();
         const tagClrMap={};allTags.forEach((tag,i)=>{tagClrMap[tag]=tagColors[i%tagColors.length];});
+        // Local helper — needs buildCard which is only in scope inside renderTaskBoard
+        const mkWbCard=t=>{
+          const card=buildCard(t,t.status);
+          const wrap=document.createElement('div');wrap.className='tk-wb-card-wrap';wrap.appendChild(card);
+          const barWrap=document.createElement('div');barWrap.className='tk-wb-bar';
+          const barFill=document.createElement('div');barFill.className='tk-wb-bar-fill';
+          barWrap.appendChild(barFill);card.insertBefore(barWrap,card.firstChild);
+          const canvas=document.createElement('canvas');canvas.className='tk-wb-overlay';wrap.appendChild(canvas);
+          const ROWS=5,COLS=7;const covered=new Set();
+          let completed=false,isErasing=false,prevCX=null,prevCY=null;
+          const sizeC=()=>{const w=wrap.offsetWidth||300,h=wrap.offsetHeight||150;if(canvas.width!==w)canvas.width=w;if(canvas.height!==h)canvas.height=h;};
+          const doErase=(cx,cy)=>{
+            if(completed)return;sizeC();
+            const rect=canvas.getBoundingClientRect();
+            if(!rect.width||cx<rect.left||cx>rect.right||cy<rect.top||cy>rect.bottom){prevCX=null;prevCY=null;return;}
+            const sx=canvas.width/rect.width,sy=canvas.height/rect.height;
+            const lx=(cx-rect.left)*sx,ly=(cy-rect.top)*sy;
+            const ctx=canvas.getContext('2d');
+            ctx.strokeStyle='rgba(245,247,250,0.96)';ctx.lineWidth=50;ctx.lineCap='round';ctx.lineJoin='round';
+            ctx.beginPath();
+            if(prevCX!==null){ctx.moveTo((prevCX-rect.left)*sx,(prevCY-rect.top)*sy);ctx.lineTo(lx,ly);}
+            else{ctx.moveTo(lx,ly);ctx.lineTo(lx+0.1,ly+0.1);}
+            ctx.stroke();prevCX=cx;prevCY=cy;
+            const col=Math.max(0,Math.min(COLS-1,Math.floor((cx-rect.left)/rect.width*COLS)));
+            const row=Math.max(0,Math.min(ROWS-1,Math.floor((cy-rect.top)/rect.height*ROWS)));
+            covered.add(col+','+row);
+            barFill.style.width=Math.min(100,Math.round(covered.size/(ROWS*COLS)*100))+'%';
+            if(covered.size>=ROWS*COLS*0.55&&!completed){
+              completed=true;wrap.style.transition='opacity .6s,transform .6s';
+              wrap.style.opacity='0';wrap.style.transform='scale(0.9)';
+              setTimeout(()=>moveTask(t.id,'done'),600);
+            }
+          };
+          canvas.addEventListener('mousedown',e=>{
+            isErasing=true;prevCX=null;prevCY=null;doErase(e.clientX,e.clientY);e.preventDefault();
+            document.addEventListener('mouseup',()=>{isErasing=false;prevCX=null;prevCY=null;},{once:true});
+          });
+          canvas.addEventListener('mousemove',e=>{if(isErasing)doErase(e.clientX,e.clientY);});
+          canvas.addEventListener('mouseleave',()=>{prevCX=null;prevCY=null;});
+          canvas.addEventListener('mouseenter',()=>{if(isErasing){prevCX=null;prevCY=null;}});
+          return wrap;
+        };
         const grid=document.createElement('div');
         grid.style.cssText='display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:14px;align-items:start';
         allTags.forEach(tag=>{
@@ -4338,7 +4380,7 @@ function renderTaskBoard(preserveTagSel){
           const col2=document.createElement('div');col2.className='tk-col';
           col2.innerHTML='<div class="tk-col-hdr" style="background:#f8f9fb;border-color:'+clr+'"><div class="tk-col-title" style="color:'+clr+'">&#127991; '+es(tag)+' <span class="tk-cnt" style="background:'+clr+'22;color:'+clr+'">'+group.length+'</span></div></div>';
           const list2=document.createElement('div');list2.className='tk-list';
-          group.forEach(t=>list2.appendChild(buildWbCard(t)));
+          group.forEach(t=>list2.appendChild(mkWbCard(t)));
           col2.appendChild(list2);grid.appendChild(col2);
         });
         const untagged=openTks.filter(t=>!t.tags||t.tags.length===0).sort(sortFn);
@@ -4346,7 +4388,7 @@ function renderTaskBoard(preserveTagSel){
           const col2=document.createElement('div');col2.className='tk-col';
           col2.innerHTML='<div class="tk-col-hdr" style="background:#f8f9fb;border-color:#9ca3af"><div class="tk-col-title" style="color:#6b7280">&#8709; No Tag <span class="tk-cnt" style="background:#f3f4f6;color:#6b7280">'+untagged.length+'</span></div></div>';
           const list2=document.createElement('div');list2.className='tk-list';
-          untagged.forEach(t=>list2.appendChild(buildWbCard(t)));
+          untagged.forEach(t=>list2.appendChild(mkWbCard(t)));
           col2.appendChild(list2);grid.appendChild(col2);
         }
         wbView.appendChild(grid);
@@ -4355,84 +4397,6 @@ function renderTaskBoard(preserveTagSel){
   }
 }
 
-function buildWbCard(t){
-  // Reuse standard card builder for identical look to By Tag
-  const card=buildCard(t,t.status);
-
-  // Wrap in a positioned container
-  const wrap=document.createElement('div');
-  wrap.className='tk-wb-card-wrap';
-  wrap.appendChild(card);
-
-  // Progress bar injected at top of card
-  const barWrap=document.createElement('div');barWrap.className='tk-wb-bar';
-  const barFill=document.createElement('div');barFill.className='tk-wb-bar-fill';
-  barWrap.appendChild(barFill);
-  card.insertBefore(barWrap,card.firstChild);
-
-  // Canvas overlay — sized lazily on first drag
-  const canvas=document.createElement('canvas');
-  canvas.className='tk-wb-overlay';
-  wrap.appendChild(canvas);
-
-  const ROWS=5,COLS=7;   // 35 cells; need 55% = ~20 to complete
-  const covered=new Set();
-  let completed=false,isErasing=false,prevCX=null,prevCY=null;
-
-  function sizeCanvas(){
-    const w=wrap.offsetWidth||wrap.getBoundingClientRect().width||300;
-    const h=wrap.offsetHeight||wrap.getBoundingClientRect().height||150;
-    if(canvas.width!==w)canvas.width=w;
-    if(canvas.height!==h)canvas.height=h;
-  }
-
-  function doErase(cx,cy){
-    if(completed)return;
-    sizeCanvas();
-    const rect=canvas.getBoundingClientRect();
-    if(!rect.width||cx<rect.left||cx>rect.right||cy<rect.top||cy>rect.bottom){prevCX=null;prevCY=null;return;}
-    const sx=canvas.width/rect.width,sy=canvas.height/rect.height;
-    const lx=(cx-rect.left)*sx,ly=(cy-rect.top)*sy;
-    const ctx=canvas.getContext('2d');
-    // Bold, visible eraser stroke
-    ctx.strokeStyle='rgba(245,247,250,0.96)';
-    ctx.lineWidth=50;ctx.lineCap='round';ctx.lineJoin='round';
-    ctx.beginPath();
-    if(prevCX!==null&&prevCY!==null){
-      ctx.moveTo((prevCX-rect.left)*sx,(prevCY-rect.top)*sy);
-      ctx.lineTo(lx,ly);
-    } else {
-      ctx.moveTo(lx,ly);ctx.lineTo(lx+0.1,ly+0.1);
-    }
-    ctx.stroke();
-    prevCX=cx;prevCY=cy;
-    // Coverage tracking
-    const col=Math.max(0,Math.min(COLS-1,Math.floor((cx-rect.left)/rect.width*COLS)));
-    const row=Math.max(0,Math.min(ROWS-1,Math.floor((cy-rect.top)/rect.height*ROWS)));
-    covered.add(col+','+row);
-    barFill.style.width=Math.min(100,Math.round(covered.size/(ROWS*COLS)*100))+'%';
-    if(covered.size>=ROWS*COLS*0.55&&!completed){
-      completed=true;
-      wrap.style.transition='opacity .6s,transform .6s';
-      wrap.style.opacity='0';wrap.style.transform='scale(0.9)';
-      setTimeout(()=>moveTask(t.id,'done'),600);
-    }
-  }
-
-  canvas.addEventListener('mousedown',e=>{
-    isErasing=true;prevCX=null;prevCY=null;
-    doErase(e.clientX,e.clientY);
-    e.preventDefault();
-    const onUp=()=>{isErasing=false;prevCX=null;prevCY=null;};
-    document.addEventListener('mouseup',onUp,{once:true});
-  });
-  canvas.addEventListener('mousemove',e=>{if(isErasing)doErase(e.clientX,e.clientY);});
-  canvas.addEventListener('mouseleave',()=>{prevCX=null;prevCY=null;});
-  // Resume on re-enter while button is still held
-  canvas.addEventListener('mouseenter',e=>{if(isErasing){prevCX=null;prevCY=null;}});
-
-  return wrap;
-}
 
 function setTbView(mode){
   if(mode!=='tag')tbTagQuickSel='';
