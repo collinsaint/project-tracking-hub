@@ -1160,6 +1160,7 @@ tr.pu-row-green td.tmiss{background:#dcfce7!important}
       <div class="tk-list" id="tkcol-todo"></div>
     </div>
   </div>
+  <div id="tb-tag-bar" style="display:none"></div>
   <div id="tb-alt-view" style="display:none"></div>
   <div class="tk-done-sec">
     <div class="tk-done-hdr" id="tk-done-hdr" onclick="toggleTbDone()">
@@ -1470,7 +1471,7 @@ const WU_PROGRAMS=[
 ];
 const WU_STEP_LABELS=['Tracker Done','Submitted','Notes Entered'];
 let wuView=false,wuData={weekOf:'',state:{}};
-let tasks=[],taskView=false,reportView=false,editTaskId=null,tbProjFilter='',tbPriFilter='',tbTagFilter='',tbSortBy='dueDate',tbSortDir=1,tbDoneOpen=false,detailAddr='',tbViewMode='board';
+let tasks=[],taskView=false,reportView=false,editTaskId=null,tbProjFilter='',tbPriFilter='',tbTagFilter='',tbSortBy='dueDate',tbSortDir=1,tbDoneOpen=false,detailAddr='',tbViewMode='board',tbTagQuickSel='';
 let col={p:false,o:false,w:false,c:false};
 let srt={p:{col:'address',dir:1},o:{col:'address',dir:1},w:{col:'address',dir:1},c:{col:'address',dir:1}};
 let pgn={p:1,o:1,w:1,c:1};
@@ -4170,9 +4171,11 @@ function renderTaskBoard(preserveTagSel){
   const altView=document.getElementById('tb-alt-view');
   const doneSec=document.querySelector('.tk-done-sec');
 
+  const tagBar=document.getElementById('tb-tag-bar');
   if(tbViewMode==='board'){
     if(boardCols)boardCols.style.display='';
     if(altView){altView.style.display='none';altView.innerHTML='';}
+    if(tagBar)tagBar.style.display='none';
     if(doneSec)doneSec.style.display='';
     ['todo','done'].forEach(st=>{
       const list=document.getElementById('tkcol-'+st);
@@ -4201,17 +4204,42 @@ function renderTaskBoard(preserveTagSel){
   } else if(tbViewMode==='tag'){
     if(boardCols)boardCols.style.display='none';
     if(doneSec)doneSec.style.display='none';
+    const tagBar=document.getElementById('tb-tag-bar');
     if(altView){
       altView.innerHTML='';
       altView.style.cssText='display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:14px;align-items:start';
       const openTks=tks.filter(t=>t.status!=='done');
-      const rawTags=[...new Set(openTks.flatMap(t=>t.tags&&t.tags.length?t.tags:[]))].sort();
-      const hasUntagged=openTks.some(t=>!t.tags||t.tags.length===0);
+      const allRawTags=[...new Set(openTks.flatMap(t=>t.tags&&t.tags.length?t.tags:[]))].sort();
       const tagColors=['#6366f1','#0ea5e9','#10b981','#f59e0b','#ef4444','#8b5cf6','#ec4899','#14b8a6','#f97316','#84cc16'];
-      rawTags.forEach((tag,i)=>{
+      const tagColorMap={};allRawTags.forEach((tag,i)=>{tagColorMap[tag]=tagColors[i%tagColors.length];});
+      // Build tag chip bar
+      if(tagBar){
+        tagBar.style.cssText='display:flex;flex-wrap:wrap;gap:8px;padding:10px 0 4px 0';
+        tagBar.innerHTML='';
+        const allChip=document.createElement('button');
+        allChip.className='tb-tag-chip'+(tbTagQuickSel===''?' tb-tag-chip-active':'');
+        allChip.textContent='All';
+        allChip.style.cssText='background:'+(tbTagQuickSel===''?'#505c6a':'#f1f5f9')+';color:'+(tbTagQuickSel===''?'#fff':'#475569')+';border:1.5px solid '+(tbTagQuickSel===''?'#505c6a':'#cbd5e1')+';border-radius:20px;padding:4px 14px;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s';
+        allChip.onclick=function(){tbTagQuickSel='';renderTaskBoard(true);};
+        tagBar.appendChild(allChip);
+        allRawTags.forEach(tag=>{
+          const clr=tagColorMap[tag];
+          const active=tbTagQuickSel===tag;
+          const chip=document.createElement('button');
+          chip.className='tb-tag-chip'+(active?' tb-tag-chip-active':'');
+          chip.textContent='🏷️ '+tag;
+          chip.style.cssText='background:'+(active?clr:clr+'18')+';color:'+(active?'#fff':clr)+';border:1.5px solid '+clr+';border-radius:20px;padding:4px 14px;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s';
+          chip.onclick=(function(t){return function(){tbTagQuickSel=(tbTagQuickSel===t?'':t);renderTaskBoard(true);};})(tag);
+          tagBar.appendChild(chip);
+        });
+      }
+      // Filter groups by quick-select
+      const rawTags=tbTagQuickSel?[tbTagQuickSel]:allRawTags;
+      const hasUntagged=!tbTagQuickSel&&openTks.some(t=>!t.tags||t.tags.length===0);
+      rawTags.forEach((tag)=>{
+        const clr=tagColorMap[tag]||'#6366f1';
         const group=openTks.filter(t=>t.tags&&t.tags.includes(tag)).sort(sortFn);
         const col2=document.createElement('div');col2.className='tk-col';
-        const clr=tagColors[i%tagColors.length];
         col2.innerHTML='<div class="tk-col-hdr" style="background:#f8f9fb;border-color:'+clr+'"><div class="tk-col-title" style="color:'+clr+'">&#127991; '+es(tag)+' <span class="tk-cnt" style="background:'+clr+'22;color:'+clr+'">'+group.length+'</span></div></div>';
         const list2=document.createElement('div');list2.className='tk-list';
         if(group.length===0){const emp2=document.createElement('div');emp2.style.cssText='color:var(--gray);font-style:italic;text-align:center;padding:22px 12px;font-size:12px;grid-column:1/-1';emp2.textContent='No tasks';list2.appendChild(emp2);}
@@ -4226,12 +4254,13 @@ function renderTaskBoard(preserveTagSel){
         group.forEach(t=>list2.appendChild(buildCard(t,t.status)));
         col2.appendChild(list2);altView.appendChild(col2);
       }
-      if(rawTags.length===0&&!hasUntagged){altView.style.display='block';altView.innerHTML='<div style="color:var(--gray);font-style:italic;text-align:center;padding:40px;font-size:13px">No tasks to display</div>';}
+      if(allRawTags.length===0&&!hasUntagged){altView.style.display='block';altView.innerHTML='<div style="color:var(--gray);font-style:italic;text-align:center;padding:40px;font-size:13px">No tasks to display</div>';}
     }
 
   } else if(tbViewMode==='list'){
     if(boardCols)boardCols.style.display='none';
     if(doneSec)doneSec.style.display='none';
+    if(tagBar)tagBar.style.display='none';
     if(altView){
       altView.style.cssText='display:block';
       altView.innerHTML='';
@@ -4269,6 +4298,7 @@ function renderTaskBoard(preserveTagSel){
 }
 
 function setTbView(mode){
+  if(mode!=='tag')tbTagQuickSel='';
   tbViewMode=mode;
   ['board','tag','list'].forEach(m=>{const b=document.getElementById('tbvbtn-'+m);if(b)b.classList.toggle('active',m===mode);});
   renderTaskBoard();
