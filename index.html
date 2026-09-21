@@ -766,6 +766,12 @@ body.mob .tb-main-cols{grid-template-columns:1fr}
 /* queues + permitting */
 body.mob .jq-top,body.mob .coq-top,body.mob .perm-top{padding:10px 12px;flex-wrap:wrap}
 body.mob .jq-title,body.mob .coq-title,body.mob .perm-title{font-size:15px}
+body.mob #jqueue .sh.bgp{flex-wrap:wrap;gap:4px}
+body.mob #jqueue .sh.bgp .shl{flex:1;min-width:0}
+body.mob #jqueue .sh.bgp>div:last-child{flex-wrap:wrap;gap:5px;width:100%;margin-left:0;margin-top:4px}
+body.mob .perm-top{flex-direction:column;align-items:stretch;gap:8px}
+body.mob .wu-topbar-right{flex-wrap:wrap;gap:6px}
+body.mob .pu-search-wrap{flex:1;min-width:0}
 
 /* modals + toast */
 body.mob #ibox{width:95vw;max-width:95vw;padding:18px}
@@ -1103,7 +1109,7 @@ tr.pu-row-green td.tmiss{background:#dcfce7!important}
   </div>
   <div class="sc" style="border-radius:0;box-shadow:0 1px 4px rgba(0,0,0,.1)">
     <div class="sh bgo" style="cursor:default"><div class="shl"><div class="sht">Queued Projects</div><div class="shc" id="coq-count">0 projects</div></div></div>
-    <div class="sbody"><div class="tw"><table><thead id="coq-th"></thead><tbody id="coq-tb"></tbody></table></div></div>
+    <div class="sbody"><div class="tw"><table><thead id="coq-th"></thead><tbody id="coq-tb"></tbody></table></div><div class="mob-clist" id="coq-cl"></div></div>
   </div>
 </div>
 
@@ -1127,7 +1133,7 @@ tr.pu-row-green td.tmiss{background:#dcfce7!important}
     </div>
   </div>
   <div class="sc" style="border-radius:0;box-shadow:0 1px 4px rgba(0,0,0,.1)">
-    <div class="sbody"><div class="tw"><table><thead id="perm-th"></thead><tbody id="perm-tb"></tbody></table></div></div>
+    <div class="sbody"><div class="tw"><table><thead id="perm-th"></thead><tbody id="perm-tb"></tbody></table></div><div class="mob-clist" id="perm-cl"></div></div>
   </div>
 </div>
 
@@ -2901,6 +2907,38 @@ function renderJQ(){
       tb.appendChild(tr);
     });
   }
+  // Mobile card list
+  const jqCl=document.getElementById('jq-cl');
+  if(jqCl){
+    jqCl.innerHTML='';
+    if(tot===0){jqCl.innerHTML='<div class="mc-empty">No projects qualify for the Job Start Queue.</div>';}
+    else{
+      pd2.forEach(p=>{
+        const idx=proj.indexOf(p);
+        const card=document.createElement('div');card.className='mc';
+        const addr=pname(p);const hm=((p.firstName||'')+' '+(p.lastName||'')).trim();const cy=p.city||'';
+        const presaleSec=SECS.find(s=>s.k==='p');
+        const datesHtml=(presaleSec?presaleSec.ec:[]).map(col=>{
+          let v=p[col.key]||'';if(col.key==='ntpP'&&!v)v=p.costEstimateApproved||'';
+          if(col.t==='d'){const fv=fd2(v);return'<div class="mc-drow"><div class="mc-dlbl">'+es(col.label)+'</div><div class="mc-dval'+(fv?'':' miss')+'">'+( fv||'—')+'</div></div>';}
+          if(col.t==='n'){return'<div class="mc-drow"><div class="mc-dlbl">'+es(col.label)+'</div><div class="mc-dval'+(v&&v!=='0'?' num':' miss')+'">'+( v&&v!=='0'?es(v):'—')+'</div></div>';}
+          return'';
+        }).join('');
+        const hasPerm=!!(p.bldgPermitIssued&&p.bldgPermitIssued!=='0');
+        card.innerHTML=
+          '<div class="mc-top"><div class="mc-addr">'+es(addr||'No address')+'</div>'+(p.projectNumber?'<div class="mc-appid">'+es(p.projectNumber)+'</div>':'')+'</div>'+
+          (hm||cy?'<div class="mc-sub">'+(hm?es(hm):'')+(hm&&cy?' · ':'')+es(cy)+'</div>':'')+
+          '<div class="mc-badges">'+pbdg(p.program)+sbdg(p.jobStatus)+(hasPerm?'<span class="badge" style="background:#dcfce7;color:#166534;border:1px solid #bbf7d0">Permit ✓</span>':'<span class="badge" style="background:#fee2e2;color:#991b1b;border:1px solid #fecaca">No Permit</span>')+'</div>'+
+          '<div class="mc-chips">'+
+            (p.superintendent?'<div class="mc-chip"><span class="mc-chip-lbl">Sup</span>'+es(p.superintendent)+'</div>':'')+
+            (p.jobType?'<div class="mc-chip"><span class="mc-chip-lbl">Type</span>'+es(p.jobType)+'</div>':'')+
+          '</div>'+
+          (datesHtml?'<div class="mc-dates">'+datesHtml+'</div>':'');
+        card.addEventListener('click',()=>{if(!editMode)od(idx);});
+        jqCl.appendChild(card);
+      });
+    }
+  }
   rfotJQ(tot,pg2);
 }
 function mpJQ(lb,tgt,dis){
@@ -3087,7 +3125,7 @@ function renderPerm(){
   if(!pending.length){
     const er=document.createElement('tr');er.className='erow';
     const ed=document.createElement('td');ed.colSpan=all.length;ed.textContent='No matching projects found.';
-    er.appendChild(ed);tb.appendChild(er);return;
+    er.appendChild(ed);tb.appendChild(er);
   }
   pending.forEach(p=>{
     const idx=proj.indexOf(p);const addr=p.address||'';
@@ -3131,6 +3169,49 @@ function renderPerm(){
     });
     tb.appendChild(tr);
   });
+  // Mobile card list
+  const permCl=document.getElementById('perm-cl');
+  if(permCl){
+    permCl.innerHTML='';
+    if(!pending.length){permCl.innerHTML='<div class="mc-empty">No matching projects found.</div>';}
+    else{
+      pending.forEach(p=>{
+        const idx=proj.indexOf(p);
+        const addr=p.address||'';
+        const card=document.createElement('div');card.className='mc';
+        const addrDisplay=pname(p);const hm=((p.firstName||'')+' '+(p.lastName||'')).trim();const cy=p.city||'';
+        const pdr=_permDaysVal(p);
+        let daysChip='';
+        if(pdr){
+          const dclr=pdr.fromAssignment?'background:#fef08a;color:#854d0e':pdr.days>60?'color:#dc2626':pdr.days>30?'color:#d97706':'color:#16a34a';
+          daysChip='<div class="mc-chip"><span class="mc-chip-lbl">Days</span><span style="font-weight:700;'+dclr+'">'+pdr.days+'d</span></div>';
+        }
+        const attnVal=!!(puData[addr]||{}).needsAttention;
+        const _ps=p.bldgPermitSubmitted||'';const _pi=p.bldgPermitIssued||'';
+        const _hs=_ps&&_ps!=='0';const _hi=_pi&&_pi!=='0';const _na=_pi==='N/A'||_ps==='N/A';
+        let permBadge='';
+        if(attnVal)permBadge='<span class="badge" style="background:#fee2e2;color:#991b1b;border:1px solid #fecaca">⚠ Needs Attn</span>';
+        else if(_na||(_hs&&_hi))permBadge='<span class="badge" style="background:#dcfce7;color:#166534;border:1px solid #bbf7d0">Issued ✓</span>';
+        else if(_hs)permBadge='<span class="badge" style="background:#dbeafe;color:#1e40af;border:1px solid #bfdbfe">Submitted</span>';
+        else permBadge='<span class="badge" style="background:#fef9c3;color:#854d0e;border:1px solid #fde68a">No Permit</span>';
+        const thisWeek=(puData[addr]||{}).thisWeek||'';
+        card.innerHTML=
+          '<div class="mc-top"><div class="mc-addr">'+es(addrDisplay||'No address')+'</div>'+(p.projectNumber?'<div class="mc-appid">'+es(p.projectNumber)+'</div>':'')+'</div>'+
+          (hm||cy?'<div class="mc-sub">'+(hm?es(hm):'')+(hm&&cy?' · ':'')+es(cy)+'</div>':'')+
+          '<div class="mc-badges">'+pbdg(p.program)+sbdg(p.jobStatus)+permBadge+'</div>'+
+          '<div class="mc-chips">'+daysChip+
+            (p.permittingJurisdiction?'<div class="mc-chip"><span class="mc-chip-lbl">Jur</span>'+es(p.permittingJurisdiction)+'</div>':'')+
+          '</div>'+
+          '<div class="mc-dates">'+
+            '<div class="mc-drow"><div class="mc-dlbl">Permit Submitted</div><div class="mc-dval'+(p.bldgPermitSubmitted&&p.bldgPermitSubmitted!=='0'?'':' miss')+'">'+(p.bldgPermitSubmitted&&p.bldgPermitSubmitted!=='0'?fd2(p.bldgPermitSubmitted):'—')+'</div></div>'+
+            '<div class="mc-drow"><div class="mc-dlbl">Permit Issued</div><div class="mc-dval'+((_hs&&_hi)||_na?'':' miss')+'">'+((_hs&&_hi)?fd2(p.bldgPermitIssued):(_na?p.bldgPermitIssued:'—'))+'</div></div>'+
+          '</div>'+
+          (thisWeek?'<div style="margin-top:6px;padding-top:6px;border-top:1px solid var(--border);font-size:11px;color:#374151"><span style="font-size:9px;font-weight:700;color:#5a6d85;text-transform:uppercase;letter-spacing:.4px">This Week</span><div>'+es(thisWeek)+'</div></div>':'');
+        card.addEventListener('click',()=>od(idx));
+        permCl.appendChild(card);
+      });
+    }
+  }
 }
 function setViewHash(h){history.replaceState(null,'',h?('#'+h):(location.pathname+location.search));}
 function syncNavActive(){
@@ -3438,6 +3519,41 @@ function renderCOQ(){
     tdRm.appendChild(btn);tr.appendChild(tdRm);
     tb.appendChild(tr);
   });
+  // Mobile card list
+  const coqCl=document.getElementById('coq-cl');
+  if(coqCl){
+    coqCl.innerHTML='';
+    if(queued.length===0){coqCl.innerHTML='<div class="mc-empty">No projects in Change Order Queue. Use the △ button to add one.</div>';}
+    else{
+      queued.forEach(p=>{
+        const idx=proj.indexOf(p);
+        const card=document.createElement('div');card.className='mc';
+        const addr=pname(p);const hm=((p.firstName||'')+' '+(p.lastName||'')).trim();const cy=p.city||'';
+        const openSec=SECS.find(s=>s.k==='o');
+        const datesHtml=(openSec?openSec.ec:[]).map(col=>{
+          const v=p[col.key]||'';
+          if(col.t==='d'){const fv=fd2(v);return'<div class="mc-drow"><div class="mc-dlbl">'+es(col.label)+'</div><div class="mc-dval'+(fv?'':' miss')+'">'+( fv||'—')+'</div></div>';}
+          return'';
+        }).join('');
+        card.innerHTML=
+          '<div class="mc-top"><div class="mc-addr">'+es(addr||'No address')+'</div>'+(p.projectNumber?'<div class="mc-appid">'+es(p.projectNumber)+'</div>':'')+'</div>'+
+          (hm||cy?'<div class="mc-sub">'+(hm?es(hm):'')+(hm&&cy?' · ':'')+es(cy)+'</div>':'')+
+          '<div class="mc-badges">'+pbdg(p.program)+sbdg(p.jobStatus)+'</div>'+
+          '<div class="mc-chips">'+
+            (p.superintendent?'<div class="mc-chip"><span class="mc-chip-lbl">Sup</span>'+es(p.superintendent)+'</div>':'')+
+            (p.jobType?'<div class="mc-chip"><span class="mc-chip-lbl">Type</span>'+es(p.jobType)+'</div>':'')+
+          '</div>'+
+          (datesHtml?'<div class="mc-dates">'+datesHtml+'</div>':'');
+        card.style.paddingBottom='36px';
+        const rmBtn=document.createElement('button');rmBtn.textContent='✕ Remove from Queue';rmBtn.style.cssText='position:absolute;bottom:8px;right:8px;font-size:11px;padding:3px 8px;border:1px solid #e5e7eb;border-radius:4px;background:#fff;color:#6b7280;cursor:pointer;';
+        rmBtn.addEventListener('click',(e)=>{e.stopPropagation();removeFromCOQ(p.address);renderCOQ();});
+        card.style.position='relative';
+        card.appendChild(rmBtn);
+        card.addEventListener('click',()=>od(idx));
+        coqCl.appendChild(card);
+      });
+    }
+  }
 }
 
 function toggleTaskView(){
