@@ -1828,7 +1828,7 @@ function rse(sec){
   const data=filt.filter(p=>p.constructionStage===sec.stage);
   const s=srt[sec.k];
   data.sort((a,b)=>{
-    const _sv=(p,c)=>c==='_identity'?pname(p):c==='_meta'?p.jobStatus||'':c==='_assign'?p.superintendent||'':c==='_name'?((p.firstName||'')+(p.lastName||'')):c==='ntpP'?(p.ntpP||p.costEstimateApproved||''):p[c]||'';
+    const _sv=(p,c)=>c==='_identity'?pname(p):c==='_meta'?p.jobStatus||'':c==='_assign'?p.superintendent||'':c==='_name'?((p.firstName||'')+(p.lastName||'')):c==='ntpP'?(p.ntpP||p.costEstimateApproved||''):c==='daysInConstruction'?calcDaysInConstruction(p):p[c]||'';
     let av=_sv(a,s.col);
     let bv=_sv(b,s.col);
     const ae=av==='',be=bv==='';
