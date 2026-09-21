@@ -1510,6 +1510,7 @@ function nmFuzzy(s){
 }
 function es(s){if(!s)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function fd2(d){if(!d)return'';const p=d.split('-');return p.length===3?p[1]+'/'+p[2]+'/'+p[0]:d;}
+function calcDaysInConstruction(p){if(!p.ntp||p.ntp==='0')return'';const t=new Date();t.setHours(0,0,0,0);return String(Math.max(0,Math.round((t-new Date(p.ntp))/86400000)));}
 
 const EXCLUDED_ADDRESSES=['3901 Bahia Vista St #136','3901 Bahia Vista St #112','3901 Bahia Vista St #438','3901 Bahia Vista St Lot 216','3901 Bahia Vista St Lot #438','4511 Land O Lakes Blvd Lot 4'];
 function filterProj(arr){
@@ -1870,6 +1871,7 @@ function rse(sec){
         const k=col.key,tp=col.t;
         let v=p[k]||'';
         if(k==='ntpP'&&!v)v=p.costEstimateApproved||'';
+        if(k==='daysInConstruction')v=calcDaysInConstruction(p);
         let miss=false;
         if(tp==='id'){
           td.className='tc-id';td.style.whiteSpace='normal';
@@ -1919,6 +1921,7 @@ function rse(sec){
         const addr=pname(p);const hm=((p.firstName||'')+' '+(p.lastName||'')).trim();const cy=p.city||'';
         const datesHtml=sec.ec.map(col=>{
           let v=p[col.key]||'';if(col.key==='ntpP'&&!v)v=p.costEstimateApproved||'';
+          if(col.key==='daysInConstruction')v=calcDaysInConstruction(p);
           if(col.t==='d'){const fv=fd2(v);return'<div class="mc-drow"><div class="mc-dlbl">'+es(col.label)+'</div><div class="mc-dval'+(fv?'':' miss')+'">'+( fv||'—')+'</div></div>';}
           if(col.t==='n'){return'<div class="mc-drow"><div class="mc-dlbl">'+es(col.label)+'</div><div class="mc-dval'+(v&&v!=='0'?' num':' miss')+'">'+( v&&v!=='0'?es(v):'—')+'</div></div>';}
           return'';
@@ -2163,7 +2166,7 @@ function od(idx){
   sec2('Basic Information','<div class="dg2">'+f('First Name',p.firstName)+f('Last Name',p.lastName)+f('Applicant Phone',p.applicantPhone)+f('Applicant Email',p.applicantEmail)+f('Project # / Prefix',p.projectNumber)+f('Program',p.program)+f('City',p.city)+f('Permitting Jurisdiction',p.permittingJurisdiction)+f('Job Type',p.jobType)+f('Superintendent',p.superintendent)+'</div>','dsec-basic');
   sec2('Pre-Construction','<div class="dg2">'+fd3('Assignment Received',p.assignmentReceived)+fd3('ISV Completed',p.isvCompleted)+fd3('Cost Estimate Submitted',p.costEstimateSubmitted)+fd3('Cost Estimate Approved',p.costEstimateApproved)+fn2('Days to Submittal',p.daysToSubmittal)+fn2('Days to Approval',p.daysToApproval)+fd3('Demo Permit Submitted',p.demoPermitSubmitted)+fd3('Demo Permit Issued',p.demoPermitIssued)+fd3('Bldg Permit Submitted',p.bldgPermitSubmitted)+fd3('Bldg Permit Issued',p.bldgPermitIssued)+f('Permit Kickback Dates',p.permitKickbackDates)+fn2('# of Kickbacks',p.numKickbacks)+fn2('Days in Permitting (Muni)',p.daysInPermittingMuni)+fn2('Assignment to Permit Issued',p.assignmentToPermitIssued)+fd3('Septic Ordered',p.septicOrdered)+fd3('Septic Received',p.septicReceived)+fd3('Bldg Permit Number',p.bldgPermitNumber)+fd3('Demo Permit Number',p.demoPermitNumber)+'</div>','dsec-precon');
   if((p.jobType||'').toLowerCase()!=='rehab')sec2('Survey, Plans & Engineering','<div class="dg2">'+fd3('Survey/EC Ordered',p.surveyOrdered)+fd3('Survey/EC Received',p.surveyReceived)+fn2('Days for Survey/EC',p.daysForSurvey)+fd3('Plans Ordered',p.plansOrdered)+fd3('Plans Received',p.plansReceived)+fn2('Days for Plans',p.daysForPlans)+fd3('Revision Requested',p.revisionRequested)+fn2('Days for Revision',p.daysForRevision)+fn2('# of Revisions',p.numRevisions)+'</div>','dsec-survey');
-  sec2('Construction','<div class="dg2">'+fd3('NTP-P',p.ntpP)+fd3('NTP',p.ntp)+fd3('Construction Start',p.constructionStart)+fd3('Work Order Issued',p.workOrderIssued)+fd3('Pre-Construction Deadline',p.preConDeadline)+fd3('Construction Deadline',p.constructionDeadline)+fn2('Days in Pre-Con',p.daysInPreCon)+fn2('Approved Pre-Con Delays',p.approvedPreConDelays)+fd3('Projected Start',p.projectedStart)+fd3('Projected Completion',p.projectedCompletion)+fd3('50% Inspection',p.inspection50)+fn2('Days to 50%',p.daysTo50)+fd3('100% Inspection',p.inspection100)+fn2('Days in Construction',p.daysInConstruction)+fn2('Approved Constr. Delays',p.approvedConstrDelays)+fn2('Construction Days',p.constructionDays)+fn2('Build Days',p.buildDays)+fn2('Remaining Pre-Con Time',p.remainingPreConTime)+'</div>','dsec-construction');
+  sec2('Construction','<div class="dg2">'+fd3('NTP-P',p.ntpP)+fd3('NTP',p.ntp)+fd3('Construction Start',p.constructionStart)+fd3('Work Order Issued',p.workOrderIssued)+fd3('Pre-Construction Deadline',p.preConDeadline)+fd3('Construction Deadline',p.constructionDeadline)+fn2('Days in Pre-Con',p.daysInPreCon)+fn2('Approved Pre-Con Delays',p.approvedPreConDelays)+fd3('Projected Start',p.projectedStart)+fd3('Projected Completion',p.projectedCompletion)+fd3('50% Inspection',p.inspection50)+fn2('Days to 50%',p.daysTo50)+fd3('100% Inspection',p.inspection100)+fn2('Days in Construction',calcDaysInConstruction(p))+fn2('Approved Constr. Delays',p.approvedConstrDelays)+fn2('Construction Days',p.constructionDays)+fn2('Build Days',p.buildDays)+fn2('Remaining Pre-Con Time',p.remainingPreConTime)+'</div>','dsec-construction');
   sec2('Financial','<div class="dg2">'+fm2('Contract Amount',p.contractAmount)+fm2('Job Cost',p.jobCost)+f('Accounting Job Type',p.acctJobType)+'</div>','dsec-financial');
   if(editMode){
     body.querySelectorAll('.df2').forEach(df=>{
@@ -2505,7 +2508,7 @@ function sir(type,html){const el=document.getElementById('ires');el.className=ty
 function exportCSV(){
   const cs=[['address','Address'],['program','Program'],['firstName','First Name'],['lastName','Last Name'],['city','City'],['permittingJurisdiction','Permitting Jurisdiction'],['constructionStage','Stage'],['jobStatus','Job Status'],['jobType','Job Type'],['superintendent','Superintendent'],['assignmentReceived','Assignment Received'],['isvCompleted','ISV Completed'],['costEstimateSubmitted','Cost Est. Submitted'],['costEstimateApproved','Cost Est. Approved'],['demoPermitSubmitted','Demo Permit Submitted'],['demoPermitIssued','Demo Permit Issued'],['bldgPermitSubmitted','Bldg Permit Submitted'],['bldgPermitIssued','Bldg Permit Issued'],['surveyOrdered','Survey Ordered'],['surveyReceived','Survey Received'],['plansOrdered','Plans Ordered'],['plansReceived','Plans Received'],['ntpP','NTP-P'],['ntp','NTP'],['constructionStart','Construction Start'],['constructionDeadline','Construction Deadline'],['projectedStart','Proj. Start'],['projectedCompletion','Proj. Completion'],['inspection50','50% Inspection'],['inspection100','100% Inspection'],['daysInConstruction','Days in Construction'],['contractAmount','Contract Amount'],['jobCost','Job Cost'],['notes','Notes']];
   const rows=[cs.map(c=>c[1]).join(',')];
-  filt.forEach(p=>{rows.push(cs.map(([k])=>{const v=p[k]||'';return(v.includes(',')||v.includes('"')||v.includes('\n'))?'"'+v.replace(/"/g,'""')+'"':v;}).join(','));});
+  filt.forEach(p=>{rows.push(cs.map(([k])=>{const v=k==='daysInConstruction'?calcDaysInConstruction(p):(p[k]||'');return(v.includes(',')||v.includes('"')||v.includes('\n'))?'"'+v.replace(/"/g,'""')+'"':v;}).join(','));});
   const blob=new Blob([rows.join('\n')],{type:'text/csv'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='FL_Job_Tracker_'+new Date().toISOString().slice(0,10)+'.csv';a.click();
   st2('CSV exported!');
