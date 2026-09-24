@@ -140,6 +140,7 @@ tr.dr:hover td.tcrit-miss,tr.dr.row-permit td.tcrit-miss{background:#fecaca}
 .tpg{white-space:normal}
 .tdt{color:#1d4ed8;font-variant-numeric:tabular-nums;font-size:12px}
 .tdt.toverdue{color:#dc2626;font-weight:700}
+.tnu.toverdue{color:#dc2626;font-weight:700}
 .tnu{color:var(--teal);font-variant-numeric:tabular-nums;font-weight:700}
 .tem{color:#c4c9d4;font-style:italic;font-size:11px}
 
@@ -1512,7 +1513,7 @@ function nmFuzzy(s){
 function es(s){if(!s)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function fd2(d){if(!d)return'';const p=d.split('-');return p.length===3?p[1]+'/'+p[2]+'/'+p[0]:d;}
 function calcDaysInConstruction(p){if(!p.ntp||p.ntp==='0')return'';const t=new Date();t.setHours(0,0,0,0);return String(Math.max(0,Math.round((t-new Date(p.ntp))/86400000)));}
-function calcPreConDays(p){const d=(p.ntpP&&p.ntpP!=='0')?p.ntpP:((p.costEstimateApproved&&p.costEstimateApproved!=='0')?p.costEstimateApproved:'');if(!d)return'';const t=new Date();t.setHours(0,0,0,0);return String(Math.max(0,Math.round((t-new Date(d))/86400000)));}
+function calcPreConDays(p){const d=(p.ntpP&&p.ntpP!=='0')?p.ntpP:((p.costEstimateApproved&&p.costEstimateApproved!=='0')?p.costEstimateApproved:'');if(!d)return'';let end;if(p.ntp&&p.ntp!=='0'){end=new Date(p.ntp);}else{end=new Date();end.setHours(0,0,0,0);}return String(Math.max(0,Math.round((end-new Date(d))/86400000)));}
 
 const EXCLUDED_ADDRESSES=['3901 Bahia Vista St #136','3901 Bahia Vista St #112','3901 Bahia Vista St #438','3901 Bahia Vista St Lot 216','3901 Bahia Vista St Lot #438','4511 Land O Lakes Blvd Lot 4'];
 function filterProj(arr){
@@ -1885,7 +1886,7 @@ function rse(sec){
         else if(tp==='st'){td.innerHTML=sbdg(p.jobStatus);miss=!p.jobStatus;}
         else if(tp==='tx'){td.textContent=v;miss=!v;}
         else if(tp==='d'){if(!v){td.className='tem';td.textContent='--';miss=true;if((k==='ntp'&&['WARRANTY','CLOSED','OPEN'].includes(p.constructionStage))||(k==='inspection100'&&['WARRANTY','CLOSED'].includes(p.constructionStage)))td.classList.add('tcrit-miss');}else{td.className='tdt';td.textContent=fd2(v);if(k==='preConDeadline'&&p.constructionStage==='PRESALE'&&v<new Date().toISOString().slice(0,10))td.classList.add('toverdue');}}
-        else if(tp==='n'){if(!v||v==='0'){td.className='tem';td.textContent='--';miss=true;}else{td.className='tnu';td.textContent=v;}}
+        else if(tp==='n'){if(!v||v==='0'){td.className='tem';td.textContent='--';miss=true;}else{td.className='tnu';td.textContent=v;if(k==='preConDays'&&p.preConDeadline&&p.preConDeadline!=='0'&&new Date().toISOString().slice(0,10)>p.preConDeadline&&!(p.ntp&&p.ntp!=='0'))td.classList.add('toverdue');}}
         else{td.textContent=v;miss=!v;}
         if(miss)td.classList.add('tmiss');
         if(editMode&&tp!=='id'){
@@ -1919,7 +1920,7 @@ function rse(sec){
           if(col.key==='daysInConstruction')v=calcDaysInConstruction(p);
           if(col.key==='preConDays')v=calcPreConDays(p);
           if(col.t==='d'){const fv=fd2(v);return'<div class="mc-drow"><div class="mc-dlbl">'+es(col.label)+'</div><div class="mc-dval'+(fv?'':' miss')+'">'+( fv||'—')+'</div></div>';}
-          if(col.t==='n'){return'<div class="mc-drow"><div class="mc-dlbl">'+es(col.label)+'</div><div class="mc-dval'+(v&&v!=='0'?' num':' miss')+'">'+( v&&v!=='0'?es(v):'—')+'</div></div>';}
+          if(col.t==='n'){const isOverdue=col.key==='preConDays'&&p.preConDeadline&&p.preConDeadline!=='0'&&new Date().toISOString().slice(0,10)>p.preConDeadline&&!(p.ntp&&p.ntp!=='0');return'<div class="mc-drow"><div class="mc-dlbl">'+es(col.label)+'</div><div class="mc-dval'+(v&&v!=='0'?' num':' miss')+'"'+(isOverdue?' style="color:#dc2626;font-weight:700"':'')+'>'+( v&&v!=='0'?es(v):'—')+'</div></div>';}
           return'';
         }).join('');
         card.innerHTML=
