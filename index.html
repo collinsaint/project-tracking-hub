@@ -1715,7 +1715,7 @@ function af(){
     if(st&&p.jobStatus!==st)return false;
     if(ty&&p.jobType!==ty)return false;
     if(su&&p.superintendent!==su)return false;
-    if(cm){const _cmProgs={'Brett':['DSW - FL Resilient SRQ','HORNE - FL Pinellas','IEM - Pasco Better Future'],'Michael':['HORNE - FL Orange County']};if(p.cm!==cm&&!(_cmProgs[cm]||[]).includes(p.program))return false;}
+    if(cm){const _cmProgs={'Brett Bales':['DSW - FL Resilient SRQ','HORNE - FL Pinellas','IEM - Pasco Better Future'],'Michael Warren':['HORNE - FL Orange County']};if(p.cm!==cm&&!(_cmProgs[cm]||[]).includes(p.program))return false;}
     if(ci&&p.city!==ci)return false;
     if(q){const h=[p.address,p.jobName,p.firstName,p.lastName,p.city,p.program,p.jobStatus,p.superintendent,p.notes,p.projectNumber,p.applicantPhone].join(' ').toLowerCase();if(!h.includes(q))return false;}
     return true;
