@@ -1404,6 +1404,7 @@ const SECS=[
     {key:'bldgPermitIssued',label:'Bldg Permit Issued',t:'d'},
     {key:'ntpP',label:'NTP-P',t:'d'},
     {key:'preConDeadline',label:'Pre-Con Deadline',t:'d'},
+    {key:'preConDays',label:'Pre-Con Days',t:'n'},
   ]},
   {k:'o',stage:'OPEN',tc:'tho',ec:[
     {key:'ntp',label:'NTP',t:'d'},
@@ -1511,6 +1512,7 @@ function nmFuzzy(s){
 function es(s){if(!s)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function fd2(d){if(!d)return'';const p=d.split('-');return p.length===3?p[1]+'/'+p[2]+'/'+p[0]:d;}
 function calcDaysInConstruction(p){if(!p.ntp||p.ntp==='0')return'';const t=new Date();t.setHours(0,0,0,0);return String(Math.max(0,Math.round((t-new Date(p.ntp))/86400000)));}
+function calcPreConDays(p){const d=(p.ntpP&&p.ntpP!=='0')?p.ntpP:((p.costEstimateApproved&&p.costEstimateApproved!=='0')?p.costEstimateApproved:'');if(!d)return'';const t=new Date();t.setHours(0,0,0,0);return String(Math.max(0,Math.round((t-new Date(d))/86400000)));}
 
 const EXCLUDED_ADDRESSES=['3901 Bahia Vista St #136','3901 Bahia Vista St #112','3901 Bahia Vista St #438','3901 Bahia Vista St Lot 216','3901 Bahia Vista St Lot #438','4511 Land O Lakes Blvd Lot 4'];
 function filterProj(arr){
@@ -1664,7 +1666,6 @@ function bh(sec){
     th2.className=sec.tc;th2.textContent=col.label;th2.dataset.key=col.key;
     th2.onclick=()=>ss(sec.k,col.key);tr.appendChild(th2);
   });
-  const thCQ=document.createElement('th');thCQ.className=sec.tc;thCQ.style.width='40px';thCQ.textContent='';tr.appendChild(thCQ);
   th.appendChild(tr);
 }
 
@@ -1828,7 +1829,7 @@ function rse(sec){
   const data=filt.filter(p=>p.constructionStage===sec.stage);
   const s=srt[sec.k];
   data.sort((a,b)=>{
-    const _sv=(p,c)=>c==='_identity'?pname(p):c==='_meta'?p.jobStatus||'':c==='_assign'?p.superintendent||'':c==='_name'?((p.firstName||'')+(p.lastName||'')):c==='ntpP'?(p.ntpP||p.costEstimateApproved||''):c==='daysInConstruction'?calcDaysInConstruction(p):p[c]||'';
+    const _sv=(p,c)=>c==='_identity'?pname(p):c==='_meta'?p.jobStatus||'':c==='_assign'?p.superintendent||'':c==='_name'?((p.firstName||'')+(p.lastName||'')):c==='ntpP'?(p.ntpP||p.costEstimateApproved||''):c==='daysInConstruction'?calcDaysInConstruction(p):c==='preConDays'?calcPreConDays(p):p[c]||'';
     let av=_sv(a,s.col);
     let bv=_sv(b,s.col);
     const ae=av==='',be=bv==='';
@@ -1854,8 +1855,6 @@ function rse(sec){
   cg.innerHTML='';
   const pxW={id:'150px',p:'115px',st:'125px',tx:'105px',n:'70px',d:'90px',ai:'80px'};
   all.forEach(c=>{const col=document.createElement('col');col.style.width=pxW[c.t]||'90px';cg.appendChild(col);});
-  const cqc=document.createElement('col');cqc.style.width='40px';cg.appendChild(cqc);
-  const cqc2=document.createElement('col');cqc2.style.width='40px';cg.appendChild(cqc2);
   if(tot===0){
     const tr=document.createElement('tr');tr.className='erow';
     const td=document.createElement('td');td.colSpan=all.length;td.textContent='No projects match your current filters.';
@@ -1872,6 +1871,7 @@ function rse(sec){
         let v=p[k]||'';
         if(k==='ntpP'&&!v)v=p.costEstimateApproved||'';
         if(k==='daysInConstruction')v=calcDaysInConstruction(p);
+        if(k==='preConDays')v=calcPreConDays(p);
         let miss=false;
         if(tp==='id'){
           td.className='tc-id';td.style.whiteSpace='normal';
@@ -1901,11 +1901,6 @@ function rse(sec){
         }
         tr.appendChild(td);
       });
-      const tdcq=document.createElement('td');tdcq.style.textAlign='center';tdcq.style.padding='4px';
-      const bcq=document.createElement('button');bcq.className='coq-row-btn'+(isInCOQ(p.address)?' coq-active':'');
-      bcq.textContent=isInCOQ(p.address)?'▲':'△';bcq.title=isInCOQ(p.address)?'Remove from Change Order Queue':'Add to Change Order Queue';
-      bcq.addEventListener('click',(e)=>{e.stopPropagation();toggleCOQAddr(p.address);});
-      tdcq.appendChild(bcq);tr.appendChild(tdcq);
       tb.appendChild(tr);
     });
   }
@@ -1922,6 +1917,7 @@ function rse(sec){
         const datesHtml=sec.ec.map(col=>{
           let v=p[col.key]||'';if(col.key==='ntpP'&&!v)v=p.costEstimateApproved||'';
           if(col.key==='daysInConstruction')v=calcDaysInConstruction(p);
+          if(col.key==='preConDays')v=calcPreConDays(p);
           if(col.t==='d'){const fv=fd2(v);return'<div class="mc-drow"><div class="mc-dlbl">'+es(col.label)+'</div><div class="mc-dval'+(fv?'':' miss')+'">'+( fv||'—')+'</div></div>';}
           if(col.t==='n'){return'<div class="mc-drow"><div class="mc-dlbl">'+es(col.label)+'</div><div class="mc-dval'+(v&&v!=='0'?' num':' miss')+'">'+( v&&v!=='0'?es(v):'—')+'</div></div>';}
           return'';
