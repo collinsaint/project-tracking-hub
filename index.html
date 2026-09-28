@@ -265,6 +265,19 @@ tr.dr:hover td.tcrit-miss,tr.dr.row-permit td.tcrit-miss{background:#fecaca}
 .dash-card-desc{font-size:12px;color:#5a6d85;line-height:1.6;flex:1}
 .dash-card-arrow{font-size:13px;color:#94a3b8;font-weight:700;letter-spacing:.3px;text-transform:uppercase;margin-top:6px}
 /* ── MONTHLY METRICS ─────────────────────────── */
+#metrics-export-wrap{position:relative;display:inline-flex}
+#metrics-export-btn{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;font-size:13px;font-weight:600;padding:5px 13px;border-radius:8px;cursor:pointer;transition:background .15s;white-space:nowrap}
+#metrics-export-btn:hover{background:rgba(255,255,255,.22)}
+#metrics-export-pop{position:absolute;top:calc(100% + 8px);right:0;background:#fff;border:1px solid #e5e7eb;border-radius:10px;box-shadow:0 8px 28px rgba(0,0,0,.18);padding:14px 16px;display:none;z-index:400;min-width:230px;flex-direction:column;gap:10px}
+#metrics-export-pop.open{display:flex}
+.mexp-title{font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.6px}
+.mexp-checks{display:flex;flex-direction:column;gap:7px}
+.mexp-check{display:flex;align-items:center;gap:8px;font-size:13px;color:#111827;cursor:pointer}
+.mexp-check input{cursor:pointer;accent-color:#1a56db;width:14px;height:14px;flex-shrink:0}
+.mexp-divider{border:none;border-top:1px solid #e5e7eb;margin:2px 0}
+.mexp-btns{display:flex;flex-direction:column;gap:6px}
+.mexp-btn{display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;border:1px solid #e5e7eb;background:#f9fafb;color:#111827;transition:background .15s;text-align:left}
+.mexp-btn:hover{background:#f3f4f6}
 #metrics-view{position:fixed;inset:0;z-index:192;background:#f0f4fa;overflow-y:auto;display:none;flex-direction:column}
 #metrics-view.open{display:flex}
 #metrics-hdr{background:linear-gradient(135deg,#091e3a 0%,#0d3b6e 55%,#1248a0 100%);color:#fff;padding:0 28px;height:64px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;box-shadow:0 2px 16px rgba(0,0,0,.25)}
@@ -1014,6 +1027,18 @@ tr.pu-row-green td.tmiss{background:#dcfce7!important}
       <div class="metrics-toggle">
         <button class="metrics-toggle-btn active" id="metrics-btn-this" onclick="setMetricsMonth(0)">This Month</button>
         <button class="metrics-toggle-btn" id="metrics-btn-last" onclick="setMetricsMonth(-1)">Last Month</button>
+      </div>
+      <div id="metrics-export-wrap">
+        <button id="metrics-export-btn" onclick="toggleMetricsExport(event)">&#8595; Export</button>
+        <div id="metrics-export-pop">
+          <div class="mexp-title">Include Sections</div>
+          <div class="mexp-checks" id="mexp-checks"></div>
+          <hr class="mexp-divider">
+          <div class="mexp-btns">
+            <button class="mexp-btn" onclick="exportMetricsPDF()">&#128438; Export as PDF</button>
+            <button class="mexp-btn" onclick="exportMetricsXLSX()">&#128202; Export as Excel</button>
+          </div>
+        </div>
       </div>
       <button id="metrics-close" onclick="closeMetricsView()">&#10005; Close</button>
     </div>
@@ -2576,7 +2601,7 @@ async function handlePermittingImport(file){
 }
 function st2(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3000);}
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){cd();ci();closeProgDrop();closeTaskModal();document.getElementById('chlog-modal').classList.remove('open');}});
-document.addEventListener('click',e=>{if(!document.getElementById('prog-wrap').contains(e.target))closeProgDrop();if(!document.getElementById('export-wrap').contains(e.target))closeExportDrop();if(!document.getElementById('wu-wrap').contains(e.target))closeWUDrop();});
+document.addEventListener('click',e=>{if(!document.getElementById('prog-wrap').contains(e.target))closeProgDrop();if(!document.getElementById('export-wrap').contains(e.target))closeExportDrop();if(!document.getElementById('wu-wrap').contains(e.target))closeWUDrop();const mep=document.getElementById('metrics-export-pop');if(mep&&mep.classList.contains('open')&&!document.getElementById('metrics-export-wrap').contains(e.target))mep.classList.remove('open');});
 function closeProgDrop(){document.getElementById('prog-drop').classList.remove('open');document.getElementById('prog-btn').classList.remove('open');}
 window.addEventListener('DOMContentLoaded',init);
 
@@ -3388,6 +3413,88 @@ function sortMetricsCard(secKey,col){
   const s=metricsSort[secKey];if(!s)return;
   if(s.col===col)s.dir*=-1;else{s.col=col;s.dir=1;}
   renderMetricsTbody(secKey);
+}
+function toggleMetricsExport(e){
+  e.stopPropagation();
+  const pop=document.getElementById('metrics-export-pop');
+  const open=pop.classList.toggle('open');
+  if(open){
+    document.getElementById('mexp-checks').innerHTML=METRICS_SECTIONS.map(s=>
+      '<label class="mexp-check"><input type="checkbox" value="'+s.key+'" checked><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:'+s.color+';flex-shrink:0"></span>'+s.label+'</label>'
+    ).join('');
+  }
+}
+function _mexpSorted(sec){
+  const entry=metricsData[sec.key]||{jobs:[]};
+  const {col,dir}=metricsSort[sec.key]||{col:'date',dir:1};
+  return [...entry.jobs].sort((a,b)=>{
+    let av='',bv='';
+    if(col==='date'){av=a[sec.key]||'';bv=b[sec.key]||'';}
+    else if(col==='projectNumber'){av=a.projectNumber||'';bv=b.projectNumber||'';}
+    else if(col==='program'){av=a.program||'';bv=b.program||'';}
+    else if(col==='jobStatus'){av=a.jobStatus||'';bv=b.jobStatus||'';}
+    else{av=a.address||'';bv=b.address||'';}
+    return av<bv?-dir:av>bv?dir:0;
+  });
+}
+function _mexpSelected(){
+  return [...document.querySelectorAll('#mexp-checks input[type=checkbox]:checked')].map(c=>c.value);
+}
+function exportMetricsPDF(){
+  const now=new Date();const d=new Date(now.getFullYear(),now.getMonth()+metricsMonthOffset,1);
+  const monthLabel=d.toLocaleString('default',{month:'long',year:'numeric'});
+  const sel=_mexpSelected();
+  const secs=METRICS_SECTIONS.filter(s=>sel.includes(s.key));
+  let html='<!DOCTYPE html><html><head><meta charset="utf-8"><title>Monthly Metrics — '+monthLabel+'</title><style>'+
+    'body{font-family:Arial,sans-serif;font-size:11px;color:#111;margin:24px 32px}'+
+    'h1{font-size:18px;margin:0 0 3px;color:#0d3b6e}'+
+    '.sub{color:#6b7280;font-size:11px;margin-bottom:24px}'+
+    '.sec{margin-bottom:28px;page-break-inside:avoid}'+
+    '.sec-hdr{display:flex;align-items:center;gap:8px;margin-bottom:8px}'+
+    '.sec-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0}'+
+    '.sec-lbl{font-size:14px;font-weight:700}'+
+    '.sec-cnt{font-size:11px;color:#6b7280;margin-left:4px}'+
+    'table{width:100%;border-collapse:collapse}'+
+    'th{background:#f3f4f6;text-align:left;padding:6px 8px;border-bottom:2px solid #e5e7eb;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px}'+
+    'td{padding:5px 8px;border-bottom:1px solid #f3f4f6;vertical-align:top}'+
+    'tr:last-child td{border-bottom:none}'+
+    '.empty{color:#9ca3af;font-style:italic;padding:6px 0}'+
+    '@media print{body{margin:10px 14px}.sec{page-break-inside:avoid}}'+
+    '</style></head><body>'+
+    '<h1>Monthly Metrics — '+monthLabel+'</h1>'+
+    '<div class="sub">Partners in Construction &nbsp;·&nbsp; Exported '+new Date().toLocaleDateString()+'</div>';
+  secs.forEach(sec=>{
+    const rows=_mexpSorted(sec);
+    html+='<div class="sec"><div class="sec-hdr"><div class="sec-dot" style="background:'+sec.color+'"></div><span class="sec-lbl">'+sec.label+'</span><span class="sec-cnt">('+rows.length+' job'+(rows.length===1?'':'s')+')</span></div>';
+    if(rows.length===0){html+='<div class="empty">No jobs this month</div>';}
+    else{
+      html+='<table><thead><tr><th>Address</th><th>App ID</th><th>Program</th><th>Status</th><th>Date</th></tr></thead><tbody>';
+      rows.forEach(p=>{html+='<tr><td>'+es(pname(p))+'</td><td>'+es(p.projectNumber||'—')+'</td><td>'+es(p.program||'')+'</td><td>'+es(p.jobStatus||'')+'</td><td style="color:'+sec.color+';font-weight:600">'+fd2(p[sec.key])+'</td></tr>';});
+      html+='</tbody></table>';
+    }
+    html+='</div>';
+  });
+  html+='</body></html>';
+  const win=window.open('','_blank');win.document.write(html);win.document.close();win.focus();
+  setTimeout(()=>{win.print();},400);
+  document.getElementById('metrics-export-pop').classList.remove('open');
+}
+function exportMetricsXLSX(){
+  if(typeof XLSX==='undefined'){st2('Export failed: XLSX not loaded');return;}
+  const now=new Date();const d=new Date(now.getFullYear(),now.getMonth()+metricsMonthOffset,1);
+  const monthLabel=d.toLocaleString('default',{month:'long',year:'numeric'});
+  const sel=_mexpSelected();
+  const secs=METRICS_SECTIONS.filter(s=>sel.includes(s.key));
+  const wb=XLSX.utils.book_new();
+  secs.forEach(sec=>{
+    const rows=_mexpSorted(sec);
+    const data=[['Address','App ID','Program','Status','Date'],...rows.map(p=>[pname(p),p.projectNumber||'',p.program||'',p.jobStatus||'',fd2(p[sec.key])])];
+    const ws=XLSX.utils.aoa_to_sheet(data);
+    ws['!cols']=[{wch:36},{wch:12},{wch:28},{wch:42},{wch:12}];
+    XLSX.utils.book_append_sheet(wb,ws,sec.label.slice(0,31));
+  });
+  XLSX.writeFile(wb,'Metrics_'+monthLabel.replace(/\s/g,'_')+'_'+now.toISOString().slice(0,10)+'.xlsx');
+  document.getElementById('metrics-export-pop').classList.remove('open');
 }
 function toggleJQView(){
   document.getElementById('dash-view').classList.remove('open');
