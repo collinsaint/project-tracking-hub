@@ -278,36 +278,20 @@ tr.dr:hover td.tcrit-miss,tr.dr.row-permit td.tcrit-miss{background:#fecaca}
 .mexp-btns{display:flex;flex-direction:column;gap:6px}
 .mexp-btn{display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;border:1px solid #e5e7eb;background:#f9fafb;color:#111827;transition:background .15s;text-align:left}
 .mexp-btn:hover{background:#f3f4f6}
-#cmr-view{position:fixed;inset:0;z-index:192;background:#f0f4fa;display:none;flex-direction:column}
+#cmr-view{position:fixed;inset:0;z-index:192;background:#eef1f6;display:none;flex-direction:column}
 #cmr-view.open{display:flex}
-#cmr-hdr{background:linear-gradient(135deg,#091e3a 0%,#0d3b6e 55%,#1248a0 100%);color:#fff;padding:0 28px;height:64px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;box-shadow:0 2px 16px rgba(0,0,0,.25)}
-#cmr-hdr-title{font-size:18px;font-weight:700;letter-spacing:.1px}
-#cmr-hdr-right{display:flex;align-items:center;gap:10px}
-#cmr-close{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;font-size:15px;padding:5px 11px;border-radius:8px;cursor:pointer;transition:background .15s;line-height:1}
+#cmr-hdr{background:linear-gradient(135deg,#091e3a 0%,#0d3b6e 55%,#1248a0 100%);color:#fff;padding:0 18px;height:52px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;box-shadow:0 2px 16px rgba(0,0,0,.25)}
+#cmr-hdr-title{font-size:15px;font-weight:700;letter-spacing:.1px}
+#cmr-hdr-right{display:flex;align-items:center;gap:8px}
+#cmr-close{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;font-size:14px;padding:4px 10px;border-radius:7px;cursor:pointer;transition:background .15s;line-height:1}
 #cmr-close:hover{background:rgba(255,255,255,.25)}
-.cmr-toggle{display:flex;background:rgba(255,255,255,.12);border-radius:8px;overflow:hidden;border:1px solid rgba(255,255,255,.2)}
-.cmr-toggle-btn{padding:5px 16px;font-size:12px;font-weight:700;color:rgba(255,255,255,.7);background:transparent;border:none;cursor:pointer;transition:all .15s;letter-spacing:.2px}
+.cmr-toggle{display:flex;background:rgba(255,255,255,.12);border-radius:7px;overflow:hidden;border:1px solid rgba(255,255,255,.2)}
+.cmr-toggle-btn{padding:4px 14px;font-size:12px;font-weight:700;color:rgba(255,255,255,.7);background:transparent;border:none;cursor:pointer;transition:all .15s;letter-spacing:.2px}
 .cmr-toggle-btn.active{background:rgba(255,255,255,.28);color:#fff}
 .cmr-toggle-btn:hover:not(.active){background:rgba(255,255,255,.12);color:#fff}
-#cmr-export-btn{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;font-size:13px;font-weight:600;padding:5px 13px;border-radius:8px;cursor:pointer;transition:background .15s;white-space:nowrap}
+#cmr-export-btn{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;font-size:12px;font-weight:600;padding:4px 12px;border-radius:7px;cursor:pointer;transition:background .15s;white-space:nowrap}
 #cmr-export-btn:hover{background:rgba(255,255,255,.2)}
-#cmr-body{flex:1;padding:20px 28px 28px;display:flex;flex-direction:column;gap:0;overflow:hidden}
-#cmr-stage-tabs{display:flex;gap:0;border-bottom:2px solid #dbe3ef;flex-shrink:0}
-.cmr-stab{padding:9px 20px;font-size:13px;font-weight:600;color:#5a6d85;border:none;background:none;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;transition:color .15s,border-color .15s;display:flex;align-items:center;gap:7px}
-.cmr-stab.active{color:#1248a0;border-bottom-color:#1248a0}
-.cmr-stab-cnt{background:#e8edf5;color:#5a6d85;border-radius:10px;padding:1px 7px;font-size:11px;font-weight:700}
-.cmr-stab.active .cmr-stab-cnt{background:#dbeafe;color:#1248a0}
-#cmr-table-wrap{flex:1;overflow:auto;background:#fff;border:1px solid #e2e8f2;border-top:none;border-radius:0 0 10px 10px;box-shadow:0 2px 8px rgba(15,23,42,.06)}
-#cmr-table{width:100%;border-collapse:collapse;font-size:13px}
-#cmr-table thead th{position:sticky;top:0;background:#f4f7fb;border-bottom:2px solid #dbe3ef;padding:9px 12px;text-align:left;font-weight:700;font-size:11px;color:#374151;text-transform:uppercase;letter-spacing:.4px;white-space:nowrap;cursor:pointer;user-select:none;z-index:2}
-#cmr-table thead th:hover{background:#e8edf5}
-#cmr-table td{padding:8px 12px;border-bottom:1px solid #f0f3fa;vertical-align:middle;white-space:nowrap}
-#cmr-table tbody tr:hover td{background:#f7f9fc;cursor:pointer}
-#cmr-table tbody tr:last-child td{border-bottom:none}
-.cmr-td-id{font-weight:600;color:#0f172a;max-width:200px;overflow:hidden;text-overflow:ellipsis}
-.cmr-td-sub{font-size:11px;color:#6b7280;margin-top:1px}
-.cmr-td-st{font-size:11px;font-weight:600;padding:2px 8px;border-radius:10px;background:#f1f5f9;color:#374151;white-space:normal;display:inline-block;max-width:200px;line-height:1.4}
-.cmr-empty{text-align:center;color:#9ca3af;font-style:italic;padding:40px;font-size:14px}
+#cmr-body{flex:1;overflow-y:auto;padding:12px 0;display:flex;flex-direction:column;gap:10px}
 #metrics-view{position:fixed;inset:0;z-index:192;background:#f0f4fa;overflow-y:auto;display:none;flex-direction:column}
 #metrics-view.open{display:flex}
 #metrics-hdr{background:linear-gradient(135deg,#091e3a 0%,#0d3b6e 55%,#1248a0 100%);color:#fff;padding:0 28px;height:64px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;box-shadow:0 2px 16px rgba(0,0,0,.25)}
@@ -1086,10 +1070,7 @@ tr.pu-row-green td.tmiss{background:#dcfce7!important}
       <button id="cmr-close" onclick="closeCMRView()">&#10005; Close</button>
     </div>
   </div>
-  <div id="cmr-body">
-    <div id="cmr-stage-tabs"></div>
-    <div id="cmr-table-wrap"><table id="cmr-table"></table></div>
-  </div>
+  <div id="cmr-body"></div>
 </div>
 <div id="metrics-view">
   <div id="metrics-hdr">
@@ -3452,52 +3433,49 @@ const CMR_SECS=[
     {key:'inspection100',label:'100% Inspection',t:'d'},
   ]},
 ];
-let cmrCM='Brett Bales',cmrStage='p',cmrSort={k:null,d:1};
-function openCMRView(){cmrCM='Brett Bales';cmrStage='p';cmrSort={k:null,d:1};renderCMR();document.getElementById('cmr-view').classList.add('open');setViewHash('cmr');}
+let cmrCM='Brett Bales',cmrSort={};
+let cmrCollapsed={w:true,c:true};
+function openCMRView(){cmrCM='Brett Bales';cmrSort={};cmrCollapsed={w:true,c:true};renderCMR();document.getElementById('cmr-view').classList.add('open');setViewHash('cmr');}
 function closeCMRView(){document.getElementById('cmr-view').classList.remove('open');setViewHash('');}
-function setCMR(cm){cmrCM=cm;cmrSort={k:null,d:1};document.getElementById('cmr-btn-brett').classList.toggle('active',cm==='Brett Bales');document.getElementById('cmr-btn-michael').classList.toggle('active',cm==='Michael Warren');renderCMR();}
-function setCMRStage(k){cmrStage=k;cmrSort={k:null,d:1};renderCMR();}
+function setCMR(cm){cmrCM=cm;cmrSort={};cmrCollapsed={w:true,c:true};document.getElementById('cmr-btn-brett').classList.toggle('active',cm==='Brett Bales');document.getElementById('cmr-btn-michael').classList.toggle('active',cm==='Michael Warren');renderCMR();}
 function _cmrAllJobs(cm){const pr=CMR_PROGS[cm]||[];return proj.filter(p=>p.cm===cm||pr.includes(p.program));}
+function _cmrToggleSec(k){cmrCollapsed[k]=!cmrCollapsed[k];renderCMR();}
 function renderCMR(){
   const allJ=_cmrAllJobs(cmrCM);
-  const sec=CMR_SECS.find(s=>s.k===cmrStage)||CMR_SECS[0];
-  document.getElementById('cmr-stage-tabs').innerHTML=CMR_SECS.map(s=>{
-    const cnt=allJ.filter(p=>p.constructionStage===s.stage).length;
-    return '<button class="cmr-stab'+(cmrStage===s.k?' active':'')+'" onclick="setCMRStage(\''+s.k+'\')">'+s.label+'<span class="cmr-stab-cnt">'+cnt+'</span></button>';
-  }).join('');
-  let jobs=allJ.filter(p=>p.constructionStage===sec.stage);
-  if(cmrSort.k){
-    const sk=cmrSort.k,sd=cmrSort.d;
-    jobs=[...jobs].sort((a,b)=>{
-      let av=sk==='preConDays'?calcPreConDays(a):sk==='daysInConstruction'?calcDaysInConstruction(a):(a[sk]||'');
-      let bv=sk==='preConDays'?calcPreConDays(b):sk==='daysInConstruction'?calcDaysInConstruction(b):(b[sk]||'');
-      if(!av&&!bv)return 0;if(!av)return 1;if(!bv)return -1;
+  const thClassMap={p:'thp',o:'tho',w:'thw',c:'thc'};
+  const bgClassMap={p:'bgp',o:'bgo',w:'bgw',c:'bgc'};
+  document.getElementById('cmr-body').innerHTML=CMR_SECS.map(sec=>{
+    const jobs=allJ.filter(p=>p.constructionStage===sec.stage);
+    const ss=cmrSort[sec.k]||{k:null,d:1};
+    let sorted=jobs;
+    if(ss.k){sorted=[...jobs].sort((a,b)=>{
+      let av=ss.k==='preConDays'?calcPreConDays(a):ss.k==='daysInConstruction'?calcDaysInConstruction(a):(a[ss.k]||'');
+      let bv=ss.k==='preConDays'?calcPreConDays(b):ss.k==='daysInConstruction'?calcDaysInConstruction(b):(b[ss.k]||'');
+      if(!av&&!bv)return 0;if(!av)return 1;if(!bv)return-1;
       const an=parseFloat(av),bn=parseFloat(bv);
-      if(!isNaN(an)&&!isNaN(bn))return(an-bn)*sd;
-      return av<bv?-sd:av>bv?sd:0;
-    });
-  }
-  const cols=[...CMN,...sec.ec];
-  const tbl=document.getElementById('cmr-table');
-  if(!jobs.length){tbl.innerHTML='<tbody><tr><td class="cmr-empty" colspan="'+cols.length+'">No projects for '+es(cmrCM)+'</td></tr></tbody>';return;}
-  const thRow='<thead><tr>'+cols.map(c=>{const iS=cmrSort.k===c.key;return'<th onclick="_cmrSort(\''+c.key+'\')">'+(c.key==='_identity'?'Project':es(c.label))+(iS?(cmrSort.d===1?' ↑':' ↓'):'')+'</th>';}).join('')+'</tr></thead>';
-  const rows=jobs.map(p=>{
-    const idx=proj.indexOf(p);
-    return'<tr onclick="od('+idx+')" data-addr="'+es(p.address||'')+'">'+cols.map(c=>{
-      if(c.key==='_identity')return'<td class="cmr-td-id"><div>'+es(pname(p))+'</div><div class="cmr-td-sub">'+es(p.city||'')+'</div></td>';
-      if(c.key==='projectNumber')return'<td style="color:#5a6d85;font-size:12px">'+es(p.projectNumber||'--')+'</td>';
-      if(c.key==='program')return'<td style="font-size:12px;color:#374151">'+es(p.program||'--')+'</td>';
-      if(c.key==='jobStatus')return'<td><span class="cmr-td-st">'+es(p.jobStatus||'--')+'</span></td>';
-      if(c.key==='jobType')return'<td style="font-size:12px;color:#374151">'+es(p.jobType||'--')+'</td>';
-      if(c.key==='superintendent')return'<td style="font-size:12px;color:#374151">'+es(p.superintendent||'--')+'</td>';
-      if(c.t==='d'){let v=p[c.key]||'';if(c.key==='ntpP'&&!v)v=p.costEstimateApproved||'';return'<td style="color:'+(v&&v!=='0'?'#0f172a':'#c4c9d4')+'">'+(v&&v!=='0'?fd2(v):'--')+'</td>';}
-      if(c.t==='n'){const v=c.key==='preConDays'?calcPreConDays(p):c.key==='daysInConstruction'?calcDaysInConstruction(p):(p[c.key]||'');const ov=c.key==='preConDays'&&p.preConDeadline&&p.preConDeadline!=='0'&&new Date().toISOString().slice(0,10)>p.preConDeadline&&!(p.ntp&&p.ntp!=='0');return'<td style="font-weight:600;color:'+(ov?'#dc2626':v?'#0f172a':'#c4c9d4')+'">'+(v||'--')+'</td>';}
-      return'<td>'+es(p[c.key]||'--')+'</td>';
-    }).join('')+'</tr>';
+      if(!isNaN(an)&&!isNaN(bn))return(an-bn)*ss.d;
+      return av<bv?-ss.d:av>bv?ss.d:0;
+    });}
+    const cols=[...CMN,...sec.ec];
+    const cl=cmrCollapsed[sec.k];
+    const thead='<thead class="'+thClassMap[sec.k]+'"><tr>'+cols.map(c=>{const sk=ss.k===c.key;return'<th'+(sk?' class="'+(ss.d===1?'sa':'sd')+'"':'')+' onclick="_cmrSort(\''+sec.k+'\',\''+c.key+'\')">'+es(c.key==='_identity'?'Project':c.label)+'</th>';}).join('')+'</tr></thead>';
+    let tbody='';
+    if(!sorted.length){tbody='<tbody><tr><td colspan="'+cols.length+'" class="tem" style="text-align:center;padding:18px">No projects</td></tr></tbody>';}
+    else{tbody='<tbody>'+sorted.map(p=>{const idx=proj.indexOf(p);return'<tr class="dr" onclick="od('+idx+')">'+cols.map(c=>{
+      const k=c.key,tp=c.t,v=k==='ntpP'?(p.ntpP||p.costEstimateApproved||''):(k==='preConDays'?calcPreConDays(p):k==='daysInConstruction'?calcDaysInConstruction(p):(p[k]||''));
+      if(tp==='id'){const addr=pname(p);const hm=((p.firstName||'')+' '+(p.lastName||'')).trim();const cy=p.city||'';return'<td class="tc-id" style="white-space:normal"><div class="ci-addr">'+es(addr)+'</div>'+(cy?'<div class="ci-city">'+es(cy)+'</div>':'')+(hm?'<div class="ci-nm">'+es(hm)+'</div>':'')+'</td>';}
+      if(tp==='ai')return'<td class="tc-ai">'+(v?'<span class="ci-appid">'+es(v)+'</span>':'<span class="ci-appid-miss">—</span>')+'</td>';
+      if(tp==='p')return'<td class="tpg">'+pbdg(p.program)+'</td>';
+      if(tp==='st')return'<td>'+sbdg(p.jobStatus)+'</td>';
+      if(tp==='tx')return'<td>'+(v?es(v):'<span class="tem">—</span>')+'</td>';
+      if(tp==='d'){if(!v||v==='0')return'<td class="tem">--</td>';const ov=k==='preConDeadline'&&p.constructionStage==='PRESALE'&&v<new Date().toISOString().slice(0,10);return'<td class="tdt'+(ov?' toverdue':'')+'">'+fd2(v)+'</td>';}
+      if(tp==='n'){if(!v||v==='0')return'<td class="tem">--</td>';const ov=k==='preConDays'&&p.preConDeadline&&p.preConDeadline!=='0'&&new Date().toISOString().slice(0,10)>p.preConDeadline&&!(p.ntp&&p.ntp!=='0');return'<td class="tnu'+(ov?' toverdue':'')+'">'+v+'</td>';}
+      return'<td>'+(v?es(v):'<span class="tem">—</span>')+'</td>';
+    }).join('')+'</tr>';}).join('')+'</tbody>';}
+    return'<div class="sc"><div class="sh '+bgClassMap[sec.k]+'" onclick="_cmrToggleSec(\''+sec.k+'\')"><div class="shl"><span class="sht">'+sec.label+'</span><span class="shc">'+jobs.length+'</span></div><span class="shv'+(cl?' cl':'')+'">&#9660;</span></div><div class="sbody'+(cl?' cl':'')+'"><div class="tw"><table>'+thead+tbody+'</table></div></div></div>';
   }).join('');
-  tbl.innerHTML=thRow+'<tbody>'+rows+'</tbody>';
 }
-function _cmrSort(k){cmrSort=cmrSort.k===k?{k,d:-cmrSort.d}:{k,d:1};renderCMR();}
+function _cmrSort(sk,ck){const cur=cmrSort[sk]||{k:null,d:1};cmrSort[sk]=cur.k===ck?{k:ck,d:-cur.d}:{k:ck,d:1};renderCMR();}
 function exportCMRXLSX(){
   if(typeof XLSX==='undefined')return;
   const wb=XLSX.utils.book_new();
