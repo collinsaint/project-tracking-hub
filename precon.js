@@ -90,20 +90,21 @@ function renderUploadPreview(){
     if(a.block)u.include=false;
     const s=a.stats||{};const d=(k)=>{const b=a.before[k],c=a.after[k];return c+(b!==c&&PC.pulls[u.program]?' <span class="pc-delta">('+(c>b?'+':'')+(c-b)+')</span>':'');};
     const sc=a.changes||[];const st=sc.filter(c=>c.field!=='(record)'),rec=sc.filter(c=>c.field==='(record)');
-    return'<div class="pcu-file'+(a.block?' blocked':'')+'"><div class="pcu-top"><label class="pcu-inc"><input type="checkbox" '+(u.include?'checked':'')+(a.block?' disabled':'')+' onchange="PC.uploads['+i+'].include=this.checked;pcUpdConfirm()"> <b>'+es(u.name)+'</b></label>'+
-      '<select onchange="PC.uploads['+i+'].program=this.value;renderUploadPreview()"><option value="">— program —</option>'+opts.replace('value="'+u.program+'"','value="'+u.program+'" selected')+'</select>'+
-      '<span class="pc-muted">'+(u.how?'detected by '+es(u.how):'not detected')+'</span>'+
-      '<label class="pc-muted">Pull time (ET) <input type="datetime-local" value="'+etInputValue(u.pullAt)+'" onchange="pcSetTime('+i+',this.value)"></label><span class="pc-muted">from '+es(u.timeFrom)+'</span></div>'+
-      (a.block?'<div class="pc-warn">&#9940; '+es(a.block)+'</div>':'')+
-      '<div class="pcu-grid"><div><b>'+u.rows.length+'</b> records'+(PC.pulls[u.program]?' <span class="pc-muted">(last pull '+PC.pulls[u.program].records.length+')</span>':'')+'</div>'+
-      '<div>Match vs BT: <b>'+(s.id||0)+'</b> by ID · <b>'+(s.address||0)+'</b> by address · <b>'+(s.none||0)+'</b> unmatched'+(s.ambiguous?' · <b>'+s.ambiguous+'</b> ambiguous':'')+'</div>'+
-      '<div>Queue impact: in scope <b>'+(s.inScope||0)+'</b> → P1 '+d('1')+' · P2 '+d('2')+' · Watch '+d('Watch')+' · Not ours '+d('none')+'</div>'+
-      '<div>Status changes: <b>'+st.length+'</b>'+(rec.length?' · records added/removed: <b>'+rec.length+'</b>':'')+(PC.pulls[u.program]?'':' <span class="pc-muted">(first pull: backfilled from “Updated” columns)</span>')+'</div></div>'+
+    const tile=(l,v,sub)=>'<div class="pcu-t"><span>'+l+'</span><b>'+v+'</b>'+(sub?'<em>'+sub+'</em>':'')+'</div>';
+    return'<div class="pcu-file'+(a.block?' blocked':'')+'"><div class="pcu-top"><label class="pcu-inc"><input type="checkbox" '+(u.include?'checked':'')+(a.block?' disabled':'')+' onchange="PC.uploads['+i+'].include=this.checked;pcUpdConfirm()"><span class="pcu-ic">'+(u.program||'?')+'</span><span class="pcu-nm"><b>'+es(u.name)+'</b><em>'+(u.how?'Detected by '+es(u.how):'Program not detected')+'</em></span></label>'+
+      '<div class="pcu-ctl"><label><span>Program</span><select onchange="PC.uploads['+i+'].program=this.value;renderUploadPreview()"><option value="">— program —</option>'+opts.replace('value="'+u.program+'"','value="'+u.program+'" selected')+'</select></label>'+
+      '<label><span>Pull time (ET) · from '+es(u.timeFrom)+'</span><input type="datetime-local" value="'+etInputValue(u.pullAt)+'" onchange="pcSetTime('+i+',this.value)"></label></div></div>'+
+      (a.block?'<div class="pc-warn bad">&#9940; '+es(a.block)+'</div>':'')+
+      '<div class="pcu-grid">'+tile('Records',u.rows.length,PC.pulls[u.program]?'last pull '+PC.pulls[u.program].records.length:'')+
+      tile('Matched to BT',(s.id||0)+(s.address||0),(s.id||0)+' by ID · '+(s.address||0)+' by address')+
+      tile('Unmatched',(s.none||0)+(s.ambiguous?' <small>+'+s.ambiguous+' amb.</small>':''),'')+
+      tile('In scope',(s.inScope||0),'P1 '+d('1')+' · P2 '+d('2')+' · Watch '+d('Watch')+' · Not ours '+d('none'))+
+      tile('Status changes',st.length,(rec.length?'records ±'+rec.length+' · ':'')+(PC.pulls[u.program]?'vs last pull':'first pull, backfilled'))+'</div>'+
       (a.missLead.length?'<div class="pc-warn">Missing standard columns: '+a.missLead.map(es).join(', ')+'</div>':'')+
       (a.ruleF.length?'<div class="pc-warn">Rule fields not in file: '+a.ruleF.map(es).join(', ')+'</div>':'')+
       (a.goneCols.length?'<div class="pc-note">Columns dropped since last pull: '+a.goneCols.slice(0,20).map(es).join(', ')+'</div>':'')+
       (a.newCols.length?'<div class="pc-note">New columns: '+a.newCols.slice(0,20).map(es).join(', ')+'</div>':'')+
-      (st.length?'<details><summary>Show status changes</summary><div class="pcu-chg">'+st.slice(0,100).map(c=>'<div>'+es(c.record_id)+' · '+es(c.field)+': '+es(c.old_value||'∅')+' → <b>'+es(c.new_value||'∅')+'</b></div>').join('')+(st.length>100?'<div>…'+(st.length-100)+' more</div>':'')+'</div></details>':'')+
+      (st.length?'<details class="pcu-det"><summary>Show '+st.length+' status change'+(st.length>1?'s':'')+'</summary><div class="pcu-chg">'+st.slice(0,100).map(c=>'<div><span class="pc-sub">'+es(c.record_id)+' · '+es(c.field)+'</span> '+es(c.old_value||'∅')+' → <b>'+es(c.new_value||'∅')+'</b></div>').join('')+(st.length>100?'<div>…'+(st.length-100)+' more</div>':'')+'</div></details>':'')+
     '</div>';}).join('');
   pcUpdConfirm();
 }
@@ -181,43 +182,60 @@ window.renderPrecon=function(){
   // BT-only jobs must still be active in the hub (no withdrawn / Volusia)
   const act=new Set(btActive().map(j=>j.address));res.queue=res.queue.filter(x=>x.program!=='BT'||act.has(x.address));
   PC.result=res;const now=Date.now();
-  // header
-  let h='<div class="pc-asof"><b>Data as of</b>'+PCE.PROGRAMS.map(p=>{const pl=PC.pulls[p];if(!pl)return'<span class="pc-src miss" title="No pull uploaded">'+p+': none</span>';
-    const stale=now-new Date(pl.meta.pull_at).getTime()>3*3600000;return'<span class="pc-src'+(stale?' stale':'')+'" title="'+es(pl.meta.file_name||'')+'">'+p+': '+fmtET(pl.meta.pull_at)+'</span>';}).join('');
-  const bt=localStorage.getItem('pic_bt_import_at');h+='<span class="pc-src'+(bt&&businessDaysSince(bt)>=1?' stale':'')+(bt?'':' miss')+'">BT: '+(bt?fmtET(bt):'import time unknown')+'</span></div>';
-  if(PC.db!=='ready')h+='<div class="pc-banner"><b>&#9888; Database setup needed.</b> '+es(PC.dbMsg)+' Run <code>sql/precon_tables.sql</code> in Supabase to save uploads for everyone. Until then you can upload program exports and use them <b>in this browser only</b>.'+(PC.local?' <i>Showing locally loaded data.</i>':'')+'</div>';
-  else if(PC.local)h+='<div class="pc-banner">Showing data loaded in this browser only.</div>';
-  if(!Object.keys(PC.pulls).length)h+='<div class="pc-empty">No program exports loaded yet. Click <b>&#8679; Program Exports</b> to upload the LC, OC, PIN, RFL, SRQ, PAS and GA files.</div>';
-  // counts
+  // ---- header: data freshness ----
+  const srcs=PCE.PROGRAMS.map(p=>{const pl=PC.pulls[p];if(!pl)return'<span class="pc-src miss" title="No pull uploaded">'+p+' <i>none</i></span>';
+    const stale=now-new Date(pl.meta.pull_at).getTime()>3*3600000;return'<span class="pc-src'+(stale?' stale':'')+'" title="'+es(pl.meta.file_name||'')+'">'+p+' <i>'+fmtET(pl.meta.pull_at)+'</i></span>';}).join('');
+  const bt=localStorage.getItem('pic_bt_import_at');
+  const nStale=PCE.PROGRAMS.filter(p=>!PC.pulls[p]||now-new Date(PC.pulls[p].meta.pull_at).getTime()>3*3600000).length;
+  let h='<details class="pc-asof"><summary><span class="pc-dot '+(nStale?'warn':'ok')+'"></span><b>Data as of</b> '+(nStale?nStale+' of '+PCE.PROGRAMS.length+' program pulls missing or older than 3 h':'All program pulls are current')+
+    ' <span class="pc-muted">· BT '+(bt?fmtET(bt):'import time unknown')+'</span></summary><div class="pc-srcs">'+srcs+
+    '<span class="pc-src'+(bt&&businessDaysSince(bt)>=1?' stale':'')+(bt?'':' miss')+'">BT <i>'+(bt?fmtET(bt):'unknown')+'</i></span></div></details>';
+  if(PC.db!=='ready')h+='<div class="pc-banner"><span class="pc-bi">!</span><div><b>Database setup needed.</b> '+es(PC.dbMsg)+' Run <code>sql/precon_tables.sql</code> in Supabase to save uploads for everyone. Until then, uploads work <b>in this browser only</b>.'+(PC.local?' <span class="pc-muted">Showing locally loaded data.</span>':'')+'</div></div>';
+  else if(PC.local)h+='<div class="pc-banner"><span class="pc-bi">i</span><div>Showing data loaded in this browser only.</div></div>';
+  if(!Object.keys(PC.pulls).length)h+='<div class="pc-empty"><div class="pc-empty-ic">&#8679;</div><b>No program exports loaded yet</b><span>Upload the LC, OC, PIN, RFL, SRQ, PAS and GA exports to build the priority queue.</span><button class="btn btn-primary" onclick="openUploads()">Upload program exports</button></div>';
+  // ---- stat cards ----
   const inScope=res.queue;const cnt=k=>inScope.filter(x=>x.priority===k).length;
-  h+='<div class="pc-cards">'+[['1','P1 — front end'],['2','P2 — permitting → NTP'],['Watch','Watch'],['none','Not our court']].map(([k,l])=>'<div class="pc-card pc-c'+(k==='Watch'?'w':k==='none'?'n':k)+'" onclick="pcCell(\'\',\''+k+'\')"><b>'+cnt(k)+'</b><span>'+l+'</span></div>').join('')+'</div>';
-  {const pq=inScope.filter(x=>x.program!=='BT');const c=k=>pq.filter(x=>x.priority===k).length;h+='<div class="pc-muted">Program records in scope: <b>'+pq.length+'</b> (P1 '+c('1')+' · P2 '+c('2')+' · Watch '+c('Watch')+' · Not ours '+c('none')+') · BT-only jobs: <b>'+(inScope.length-pq.length)+'</b></div>';}
+  h+='<div class="pc-cards">'+[['1','Needs action now','P1 · front end'],['2','Permitting → NTP','P2'],['Watch','Watch','Monitor'],['none','Not our court','Waiting on others']].map(([k,l,s])=>{const on=PC.f.pr.length===1&&PC.f.pr[0]===k;
+    return'<button class="pc-card pc-c'+(k==='Watch'?'w':k==='none'?'n':k)+(on?' on':'')+'" onclick="pcCell(\'\',\''+(on?'':k)+'\')"><span class="pc-cl">'+l+'</span><b>'+cnt(k)+'</b><span class="pc-cs">'+s+'</span></button>';}).join('')+'</div>';
+  {const pq=inScope.filter(x=>x.program!=='BT');const c=k=>pq.filter(x=>x.priority===k).length;h+='<div class="pc-note2">Program records in scope: <b>'+pq.length+'</b> (P1 '+c('1')+' · P2 '+c('2')+' · Watch '+c('Watch')+' · Not ours '+c('none')+') · BT-only jobs: <b>'+(inScope.length-pq.length)+'</b></div>';}
   const progs=[...PCE.PROGRAMS,'BT'];
-  h+='<table class="pc-matrix"><thead><tr><th>Program</th><th>P1</th><th>P2</th><th>Watch</th><th>Not ours</th><th>Total</th></tr></thead><tbody>'+progs.map(p=>{const it=inScope.filter(x=>x.program===p);const c=k=>it.filter(x=>x.priority===k).length;
-    return'<tr><td title="'+es(PCE.PROGRAM_NAMES[p]||'Buildertrend-only jobs')+'">'+(p==='BT'?'BT-only':p)+'</td>'+['1','2','Watch','none'].map(k=>'<td class="pc-cell'+(c(k)?'':' z')+'" onclick="pcCell(\''+p+'\',\''+k+'\')">'+c(k)+'</td>').join('')+'<td class="pc-cell" onclick="pcCell(\''+p+'\',\'\')"><b>'+it.length+'</b></td></tr>';}).join('')+
-    '<tr class="pc-tot"><td>Total</td>'+['1','2','Watch','none'].map(k=>'<td>'+cnt(k)+'</td>').join('')+'<td>'+inScope.length+'</td></tr></tbody></table>';
-  // filters
+  // ---- filter bar ----
   const stages=[...new Set(inScope.map(x=>x.stage).filter(Boolean))].sort((a,b)=>PCE.STAGE_ORDER.indexOf(a)-PCE.STAGE_ORDER.indexOf(b));
   const who=[...new Set(inScope.flatMap(x=>[x.superintendent,x.cm]).filter(Boolean))].sort();
   const fc=(k,v,l)=>'<button class="pc-f'+(PC.f[k].includes(v)?' on':'')+'" onclick="pcToggle(\''+k+'\',\''+es(v)+'\')">'+es(l||v)+'</button>';
-  h+='<div class="pc-filters" id="pc-queue"><div>'+progs.map(p=>fc('p',p,p==='BT'?'BT-only':p)).join('')+'</div><div>'+['1','2','Watch','none'].map(k=>fc('pr',k,PRI_LABEL[k])).join('')+'</div><div>'+stages.map(s=>fc('st',s)).join('')+'</div>'+
-    '<div><select onchange="pcSet(\'who\',this.value)"><option value="">All superintendents / CMs</option>'+who.map(w=>'<option'+(w===PC.f.who?' selected':'')+'>'+es(w)+'</option>').join('')+'</select>'+
-    '<input type="search" placeholder="Search address, ID, applicant…" value="'+es(PC.f.q)+'" onchange="pcSet(\'q\',this.value)">'+
-    '<label><input type="checkbox" '+(PC.opts.showHold?'checked':'')+' onchange="pcOpt(\'showHold\',this.checked)"> Show on-hold</label>'+
-    '<label title="Also use the newer Buildertrend fields (RFI, septic, ISV scheduled, CE returned, permit kickback, Building Permit dropdown)"><input type="checkbox" '+(PC.opts.phase4?'checked':'')+' onchange="pcOpt(\'phase4\',this.checked)"> Phase 4 BT rules</label>'+
-    '<button class="pc-f" onclick="pcClear()">Clear filters</button></div></div>';
-  // queue
-  const fl=filterItems(inScope);const main=fl.filter(x=>x.priority==='1'||x.priority==='2'),watch=fl.filter(x=>x.priority==='Watch'),none=fl.filter(x=>x.priority==='none');
-  const row=(x,i)=>{const t=x.primary;const btn=x.bt&&x.bt.address&&x.bt.address!==x.address?'<div class="pc-sub">BT: '+es(x.bt.address)+'</div>':'';
-    const more=x.hits.length>1?' <a href="#" onclick="pcExpand('+i+');return false">+'+(x.hits.length-1)+' more</a><div id="pc-hits-'+i+'" style="display:none" class="pc-sub">'+x.hits.slice(1).map(hh=>chip(hh.rule.Priority)+' '+es(hh.rule.Action)+' <i>('+es(hh.fields.join('; '))+')</i>').join('<br>')+'</div>':'';
-    return'<tr><td>'+chip(x.priority)+'</td><td><b>'+es(x.address)+'</b>'+btn+'<div class="pc-sub">'+es(x.applicant)+' · '+es(x.record_id)+'</div></td><td title="'+es(PCE.PROGRAM_NAMES[x.program]||x.bt_group||'')+'">'+(x.program==='BT'?'BT <span class="pc-sub">'+es(x.bt_group||'')+'</span>':x.program)+'</td>'+
-      '<td>'+(t?es(t.fields.join('; ')):es(x.scope_value||''))+'</td><td>'+(t?es(t.rule.Action):'<span class="pc-muted">—</span>')+more+'</td><td>'+es(x.stage||'')+'</td>'+
-      '<td title="'+es(x.days_basis||'')+'">'+(x.days==null?'':(x.days_ge?'≥ ':'')+x.days)+'</td><td>'+es(x.superintendent)+(x.cm?'<div class="pc-sub">CM: '+es(x.cm)+'</div>':x.program_cm?'<div class="pc-sub" title="Program CM">('+es(x.program_cm)+')</div>':'')+'</td>'+
-      '<td>'+(x.bt?'<a href="#" onclick="pcOpenJob(\''+es(String(x.bt.address).replace(/'/g,"\\'"))+'\');return false">Open</a>':'')+'</td></tr>';};
-  const tbl=(items,off)=>'<table class="pc-q"><thead><tr><th>Pri</th><th>Job</th><th>Program</th><th>Status</th><th>Action</th><th>Stage</th><th>Days</th><th>Super / CM</th><th></th></tr></thead><tbody>'+(items.length?items.map((x,i)=>row(x,i+off)).join(''):'<tr><td colspan="9" class="pc-muted">Nothing here with the current filters.</td></tr>')+'</tbody></table>';
-  h+='<h3 class="pc-h">Priority queue <span class="pc-muted">('+main.length+')</span></h3>'+tbl(main,0);
-  h+='<details class="pc-sec"><summary>Watch list ('+watch.length+')</summary>'+tbl(watch,1000)+'</details>';
-  h+='<details class="pc-sec"><summary>Not our court ('+none.length+')</summary>'+tbl(none,2000)+'</details>';
+  const nF=PC.f.p.length+PC.f.pr.length+PC.f.st.length+(PC.f.who?1:0)+(PC.f.q?1:0);
+  h+='<div class="pc-filters" id="pc-queue"><div class="pc-frow"><div class="pc-search"><span>&#9906;</span><input type="search" placeholder="Search address, ID, applicant…" value="'+es(PC.f.q)+'" onchange="pcSet(\'q\',this.value)"></div>'+
+    '<div class="pc-seg">'+progs.map(p=>fc('p',p,p==='BT'?'BT-only':p)).join('')+'</div>'+
+    '<select onchange="pcSet(\'who\',this.value)"><option value="">All supers / CMs</option>'+who.map(w=>'<option'+(w===PC.f.who?' selected':'')+'>'+es(w)+'</option>').join('')+'</select>'+
+    (nF?'<button class="pc-clear" onclick="pcClear()">Clear '+nF+' filter'+(nF>1?'s':'')+' &#10005;</button>':'')+'</div>'+
+    '<details class="pc-more"'+(PC.f.pr.length||PC.f.st.length||PC.opts.showHold||PC.opts.phase4?' open':'')+'><summary>More filters</summary><div class="pc-frow"><span class="pc-fl">Priority</span><div class="pc-seg">'+['1','2','Watch','none'].map(k=>fc('pr',k,PRI_LABEL[k])).join('')+'</div></div>'+
+    '<div class="pc-frow"><span class="pc-fl">Stage</span><div class="pc-seg">'+stages.map(s=>fc('st',s)).join('')+'</div></div>'+
+    '<div class="pc-frow"><span class="pc-fl">Options</span><label class="pc-sw"><input type="checkbox" '+(PC.opts.showHold?'checked':'')+' onchange="pcOpt(\'showHold\',this.checked)"> Show on-hold</label>'+
+    '<label class="pc-sw" title="Also use the newer Buildertrend fields (RFI, septic, ISV scheduled, CE returned, permit kickback, Building Permit dropdown)"><input type="checkbox" '+(PC.opts.phase4?'checked':'')+' onchange="pcOpt(\'phase4\',this.checked)"> Phase 4 BT rules</label></div></details></div>';
+  // ---- queue ----
+  const fl=filterItems(inScope);const p1=fl.filter(x=>x.priority==='1'),p2=fl.filter(x=>x.priority==='2'),watch=fl.filter(x=>x.priority==='Watch'),none=fl.filter(x=>x.priority==='none');
+  const row=(x,i)=>{const t=x.primary;const btn=x.bt&&x.bt.address&&x.bt.address!==x.address?' <span class="pc-sub">· BT: '+es(x.bt.address)+'</span>':'';
+    const more=x.hits.length>1?' <a href="#" class="pc-more-a" onclick="pcExpand('+i+');return false">+'+(x.hits.length-1)+' more</a><div id="pc-hits-'+i+'" style="display:none" class="pc-hits">'+x.hits.slice(1).map(hh=>'<div>'+chip(hh.rule.Priority)+' '+es(hh.rule.Action)+' <span class="pc-sub">('+es(hh.fields.join('; '))+')</span></div>').join('')+'</div>':'';
+    const days=x.days==null?'<span class="pc-sub">—</span>':'<b>'+(x.days_ge?'≥':'')+x.days+'</b><span class="pc-sub">d</span>';
+    return'<tr><td class="pc-pri">'+chip(x.priority)+'</td><td class="pc-act" data-l="Action"><div class="pc-at">'+(t?es(t.rule.Action):'<span class="pc-sub">No action rule</span>')+more+'</div><div class="pc-sub">'+(t?es(t.fields.join('; ')):es(x.scope_value||''))+'</div></td>'+
+      '<td data-l="Job"><div class="pc-job">'+es(x.address)+'</div><div class="pc-sub">'+es(x.applicant)+' · '+es(x.record_id)+btn+'</div></td>'+
+      '<td data-l="Program"><span class="pc-prog" title="'+es(PCE.PROGRAM_NAMES[x.program]||x.bt_group||'')+'">'+(x.program==='BT'?'BT':x.program)+'</span>'+(x.program==='BT'&&x.bt_group?'<div class="pc-sub">'+es(x.bt_group)+'</div>':'')+'</td>'+
+      '<td data-l="Stage"><span class="pc-stage">'+es(x.stage||'—')+'</span></td><td class="pc-days" data-l="Waiting" title="'+es(x.days_basis||'')+'">'+days+'</td>'+
+      '<td data-l="Owner">'+(es(x.superintendent)||'<span class="pc-sub">—</span>')+(x.cm?'<div class="pc-sub">CM: '+es(x.cm)+'</div>':x.program_cm?'<div class="pc-sub" title="Program CM">('+es(x.program_cm)+')</div>':'')+'</td>'+
+      '<td class="pc-go">'+(x.bt?'<a href="#" onclick="pcOpenJob(\''+es(String(x.bt.address).replace(/'/g,"\\'"))+'\');return false">Open &#8250;</a>':'')+'</td></tr>';};
+  const tbl=(items,off,empty)=>items.length?'<div class="pc-tw"><table class="pc-q pc-ql"><thead><tr><th></th><th>Action</th><th>Job</th><th>Program</th><th>Stage</th><th>Waiting</th><th>Owner</th><th></th></tr></thead><tbody>'+items.map((x,i)=>row(x,i+off)).join('')+'</tbody></table></div>'
+    :'<table class="pc-q pc-ql"><tbody><tr><td colspan="8"><div class="pc-none">'+empty+'</div></td></tr></tbody></table>';
+  const sec=(cls,title,sub,n,body)=>'<section class="pc-panel '+cls+'"><header><h3>'+title+'</h3><span class="pc-count">'+n+'</span><span class="pc-hsub">'+sub+'</span></header>'+body+'</section>';
+  h+=sec('pc-s1','Needs action now','P1 · front-end items where the ball is in our court',p1.length,tbl(p1,0,nF?'No P1 items match these filters.':'&#10003; Nothing urgent. No P1 items right now.'));
+  h+=sec('pc-s2','Permitting → NTP','P2 · in our court, less urgent',p2.length,tbl(p2,500,nF?'No P2 items match these filters.':'No P2 items.'));
+  const fold=(id,title,n,body,sub)=>'<details class="pc-fold" id="'+id+'"><summary><span class="pc-chev">&#8250;</span><h3>'+title+'</h3>'+(n!=null?'<span class="pc-count">'+n+'</span>':'')+(sub?'<span class="pc-hsub">'+sub+'</span>':'')+'</summary><div class="pc-fb">'+body+'</div></details>';
+  h+='<div class="pc-folds">';
+  h+=fold('pc-f-w','Watch',watch.length,tbl(watch,1000,'Nothing on the watch list.'),'monitor, no action yet');
+  h+=fold('pc-f-n','Not our court',none.length,tbl(none,2000,'Nothing here.'),'waiting on program or others');
+  // matrix
+  h+=fold('pc-f-m','By program',inScope.length,'<div class="pc-tw"><table class="pc-matrix"><thead><tr><th>Program</th><th>P1</th><th>P2</th><th>Watch</th><th>Not ours</th><th>Total</th></tr></thead><tbody>'+progs.map(p=>{const it=inScope.filter(x=>x.program===p);const c=k=>it.filter(x=>x.priority===k).length;
+    return'<tr><td title="'+es(PCE.PROGRAM_NAMES[p]||'Buildertrend-only jobs')+'"><b>'+(p==='BT'?'BT-only':p)+'</b> <span class="pc-sub">'+es(PCE.PROGRAM_NAMES[p]||'Buildertrend only')+'</span></td>'+['1','2','Watch','none'].map(k=>'<td class="pc-cell'+(c(k)?' k'+(k==='Watch'?'w':k==='none'?'n':k):' z')+'" onclick="pcCell(\''+p+'\',\''+k+'\')">'+c(k)+'</td>').join('')+'<td class="pc-cell" onclick="pcCell(\''+p+'\',\'\')"><b>'+it.length+'</b></td></tr>';}).join('')+
+    '<tr class="pc-tot"><td>Total</td>'+['1','2','Watch','none'].map(k=>'<td>'+cnt(k)+'</td>').join('')+'<td>'+inScope.length+'</td></tr></tbody></table></div><div class="pc-sub" style="margin-top:8px">Click a number to filter the queue.</div>','program × priority');
   // recent changes
   const wk=now-7*86400000;const scopeKeys=new Set(inScope.map(x=>x.program+'|'+x.record_id));
   let ch=PC.changes.filter(c=>new Date(c.changed_at).getTime()>=wk&&scopeKeys.has(c.program+'|'+c.record_id));
@@ -225,18 +243,24 @@ window.renderPrecon=function(){
   ch=ch.map(c=>{const nowY=c.field!=='(record)'&&PCE.ourCourt(R,c.program,c.field,c.new_value);const wasY=c.old_value!=='(unknown)'&&PCE.ourCourt(R,c.program,c.field,c.old_value);return{...c,nowY,entered:nowY&&!wasY};});
   if(PC.chg.our)ch=ch.filter(c=>c.nowY);if(PC.chg.entered)ch=ch.filter(c=>c.entered);
   ch.sort((a,b)=>String(b.changed_at).localeCompare(String(a.changed_at)));
-  h+='<h3 class="pc-h">Recent changes <span class="pc-muted">(last 7 days, pre-con scope: '+ch.length+')</span> <label class="pc-tg"><input type="checkbox" '+(PC.chg.our?'checked':'')+' onchange="pcChg(\'our\',this.checked)"> Now in our court</label><label class="pc-tg"><input type="checkbox" '+(PC.chg.entered?'checked':'')+' onchange="pcChg(\'entered\',this.checked)"> Entered our court</label></h3>';
-  h+='<div class="pc-scroll"><table class="pc-q"><thead><tr><th>Changed (ET)</th><th>Program</th><th>ID</th><th>Address</th><th>Applicant</th><th>Field</th><th>Old → New</th><th>Our court</th><th>Source</th></tr></thead><tbody>'+(ch.length?ch.slice(0,300).map(c=>'<tr><td>'+(c.changed_at_precision==='detected'?'≤ ':'')+fmtET(c.changed_at)+'</td><td>'+c.program+'</td><td>'+es(c.record_id)+'</td><td>'+es(c.address)+'</td><td>'+es(c.applicant)+'</td><td>'+es(c.field)+'</td><td>'+es(c.old_value)+' → <b>'+es(c.new_value)+'</b></td><td>'+(c.entered?'<span class="pc-chip pc-p1">Entered</span>':c.nowY?'Yes':'')+'</td><td class="pc-sub">'+es(c.source)+'</td></tr>').join(''):'<tr><td colspan="9" class="pc-muted">No changes in the last 7 days. Changes appear after a second pull of the same program (or from “Updated” dates on the first pull).</td></tr>')+'</tbody></table></div>';
+  h+=fold('pc-f-c','Recent changes',ch.length,'<div class="pc-frow" style="margin-bottom:10px"><label class="pc-sw"><input type="checkbox" '+(PC.chg.our?'checked':'')+' onchange="pcChg(\'our\',this.checked)"> Now in our court</label><label class="pc-sw"><input type="checkbox" '+(PC.chg.entered?'checked':'')+' onchange="pcChg(\'entered\',this.checked)"> Entered our court</label></div>'+
+    (ch.length?'<div class="pc-tw pc-scroll"><table class="pc-q"><thead><tr><th>Changed (ET)</th><th>Program</th><th>ID</th><th>Address</th><th>Applicant</th><th>Field</th><th>Old → New</th><th>Our court</th><th>Source</th></tr></thead><tbody>'+ch.slice(0,300).map(c=>'<tr><td class="pc-nw">'+(c.changed_at_precision==='detected'?'≤ ':'')+fmtET(c.changed_at)+'</td><td><span class="pc-prog">'+c.program+'</span></td><td class="pc-nw">'+es(c.record_id)+'</td><td>'+es(c.address)+'</td><td>'+es(c.applicant)+'</td><td>'+es(c.field)+'</td><td><span class="pc-sub">'+es(c.old_value)+'</span> → <b>'+es(c.new_value)+'</b></td><td>'+(c.entered?'<span class="pc-chip pc-p1">Entered</span>':c.nowY?'Yes':'')+'</td><td class="pc-sub">'+es(c.source)+'</td></tr>').join('')+'</tbody></table></div>'
+      :'<div class="pc-none">No changes in the last 7 days. Changes appear after a second pull of the same program, or from “Updated” dates on the first pull.</div>'),'last 7 days, pre-con scope');
   // gaps
   const g=res.gaps;const um=Object.entries(g.unmapped).map(([k,n])=>{const[p,f,v]=k.split('|');return{p,f,v,n};}).sort((a,b)=>b.n-a.n);
-  const gl=(t,arr,fn)=>'<details class="pc-gap"><summary>'+t+' <b>('+arr.length+')</b></summary><div class="pc-gl">'+(arr.length?arr.slice(0,300).map(fn).join(''):'<div class="pc-muted">None</div>')+'</div></details>';
+  const gl=(t,arr,fn)=>'<details class="pc-gap"><summary><span>'+t+'</span> <b class="'+(arr.length?'':'z')+'">('+arr.length+')</b></summary><div class="pc-gl">'+(arr.length?arr.slice(0,300).map(fn).join(''):'<div class="pc-sub">None</div>')+'</div></details>';
   const idf=x=>'<div>'+x.program+' · '+es(x.id)+' · '+es(x.address||'')+'</div>';
-  h+='<h3 class="pc-h">Gaps</h3><div class="pc-gaps">'+
+  const gTot=g.unknownRfi.length+g.unknownSeptic.length+g.unmatched.length+g.ambiguous.length+g.stageMismatch.length+um.length+g.missingFields.length;
+  h+=fold('pc-f-g','Data gaps',gTot,'<div class="pc-gaps">'+
     gl('Unknown RFI',g.unknownRfi,idf)+gl('Unknown septic',g.unknownSeptic,x=>'<div>'+x.program+' · '+es(x.id)+' · '+es(x.address)+' · <i>'+es(x.septic||'blank')+'</i></div>')+
     gl('Unmatched (no BT job by case # or address)',g.unmatched,x=>'<div>'+x.program+' · '+es(x.id)+' · '+es(x.address||'')+' · '+es(x.applicant||'')+'</div>')+
     gl('Ambiguous matches',g.ambiguous,idf)+gl('Stage mismatch (program pre-con, BT 20+)',g.stageMismatch,x=>'<div>'+x.program+' · '+es(x.id)+' · '+es(x.address)+' · '+es(x.program_value)+' vs BT '+es(x.bt_status)+'</div>')+
-    gl('Unmapped values',um,x=>'<div>'+x.p+' · '+es(x.f)+' = <b>'+es(x.v)+'</b> ('+x.n+')</div>')+gl('Missing fields',g.missingFields,x=>'<div>'+x.program+' · '+es(x.field)+'</div>')+'</div>';
+    gl('Unmapped values',um,x=>'<div>'+x.p+' · '+es(x.f)+' = <b>'+es(x.v)+'</b> ('+x.n+')</div>')+gl('Missing fields',g.missingFields,x=>'<div>'+x.program+' · '+es(x.field)+'</div>')+'</div>','matching & data quality');
+  h+=fold('pc-f-r','Rules',PC.rules.length,'<div class="pc-frow"><span class="pc-sub">The queue is driven by '+PC.rules.length+' status → priority rules ('+(PC.rulesSource==='seed'?'bundled seed':'Supabase')+'). Read-only.</span><button class="btn btn-ol pc-ol" onclick="openPcRules()">View rules</button></div>','read-only');
+  h+='</div>';
+  const op=[...body.querySelectorAll('details[id]')].filter(d=>d.open).map(d=>d.id),mo=body.querySelector('.pc-more')?.open,ao=body.querySelector('.pc-asof')?.open;
   body.innerHTML=h;
+  op.forEach(id=>{const d=document.getElementById(id);if(d)d.open=true;});if(mo)body.querySelector('.pc-more').open=true;if(ao)body.querySelector('.pc-asof').open=true;
 };
 window.openPcRules=function(){const q=(document.getElementById('pcr-q')||{}).value||'';const rs=PC.rules.filter(r=>!q||Object.values(r).join(' ').toLowerCase().includes(q.toLowerCase()));
   document.getElementById('pcr-meta').textContent=PC.rules.length+' rules · source: '+(PC.rulesSource==='seed'?'bundled seed (precon_rules_seed.js)':'Supabase precon_rules');
