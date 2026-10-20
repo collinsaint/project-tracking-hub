@@ -444,6 +444,15 @@ tr.dr:hover td.tcrit-miss,tr.dr.row-permit td.tcrit-miss{background:#fecaca}
 
 /* ── TOAST ──────────────────────────────────────── */
 #toast{position:fixed;bottom:24px;right:24px;background:linear-gradient(135deg,#1f2937,#374151);color:#fff;padding:10px 18px;border-radius:20px;font-size:13px;font-weight:500;z-index:400;transform:translateY(16px);opacity:0;transition:all .25s;pointer-events:none;box-shadow:0 4px 16px rgba(0,0,0,.28)}
+#um-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:350;align-items:center;justify-content:center}
+#um-modal.open{display:flex}
+#um-box{background:#fff;border-radius:12px;width:min(820px,94vw);max-height:86vh;overflow:auto;padding:16px 18px;box-shadow:0 20px 50px rgba(0,0,0,.25)}
+#um-hdr{display:flex;justify-content:space-between;align-items:center}#um-hdr h2{font-size:17px;margin:0}
+.um-help{font-size:12px;color:#6b7280;margin:6px 0 12px}
+.um-row{display:flex;gap:12px;justify-content:space-between;border:1px solid #fde68a;background:#fffbeb;border-radius:8px;padding:10px;margin-bottom:8px;flex-wrap:wrap}
+.um-meta{flex:1 1 260px;font-size:13px}.um-src{display:block;font-size:11px;color:#92400e;margin-top:2px}.um-text{font-size:12px;color:#374151;margin-top:4px;white-space:pre-wrap}
+.um-act{display:flex;gap:6px;align-items:center;flex:1 1 320px}.um-pick{flex:1;border:1px solid #d1d5db;border-radius:7px;padding:7px 9px;font-size:13px;min-width:0}
+.um-empty{padding:20px;text-align:center;color:#15803d}
 #toast.show{transform:translateY(0);opacity:1}
 
 /* ── LOADING ────────────────────────────────────── */
@@ -988,6 +997,7 @@ tr.pu-row-green td.tmiss{background:#dcfce7!important}
   </div>
   <div id="hdr-sep"></div>
   <div id="hdr-views">
+    <button class="btn btn-ol" id="um-btn" onclick="openUnmatched()" style="display:none;border-color:#f59e0b;color:#b45309" title="Imported rows that didn't match a job">&#9888; Unmatched (0)</button>
     <button class="btn btn-ol" id="tracker-home-btn" onclick="goToTracker()">Tracker</button>
     <button class="btn btn-ol" id="dash-view-btn" onclick="openDashboard()">Dashboard</button>
     <button class="btn btn-ol" id="task-view-btn" onclick="toggleTaskView()">Tasks</button>
@@ -1301,6 +1311,7 @@ tr.pu-row-green td.tmiss{background:#dcfce7!important}
   <div class="wu-body" id="wu-body"></div>
 </div>
 
+<div id="um-modal"><div id="um-box"><div id="um-hdr"><h2>&#9888; Unmatched rows</h2><button class="btn btn-gh" onclick="closeUnmatched()" style="font-size:12px;padding:4px 10px">&#10005;</button></div><p class="um-help">These imported rows didn't match any job. Link each one to the right job (the address spelling is remembered for next time) or dismiss it. Nothing here has been saved to the cloud yet.</p><datalist id="um-jobs"></datalist><div id="um-list"></div></div></div>
 <div id="jwu-modal">
   <div id="jwu-box">
     <div id="jwu-hdr">
@@ -1626,6 +1637,103 @@ function nmFuzzy(s){
   Object.entries(_SFXMAP).forEach(([l,r])=>{v=v.replace(new RegExp('\\b'+l+'$'),'_'+r);});
   return v.replace(/[^a-z0-9]/g,'');
 }
+// ===== Stable job IDs + address aliases =====
+// Each job gets a persistent jobId (stored inside the project's data JSON, so no
+// schema change). Old/variant addresses are kept in p.addrAliases so rows that
+// Supabase still keys by an older address keep attaching to the right job.
+const _ADDR_WORDS={street:'st',str:'st',avenue:'ave',av:'ave',drive:'dr',drv:'dr',road:'rd',lane:'ln',boulevard:'blvd',blv:'blvd',court:'ct',crt:'ct',place:'pl',circle:'cir',circ:'cir',terrace:'ter',terr:'ter',trail:'trl',way:'wy',parkway:'pkwy',pky:'pkwy',highway:'hwy',square:'sq',point:'pt',pointe:'pt',heights:'hts',hollow:'holw',crossing:'xing',loop:'lp',run:'run',north:'n',south:'s',east:'e',west:'w',northeast:'ne',northwest:'nw',southeast:'se',southwest:'sw',apartment:'unit',apt:'unit',suite:'unit',ste:'unit',lot:'unit',no:'unit',number:'unit',first:'1st',second:'2nd',third:'3rd',fourth:'4th',fifth:'5th'};
+function normAddr(s){
+  let v=String(s||'').toLowerCase().replace(/#/g,' unit ').replace(/[^a-z0-9 ]/g,' ').replace(/\s+/g,' ').trim();
+  if(!v)return'';
+  v=v.split(' ').map(w=>_ADDR_WORDS[w]||w).join(' ').replace(/\bunit unit\b/g,'unit').replace(/\bclub house\b/g,'clubhouse');
+  return v;
+}
+function _addrKeys(s){
+  const raw=String(s||'').trim();if(!raw)return[];
+  const ks=new Set([normAddr(raw)]);
+  const street=raw.split(',')[0].trim();if(street&&street!==raw)ks.add(normAddr(street));
+  ks.add('f:'+nmFuzzy(raw));if(street!==raw)ks.add('f:'+nmFuzzy(street));
+  ks.delete('');ks.delete('f:');return[...ks];
+}
+function _hash36(s){let h=0x811c9dc5;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,0x01000193)>>>0;}return h.toString(36);}
+function makeJobId(addr){return'J'+_hash36(normAddr(addr)||String(addr||''));}
+let _jobIdx={byKey:{},byId:{},byPn:{}};
+function ensureJobId(p){if(p&&!p.jobId)p.jobId=makeJobId(p.address);if(p&&!Array.isArray(p.addrAliases))p.addrAliases=[];return p;}
+function addAlias(p,addr){ensureJobId(p);addr=String(addr||'').trim();if(!addr||addr===p.address)return false;if(p.addrAliases.some(a=>normAddr(a)===normAddr(addr)))return false;p.addrAliases.push(addr);return true;}
+function rebuildJobIndex(arr){
+  const idx={byKey:{},byId:{},byPn:{}};const pnCount={};
+  (arr||[]).forEach(p=>{if(p.projectNumber)pnCount[p.projectNumber]=(pnCount[p.projectNumber]||0)+1;});
+  (arr||[]).forEach(p=>{
+    ensureJobId(p);idx.byId[p.jobId]=p;
+    // current address wins over aliases of another job
+    _addrKeys(p.address).forEach(k=>{idx.byKey[k]=p;});
+  });
+  (arr||[]).forEach(p=>{
+    [...p.addrAliases,p.jobName].forEach(a=>_addrKeys(a).forEach(k=>{if(!idx.byKey[k])idx.byKey[k]=p;}));
+    if(p.projectNumber&&pnCount[p.projectNumber]===1)idx.byPn[String(p.projectNumber).trim()]=p;
+  });
+  _jobIdx=idx;return idx;
+}
+// Find the job for any address / job name / App ID string, or null.
+function resolveJob(s,pn){
+  const raw=String(s||'').trim();
+  if(raw&&_jobIdx.byId[raw])return _jobIdx.byId[raw];
+  for(const k of _addrKeys(raw)){if(_jobIdx.byKey[k])return _jobIdx.byKey[k];}
+  if(pn&&_jobIdx.byPn[String(pn).trim()])return _jobIdx.byPn[String(pn).trim()];
+  if(raw&&_jobIdx.byPn[raw])return _jobIdx.byPn[raw];
+  return null;
+}
+// Map a stored address key to the job's current address (unchanged if unknown).
+function canonAddr(a){const p=resolveJob(a);return p?p.address:a;}
+// Every address a job has been stored under (current + aliases).
+function jobAddrs(a){const p=resolveJob(a);if(!p)return[a];return[...new Set([p.address,...p.addrAliases])];}
+function _remapKeyed(obj,merge){const out={};Object.entries(obj||{}).forEach(([k,v])=>{const c=canonAddr(k);out[c]=(c in out)?merge(out[c],v,k===c):v;});return out;}
+
+// ===== Unmatched rows review list =====
+let unmatchedRows=[];
+try{unmatchedRows=JSON.parse(localStorage.getItem('pic_unmatched_v1')||'[]');if(!Array.isArray(unmatchedRows))unmatchedRows=[];}catch(e){console.warn('[sync] unmatched list unreadable',e);unmatchedRows=[];}
+function _umSave(){lsSet('pic_unmatched_v1',JSON.stringify(unmatchedRows));updateUnmatchedBadge();}
+function addUnmatched(entry){
+  const dupe=unmatchedRows.find(u=>u.source===entry.source&&normAddr(u.raw)===normAddr(entry.raw)&&u.weekOf===entry.weekOf&&u.text===entry.text);
+  if(dupe)return;
+  unmatchedRows.push({id:'u'+Date.now().toString(36)+Math.random().toString(36).slice(2,7),at:new Date().toISOString(),...entry});_umSave();
+}
+function updateUnmatchedBadge(){const b=document.getElementById('um-btn');if(!b)return;const n=unmatchedRows.length;b.style.display=n?'':'none';b.innerHTML='&#9888; Unmatched ('+n+')';if(document.getElementById('um-modal')?.classList.contains('open'))renderUnmatched();}
+const _UM_SRC={'weekly-update':'Weekly update','permit-import':'Permit notes import'};
+function openUnmatched(){renderUnmatched();document.getElementById('um-modal').classList.add('open');}
+function closeUnmatched(){document.getElementById('um-modal').classList.remove('open');}
+function _umJobLabel(p){return p.address+(p.jobName&&p.jobName!==p.address?' — '+p.jobName:'')+(p.projectNumber?' — #'+p.projectNumber:'');}
+function renderUnmatched(){
+  const dl=document.getElementById('um-jobs');
+  dl.innerHTML=proj.map(p=>'<option value="'+es(_umJobLabel(p))+'"></option>').join('');
+  const body=document.getElementById('um-list');
+  if(!unmatchedRows.length){body.innerHTML='<div class="um-empty">No unmatched rows. &#10003;</div>';return;}
+  body.innerHTML=unmatchedRows.map(u=>'<div class="um-row" data-id="'+es(u.id)+'"><div class="um-meta"><b>'+es(u.raw)+'</b><span class="um-src">'+es(_UM_SRC[u.source]||u.source)+(u.weekOf?' · week of '+es(fd2(u.weekOf)):'')+'</span><div class="um-text">'+es((u.text||'').slice(0,240))+'</div></div><div class="um-act"><input list="um-jobs" class="um-pick" placeholder="Search job by address, name or App ID…"><button class="btn btn-primary" onclick="linkUnmatched(\''+es(u.id)+'\',this)">Link</button><button class="btn btn-ol" style="color:#374151;border-color:#d1d5db;background:#fff" onclick="dismissUnmatched(\''+es(u.id)+'\')">Dismiss</button></div></div>').join('');
+}
+function dismissUnmatched(id){unmatchedRows=unmatchedRows.filter(u=>u.id!==id);_umSave();renderUnmatched();}
+async function linkUnmatched(id,btn){
+  const u=unmatchedRows.find(x=>x.id===id);if(!u)return;
+  const val=(btn.parentElement.querySelector('.um-pick').value||'').trim();
+  const p=proj.find(x=>_umJobLabel(x)===val)||resolveJob(val.split(' — ')[0]);
+  if(!p){st2('Pick a job from the list first.');return;}
+  btn.disabled=true;
+  let ok=true;
+  if(u.source==='weekly-update'){
+    const r=await sbTry('Weekly update save',()=>sb.from('job_weekly_updates').upsert({address:p.address,week_of:u.weekOf,update_text:u.text,updated_at:new Date().toISOString()},{onConflict:'address,week_of'}));
+    ok=!!r;
+    if(ok){if(!jobWU[p.address])jobWU[p.address]=[];const xi=jobWU[p.address].findIndex(e=>e.week_of===u.weekOf);if(xi>=0)jobWU[p.address][xi].text=u.text;else jobWU[p.address].unshift({week_of:u.weekOf,text:u.text});jobWU[p.address].sort((a,b)=>b.week_of.localeCompare(a.week_of));}
+  }else if(u.source==='permit-import'){
+    try{if(u.text)await savePuUpdate(p.address,'puThisWeek',u.text,u.weekKey);if(u.attn==='yes'||u.attn==='no')await savePuAttention(p.address,u.attn==='yes');}catch(e){ok=false;reportFail('Permit note save',e);}
+  }
+  if(!ok){btn.disabled=false;return;}
+  // Remember this spelling so future imports match automatically.
+  if(addAlias(p,u.raw)){
+    rebuildJobIndex(proj);lsSet('pic_fl_v3',JSON.stringify(proj));
+    await sbTry('Saving address alias',()=>sb.from('projects').upsert([{address:p.address,data:p,updated_at:new Date().toISOString()}],{onConflict:'address'}));
+  }
+  unmatchedRows=unmatchedRows.filter(x=>x.id!==id);_umSave();renderUnmatched();
+  st2('Linked to '+p.address);
+}
 function es(s){if(!s)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function fd2(d){if(!d)return'';const p=d.split('-');return p.length===3?p[1]+'/'+p[2]+'/'+p[0]:d;}
 function calcDaysInConstruction(p){if(!p.ntp||p.ntp==='0')return'';const t=new Date();t.setHours(0,0,0,0);return String(Math.max(0,Math.round((t-new Date(p.ntp))/86400000)));}
@@ -1644,15 +1752,27 @@ function filterProj(arr){
   });
 }
 function dedup(arr){
-  const seen=new Set();
-  return arr.filter(p=>{const k=nmFuzzy(p.address||'');if(!k||seen.has(k))return false;seen.add(k);return true;});
+  const seen=new Set(),ids=new Set();
+  const out=arr.filter(p=>{const k=nmFuzzy(p.address||'');if(!k||seen.has(k))return false;ensureJobId(p);if(ids.has(p.jobId))return false;seen.add(k);ids.add(p.jobId);return true;});
+  rebuildJobIndex(out);
+  return out;
 }
 async function sbLoadProjects(){
   try{
     const {data,error}=await sb.from('projects').select('address,data,updated_at');
     if(error||!data||data.length===0)return null;
-    return data.map(r=>({...r.data,address:r.address}));
-  }catch(e){return null;}
+    // Oldest first so the most recently saved row for a job wins; older
+    // addresses for the same jobId become aliases instead of duplicate jobs.
+    const rows=[...data].sort((a,b)=>String(a.updated_at||'').localeCompare(String(b.updated_at||'')));
+    const byId={};
+    rows.forEach(r=>{
+      const p=ensureJobId({...(r.data||{}),address:r.address});
+      const prev=byId[p.jobId];
+      if(prev){[prev.address,...prev.addrAliases].forEach(a=>addAlias(p,a));}
+      byId[p.jobId]=p;
+    });
+    return Object.values(byId);
+  }catch(e){reportFail('Loading projects',e);return null;}
 }
 async function sbUpsertBatch(rows){
   const BATCH=50;
@@ -1709,6 +1829,7 @@ async function init(){
   SECS.forEach(s=>bh(s));
   pd();af();
   initSyncDisplay();
+  updateUnmatchedBadge();
   document.getElementById('ldr').style.display='none';
   document.addEventListener('click',function(e){
     const pop=document.getElementById('fpop');
@@ -1756,7 +1877,7 @@ function setupRealtime(){
       });
     })
     .subscribe();
-  function _rtTask(r){return{id:r.id,title:r.title||'',notes:r.notes||'',dueDate:r.due_date||'',status:r.status||'todo',priority:r.priority||'medium',tags:Array.isArray(r.tags)?r.tags:[],projectAddress:r.project_address||'',createdAt:r.created_at||'',completedAt:r.completed_at||''};}
+  function _rtTask(r){return{id:r.id,title:r.title||'',notes:r.notes||'',dueDate:r.due_date||'',status:r.status||'todo',priority:r.priority||'medium',tags:Array.isArray(r.tags)?r.tags:[],projectAddress:canonAddr(r.project_address||''),createdAt:r.created_at||'',completedAt:r.completed_at||''};}
   sb.channel('rt-tasks')
     .on('postgres_changes',{event:'INSERT',schema:'public',table:'tasks'},(pl)=>{
       const t=_rtTask(pl.new);if(!tasks.find(x=>x.id===t.id))tasks.push(t);
@@ -2401,7 +2522,7 @@ async function loadNotes(address){
   const dn=document.getElementById('dnotes');if(!dn)return;
   dn.innerHTML='<div class="pn-loading">Loading notes…</div>';
   try{
-    const{data,error}=await sb.from('project_notes').select('*').eq('project_address',address).order('created_at',{ascending:false});
+    const{data,error}=await sb.from('project_notes').select('*').in('project_address',jobAddrs(address)).order('created_at',{ascending:false});
     pnotes[address]=(!error&&data)?data:[];
   }catch(e){pnotes[address]=[];}
   renderNotes(address);
@@ -2480,7 +2601,7 @@ function hfd(e){e.preventDefault();document.getElementById('fdrop').classList.re
 function hfs(e){const f=e.target.files[0];if(f)pf(f);e.target.value='';}
 
 let jobWU={};let _jwuFile=null;
-async function initJobWU(){try{const{data,error}=await sb.from('job_weekly_updates').select('address,week_of,update_text').order('week_of',{ascending:false});if(!error&&data){jobWU={};data.forEach(r=>{if(!jobWU[r.address])jobWU[r.address]=[];jobWU[r.address].push({week_of:r.week_of,text:r.update_text||''}); });}}catch(e){console.warn('[sync] ignored error',e);}}
+async function initJobWU(){try{const{data,error}=await sb.from('job_weekly_updates').select('address,week_of,update_text').order('week_of',{ascending:false});if(!error&&data){jobWU={};data.forEach(r=>{const _a=canonAddr(r.address);if(!jobWU[_a])jobWU[_a]=[];jobWU[_a].push({week_of:r.week_of,text:r.update_text||''}); });}}catch(e){console.warn('[sync] ignored error',e);}}
 let _jwuHeaders=[];let _jwuRows=[];
 function openJWUImport(){const today=new Date();const d=new Date(today);d.setDate(today.getDate()-((today.getDay()+6)%7));document.getElementById('jwu-date').value=d.toISOString().slice(0,10);document.getElementById('jwu-status').style.display='none';document.getElementById('jwu-drop').innerHTML='<div>&#128193; Click to select or drag and drop</div>';document.getElementById('jwu-cols').style.display='none';_jwuFile=null;_jwuHeaders=[];_jwuRows=[];document.getElementById('jwu-modal').classList.add('open');}
 function closeJWUImport(){document.getElementById('jwu-modal').classList.remove('open');}
@@ -2488,7 +2609,7 @@ async function jwuDrop(e){e.preventDefault();document.getElementById('jwu-drop')
 async function jwuFileChosen(e){const f=e.target.files[0];if(f){_jwuFile=f;await _jwuLoadHeaders(f);}e.target.value='';}
 async function _jwuLoadHeaders(f){document.getElementById('jwu-drop').innerHTML='<div>&#128196; '+es(f.name)+'</div><div style="font-size:11px;margin-top:5px;color:#6b7280">Click to change</div>';try{const ext=f.name.split('.').pop().toLowerCase();if(ext==='csv'||ext==='txt'){const txt=await f.text();const lines=txt.split('\n').filter(l=>l.trim());const parse=l=>{const cells=[];let cur='',inQ=false;for(let i=0;i<l.length;i++){const c=l[i];if(c==='"'){inQ=!inQ;}else if(c===','&&!inQ){cells.push(cur.trim());cur='';}else cur+=c;}cells.push(cur.trim());return cells;};_jwuRows=[parse(lines[0]),...lines.slice(1).map(parse)];_jwuHeaders=_jwuRows[0].map(h=>String(h||'').trim());}else{if(typeof XLSX==='undefined'){_jwuSt('error','SheetJS not loaded.');return;}const buf=await f.arrayBuffer();const wb2=XLSX.read(new Uint8Array(buf),{type:'array'});const ws2=wb2.Sheets[wb2.SheetNames[0]];_jwuRows=XLSX.utils.sheet_to_json(ws2,{header:1,raw:false});_jwuHeaders=(_jwuRows[0]||[]).map(h=>String(h||'').trim());}const opts=_jwuHeaders.map((h,i)=>'<option value="'+i+'">'+es(h||('Column '+(i+1)))+'</option>').join('');document.getElementById('jwu-col-addr').innerHTML=opts;document.getElementById('jwu-col-notes').innerHTML=opts;const ai=_jwuHeaders.findIndex(h=>/(address|job name|street)/i.test(h));const ni=_jwuHeaders.findIndex((h,i)=>i!==(ai>=0?ai:0)&&/(note|update|log|comment|remark|gc\s*note|cpm\s*note|status\s*note)/i.test(h));if(ai>=0)document.getElementById('jwu-col-addr').value=String(ai);if(ni>=0)document.getElementById('jwu-col-notes').value=String(ni);document.getElementById('jwu-cols').style.display='flex';}catch(err){_jwuSt('error','Could not read file: '+err.message);}}
 async function doJWUImport(){const weekOf=document.getElementById('jwu-date').value;if(!weekOf){_jwuSt('error','Please select a week date.');return;}if(!_jwuFile||!_jwuRows.length){_jwuSt('error','Please select a file.');return;}const addrIdx=parseInt(document.getElementById('jwu-col-addr').value);const notesIdx=parseInt(document.getElementById('jwu-col-notes').value);if(isNaN(addrIdx)||isNaN(notesIdx)){_jwuSt('error','Please select address and notes columns.');return;}const btn=document.getElementById('jwu-import-btn');btn.disabled=true;btn.textContent='Importing…';try{await _jwuProcess(_jwuRows,weekOf,addrIdx,notesIdx);}catch(err){_jwuSt('error','Error: '+err.message);}btn.disabled=false;btn.textContent='Import';}
-async function _jwuProcess(rows,weekOf,addrIdx,notesIdx){if(!rows.length){_jwuSt('error','File is empty.');return;}const nm={};proj.forEach(p=>{if(p.address){nm[nmFuzzy(p.address)]=p.address;nm[(pname(p)||'').toLowerCase().trim()]=p.address;}});let saved=0,skipped=0;const ups=[];rows.slice(1).filter(r=>r&&r.some(c=>c)).forEach(r=>{const rawA=String(r[addrIdx]||'').trim();const rawU=String(r[notesIdx]||'').trim();if(!rawA||!rawU){skipped++;return;}const streetOnly=rawA.split(',')[0].trim();const addr=nm[nmFuzzy(rawA)]||nm[nmFuzzy(streetOnly)]||nm[rawA.toLowerCase()]||nm[streetOnly.toLowerCase()]||rawA;ups.push({address:addr,week_of:weekOf,update_text:rawU,updated_at:new Date().toISOString()});saved++;});if(!ups.length){_jwuSt('error','No valid rows found. Check your column selections.');return;}try{const B=50;for(let i=0;i<ups.length;i+=B){const{error}=await sb.from('job_weekly_updates').upsert(ups.slice(i,i+B),{onConflict:'address,week_of'});if(error)throw error;}ups.forEach(u=>{if(!jobWU[u.address])jobWU[u.address]=[];const xi=jobWU[u.address].findIndex(e=>e.week_of===u.week_of);if(xi>=0)jobWU[u.address][xi].text=u.update_text;else jobWU[u.address].unshift({week_of:u.week_of,text:u.update_text});jobWU[u.address].sort((a,b)=>b.week_of.localeCompare(a.week_of));});_jwuSt('ok','&#10003; Imported '+saved+' updates'+(skipped?' ('+skipped+' rows skipped)':'')+'.');}catch(err){_jwuSt('error','Save failed: '+err.message+'. Make sure the job_weekly_updates table exists in Supabase.');}}
+async function _jwuProcess(rows,weekOf,addrIdx,notesIdx){if(!rows.length){_jwuSt('error','File is empty.');return;}rebuildJobIndex(proj);let saved=0,skipped=0,unm=0;const ups=[];rows.slice(1).filter(r=>r&&r.some(c=>c)).forEach(r=>{const rawA=String(r[addrIdx]||'').trim();const rawU=String(r[notesIdx]||'').trim();if(!rawA||!rawU){skipped++;return;}const _j=resolveJob(rawA);if(!_j){addUnmatched({source:'weekly-update',raw:rawA,weekOf,text:rawU});unm++;return;}const addr=_j.address;ups.push({address:addr,week_of:weekOf,update_text:rawU,updated_at:new Date().toISOString()});saved++;});if(!ups.length){_jwuSt(unm?'ok':'error',unm?('No rows matched a job. '+unm+' sent to <a href="#" onclick="closeJWUImport();openUnmatched();return false">Unmatched rows</a> for review.'):'No valid rows found. Check your column selections.');return;}try{const B=50;for(let i=0;i<ups.length;i+=B){const{error}=await sb.from('job_weekly_updates').upsert(ups.slice(i,i+B),{onConflict:'address,week_of'});if(error)throw error;}ups.forEach(u=>{if(!jobWU[u.address])jobWU[u.address]=[];const xi=jobWU[u.address].findIndex(e=>e.week_of===u.week_of);if(xi>=0)jobWU[u.address][xi].text=u.update_text;else jobWU[u.address].unshift({week_of:u.week_of,text:u.update_text});jobWU[u.address].sort((a,b)=>b.week_of.localeCompare(a.week_of));});_jwuSt('ok','&#10003; Imported '+saved+' updates'+(skipped?' ('+skipped+' rows skipped)':'')+'.'+(unm?' '+unm+' unmatched → <a href="#" onclick="closeJWUImport();openUnmatched();return false">review</a>.':''));}catch(err){_jwuSt('error','Save failed: '+err.message+'. Make sure the job_weekly_updates table exists in Supabase.');}}
 function _jwuSt(type,msg){const el=document.getElementById('jwu-status');el.style.display='block';el.style.background=type==='ok'?'#f0fdf4':'#fef2f2';el.style.color=type==='ok'?'#15803d':'#dc2626';el.innerHTML=msg;}
 const FIELD_LABELS={address:'Address',jobName:'Job Name',program:'Program',city:'City',jobType:'Job Type',permittingJurisdiction:'Permitting Jurisdiction',jobStatus:'Job Status',assignmentReceived:'Assignment Received',surveyOrdered:'Survey Ordered',surveyReceived:'Survey Received',plansOrdered:'Plans Ordered',plansReceived:'Plans Received',septicOrdered:'Septic Design Ordered',septicReceived:'Septic Design Received',isvCompleted:'ISV Completed',costEstimateSubmitted:'Cost Est. Submitted',costEstimateApproved:'Cost Est. Approved',bldgPermitSubmitted:'Bldg Permit Submitted',bldgPermitIssued:'Bldg Permit Issued',bldgPermitNumber:'Bldg Permit #',ntp:'NTP',ntpP:'NTP-P',constructionStart:'Construction Start',constructionDeadline:'Construction Deadline',constructionStage:'Stage',projectedStart:'Proj. Start',projectedCompletion:'Proj. Completion',inspection50:'50% Inspection',inspection100:'100% Inspection',demoPermitSubmitted:'Demo Permit Submitted',demoPermitIssued:'Demo Permit Issued',demoPermitNumber:'Demo Permit #',superintendent:'Superintendent',contractAmount:'Contract Amount',firstName:'First Name',lastName:'Last Name',projectNumber:'Project #',preConDeadline:'Pre-Con Deadline',approvedPreConDelays:'Pre-Con Delay Days',approvedConstrDelays:'Constr. Delay Days',applicantPhone:'Applicant Phone',applicantEmail:'Applicant Email',cm:'CM'};
 
@@ -2514,18 +2635,21 @@ function pf(file){
       const renames=[];// {oldAddr, newAddr}
       const pm={};proj.forEach((p,i)=>{if(p.address)pm[nmFuzzy(p.address)]=i;});
       const allImportedNd=[];
+      rebuildJobIndex(proj);
+      const _pnUnique={};{const _c={};rows.forEach(r=>{const v=g(r,'Prefix');if(v)_c[v]=(_c[v]||0)+1;});Object.keys(_c).forEach(v=>{if(_c[v]===1)_pnUnique[v]=true;});}
       const _psKey=Object.keys(cm).find(k=>k.toLowerCase().replace(/\*$/,'')==='permit status')||'';
       rows.forEach(r=>{
         const addr=g(r,'Street Address')||g(r,'Job Name');if(!addr){sk++;return;}
         const nd={address:addr,jobName:g(r,'Job Name'),program:g(r,'Groups'),city:g(r,'City'),jobType:g(r,'Job Type *'),permittingJurisdiction:g(r,'Permitting Jurisdiction*'),jobStatus:g(r,'Job Status*'),assignmentReceived:gd3(r,'Assignment Received*'),surveyOrdered:gd3(r,'Survey / EC Ordered*'),surveyReceived:gd3(r,'Survey / EC Received*'),plansOrdered:gd3(r,'Plans Ordered*'),plansReceived:gd3(r,'Plans Received*'),septicOrdered:gd3(r,'Septic Design Ordered*'),septicReceived:gd3(r,'Septic Design Received*'),isvCompleted:gd3(r,'ISV Completed*'),costEstimateSubmitted:gd3(r,'Cost Estimate Submitted*'),costEstimateApproved:gd3(r,'Cost Estimate Approved*'),bldgPermitSubmitted:gd3(r,'Building Permit Submitted*'),bldgPermitIssued:gd3(r,'Building Permit Issued*'),ntp:gd3(r,'NTP*'),constructionStart:gd3(r,'Actual Start'),inspection50:gd3(r,'50% Complete Date*'),inspection100:gd3(r,'100% Complete Date*'),superintendent:gd3(r,'Superintendent*'),constructionDeadline:gd3(r,'Construction Deadline*'),approvedConstrDelays:g(r,'Construction Delay Days*'),demoPermitIssued:gd3(r,'Demo Permit Issued*'),demoPermitNumber:g(r,'Demo Permit Number*'),demoPermitSubmitted:gd3(r,'Demo Permit Submitted*'),bldgPermitNumber:g(r,'Building Permit Number*'),ntpP:gd3(r,'NTP-P*'),approvedPreConDelays:g(r,'Pre-Con Delay Days*'),preConDeadline:gd3(r,'Pre-Construction Deadline*'),firstName:g(r,'Applicant First Name*'),lastName:g(r,'Applicant Last Name*'),applicantPhone:g(r,'Applicant Phone Number*'),applicantEmail:g(r,'Applicant Email*'),projectNumber:g(r,'Prefix'),contractAmount:g(r,'Contract Price')==='0'?'':g(r,'Contract Price'),projectedStart:gd3(r,'Proj. Start'),projectedCompletion:gd3(r,'Proj. Completion'),constructionStage:g(r,'Status'),cm:g(r,'CM*')};
         const permitSt=_psKey?g(r,_psKey):'';
         if(permitSt.toLowerCase()==='not required'){nd.bldgPermitSubmitted='N/A';nd.bldgPermitIssued='N/A';naSet++;}
-        const k=nmFuzzy(addr);
+        let k=nmFuzzy(addr);
+        if(pm[k]===undefined){const _j=resolveJob(addr,_pnUnique[nd.projectNumber]?nd.projectNumber:'');if(_j){const _i=proj.indexOf(_j);if(_i>=0){k=nmFuzzy(_j.address);pm[k]=_i;}}}
         if(pm[k]!==undefined){const _ex=proj[pm[k]];if(_ex.bldgPermitSubmitted==='N/A'&&!nd.bldgPermitSubmitted)nd.bldgPermitSubmitted='N/A';if(_ex.bldgPermitIssued==='N/A'&&!nd.bldgPermitIssued)nd.bldgPermitIssued='N/A';}
         allImportedNd.push(nd);
         if(pm[k]!==undefined){
           const existing=proj[pm[k]];
-          if(existing.address&&existing.address!==addr)renames.push({oldAddr:existing.address,newAddr:addr});
+          if(existing.address&&existing.address!==addr){renames.push({oldAddr:existing.address,newAddr:addr});addAlias(existing,existing.address);}ensureJobId(existing);
           Object.assign(existing,nd);up++;
         }else{proj.push(nd);pm[k]=proj.length-1;ad++;}
       });
@@ -2608,10 +2732,9 @@ async function doImportSave(auto){
     // Delete stale old-address rows from Supabase before upserting so renames don't re-appear
     const renames=(window._lastChangeLog&&window._lastChangeLog.renames)||[];
     if(renames.length){
-      await sbTry('Removing renamed projects',()=>sb.from('projects').delete().in('address',renames.map(r=>r.oldAddr)));
-      // Migrate notes to the new address so they stay attached after a rename
+      // Old-address rows are no longer deleted: the job keeps its jobId and the old
+      // address is stored as an alias, so notes/queues/updates still attach on read.
       for(const r of renames){
-        await sbTry('Moving notes to renamed address',()=>sb.from('project_notes').update({project_address:r.newAddr}).eq('project_address',r.oldAddr));
         if(pnotes[r.oldAddr]){pnotes[r.newAddr]=pnotes[r.oldAddr].map(n=>({...n,project_address:r.newAddr}));delete pnotes[r.oldAddr];}
       }
     }
@@ -2621,7 +2744,7 @@ async function doImportSave(auto){
     if(allNd.length){
       try{
         showSaveStatus('saving');
-        await sbUpsertBatch(allNd.map(p=>({address:p.address,data:p,updated_at:new Date().toISOString()})));
+        await sbUpsertBatch(allNd.map(p=>{const j=resolveJob(p.address);const d=j?{...p,jobId:j.jobId,addrAliases:j.addrAliases}:ensureJobId({...p});return{address:p.address,data:d,updated_at:new Date().toISOString()};}));
       }catch(e){console.error('allImportedNd upsert:',e);}
     }
     const ok=await sbSyncProjects();
@@ -2686,20 +2809,21 @@ async function handlePermittingImport(file){
     const a=(p.address||'').toLowerCase();if(a)nameMap[a]=p.address;
   });
   const thisSun=puGetSunday(0);const thisWeekKey=puSundayKey(thisSun);
-  let updated=0,skipped=0;
+  let updated=0,skipped=0,unmatched=0;rebuildJobIndex(proj);
   for(let i=1;i<lines.length;i++){
     const cols=_parseCSVRow(lines[i]);
     const name=(cols[nameIdx]||'').trim();
     const tw=(cols[twIdx]||'').trim();
     if(!name){skipped++;continue;}
-    const addr=nameMap[name.toLowerCase()];
-    if(!addr){skipped++;continue;}
+    let addr=nameMap[name.toLowerCase()];
+    if(!addr){const _j=resolveJob(name);if(_j)addr=_j.address;}
+    if(!addr){addUnmatched({source:'permit-import',raw:name,text:tw,weekKey:thisWeekKey,attn:attnIdx!==-1?(cols[attnIdx]||'').trim().toLowerCase():''});unmatched++;continue;}
     if(tw)await savePuUpdate(addr,'puThisWeek',tw,thisWeekKey);
     if(attnIdx!==-1){const attnVal=(cols[attnIdx]||'').trim().toLowerCase();if(attnVal==='yes'||attnVal==='no')await savePuAttention(addr,attnVal==='yes');}
     if(tw)updated++;else skipped++;
   }
   if(permUpdView)renderPermUpdView();
-  st2('Import complete: '+updated+' updated'+(skipped?' ('+skipped+' unmatched)':''));
+  st2('Import complete: '+updated+' updated'+(skipped?', '+skipped+' skipped':'')+(unmatched?', '+unmatched+' unmatched — see ⚠ Unmatched':''));
 }
 function reportFail(what,err){try{console.error('[sync] '+what+' failed',err);}catch(_){}const now=Date.now();if(!reportFail._t||now-reportFail._t>4000||reportFail._w!==what){reportFail._t=now;reportFail._w=what;try{st2('\u26a0 '+what+' failed \u2014 check connection');}catch(_){}}}
 function lsSet(k,v){try{localStorage.setItem(k,v);}catch(e){reportFail('Local save ('+k+')',e);}}
@@ -2711,7 +2835,7 @@ function closeProgDrop(){document.getElementById('prog-drop').classList.remove('
 window.addEventListener('DOMContentLoaded',init);
 
 /* ── TASK MANAGEMENT ─────────────────────────────── */
-function _mapTaskRow(r){const t={id:r.id,title:r.title||'',notes:r.notes||'',dueDate:r.due_date||'',status:r.status||'todo',priority:r.priority||'medium',tags:Array.isArray(r.tags)?r.tags:[],projectAddress:r.project_address||'',createdAt:r.created_at||'',completedAt:r.completed_at||''};if(t.status==='inprogress'||t.status==='queue')t.status='todo';return t;}
+function _mapTaskRow(r){const t={id:r.id,title:r.title||'',notes:r.notes||'',dueDate:r.due_date||'',status:r.status||'todo',priority:r.priority||'medium',tags:Array.isArray(r.tags)?r.tags:[],projectAddress:canonAddr(r.project_address||''),createdAt:r.created_at||'',completedAt:r.completed_at||''};if(t.status==='inprogress'||t.status==='queue')t.status='todo';return t;}
 // Three-layer task storage: Supabase → pic_tasks_v1 (working) → pic_tasks_bak_v1 (backup).
 // The backup key is ONLY written to when tasks exist and is NEVER cleared by an empty DB result.
 function _readTaskSnap(key){try{const s=localStorage.getItem(key);return s?JSON.parse(s):[];}catch(e){return[];}}
@@ -2812,7 +2936,7 @@ async function initJQ(){
   try{
     const {data,error}=await sb.from('job_start_queue').select('address');
     if(error)throw error;
-    jqAddrs=(data||[]).map(r=>r.address);
+    jqAddrs=[...new Set((data||[]).map(r=>canonAddr(r.address)))];
     localStorage.setItem('pic_jsq_v1',JSON.stringify(jqAddrs));
     jqLoaded=true;
   }catch(e){
@@ -2831,10 +2955,10 @@ async function sbWriteJQ(op){
   showSaveStatus('saving');
   let r;
   if(op.add){
-    const ex=await sbTry('Job Queue save',()=>sb.from('job_start_queue').select('address').eq('address',op.add));
+    const ex=await sbTry('Job Queue save',()=>sb.from('job_start_queue').select('address').in('address',jobAddrs(op.add)));
     r=(ex&&ex.data&&ex.data.length)?ex:await sbTry('Job Queue save',()=>sb.from('job_start_queue').insert({address:op.add}));
   }else if(op.remove){
-    r=await sbTry('Job Queue save',()=>sb.from('job_start_queue').delete().eq('address',op.remove));
+    r=await sbTry('Job Queue save',()=>sb.from('job_start_queue').delete().in('address',jobAddrs(op.remove)));
   }
   showSaveStatus('saved');
   return r;
@@ -2845,7 +2969,7 @@ async function sbSyncJQ(){
   if(!jqLoaded)return;
   const r=await sbTry('Job Queue refresh',()=>sb.from('job_start_queue').select('address'));
   if(!r)return;
-  const fresh=(r.data||[]).map(x=>x.address);
+  const fresh=[...new Set((r.data||[]).map(x=>canonAddr(x.address)))];
   if(fresh.length===(jqAddrs).length&&fresh.every(x=>jqAddrs.includes(x)))return;
   jqAddrs=fresh; lsSet('pic_jsq_v1',JSON.stringify(jqAddrs));
   try{if(jqView)renderJQ();}catch(e){console.warn('[sync] Job Queue re-render',e);}
@@ -3746,7 +3870,7 @@ async function initCOQ(){
   try{
     const {data,error}=await sb.from('change_order_queue').select('address');
     if(error)throw error;
-    coqAddrs=(data||[]).map(r=>r.address);
+    coqAddrs=[...new Set((data||[]).map(r=>canonAddr(r.address)))];
     localStorage.setItem('pic_coq_v1',JSON.stringify(coqAddrs));
     coqLoaded=true;
   }catch(e){
@@ -3765,10 +3889,10 @@ async function sbWriteCOQ(op){
   showSaveStatus('saving');
   let r;
   if(op.add){
-    const ex=await sbTry('Change Order Queue save',()=>sb.from('change_order_queue').select('address').eq('address',op.add));
+    const ex=await sbTry('Change Order Queue save',()=>sb.from('change_order_queue').select('address').in('address',jobAddrs(op.add)));
     r=(ex&&ex.data&&ex.data.length)?ex:await sbTry('Change Order Queue save',()=>sb.from('change_order_queue').insert({address:op.add}));
   }else if(op.remove){
-    r=await sbTry('Change Order Queue save',()=>sb.from('change_order_queue').delete().eq('address',op.remove));
+    r=await sbTry('Change Order Queue save',()=>sb.from('change_order_queue').delete().in('address',jobAddrs(op.remove)));
   }
   showSaveStatus('saved');
   return r;
@@ -3779,7 +3903,7 @@ async function sbSyncCOQ(){
   if(!coqLoaded)return;
   const r=await sbTry('Change Order Queue refresh',()=>sb.from('change_order_queue').select('address'));
   if(!r)return;
-  const fresh=(r.data||[]).map(x=>x.address);
+  const fresh=[...new Set((r.data||[]).map(x=>canonAddr(x.address)))];
   if(fresh.length===(coqAddrs).length&&fresh.every(x=>coqAddrs.includes(x)))return;
   coqAddrs=fresh; lsSet('pic_coq_v1',JSON.stringify(coqAddrs));
   try{if(coqView)renderCOQ();}catch(e){console.warn('[sync] Change Order Queue re-render',e);}
@@ -4033,7 +4157,7 @@ let puData={};
 async function initPU(){
   try{
     const{data,error}=await sb.from('permitting_updates').select('*');
-    if(!error&&data){data.forEach(r=>{puData[r.address]={lastWeek:r.last_week||'',thisWeek:r.this_week||'',thisWeekSavedAt:r.this_week_saved_at||null,lastRotatedAt:r.last_rotated_at||null,needsAttention:!!r.needs_attention};});}
+    if(!error&&data){data.forEach(r=>{const _ca=canonAddr(r.address);if(puData[_ca]&&_ca!==r.address)return;puData[_ca]={lastWeek:r.last_week||'',thisWeek:r.this_week||'',thisWeekSavedAt:r.this_week_saved_at||null,lastRotatedAt:r.last_rotated_at||null,needsAttention:!!r.needs_attention};});}
   }catch(e){console.warn('[sync] ignored error',e);}
   Object.entries(puNotes).forEach(([addr,fields])=>{
     if(!puData[addr])puData[addr]={lastWeek:'',thisWeek:'',thisWeekSavedAt:null,lastRotatedAt:null};
