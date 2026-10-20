@@ -169,6 +169,8 @@ window.pcCell=(p,pr)=>{PC.f.p=p?[p]:[];PC.f.pr=pr?[pr]:[];writeHash();renderPrec
 window.pcClear=()=>{PC.f={p:[],pr:[],st:[],who:'',q:''};writeHash();renderPrecon();};
 window.pcChg=(k,v)=>{PC.chg[k]=v;renderPrecon();};
 window.pcOpenJob=addr=>{closePrecon();goToTracker();if(typeof openProjectByAddr==='function')openProjectByAddr(addr);};
+window.pcAct=(k,v)=>{PC.ui=PC.ui||{act:{},open:{}};PC.ui.act[k]=v;renderPrecon();};
+window.pcRow=(tr,key)=>{if(window.getSelection&&String(window.getSelection()))return;PC.ui=PC.ui||{act:{},open:{}};const on=!PC.ui.open[key];if(on)PC.ui.open[key]=1;else delete PC.ui.open[key];tr.classList.toggle('open',on);const d=tr.nextElementSibling;if(on&&!d.firstChild.innerHTML){const x=(PC.result.queue||[]).find(q=>q.job_key===key);if(x)d.firstChild.innerHTML=PC._detail(x);}d.hidden=!on;};
 window.pcExpand=i=>{const el=document.getElementById('pc-hits-'+i);if(el)el.style.display=el.style.display==='none'?'block':'none';};
 function filterItems(items){const f=PC.f,q=f.q.toLowerCase();
   return items.filter(x=>(!f.p.length||f.p.includes(x.program))&&(!f.pr.length||f.pr.includes(x.priority))&&(!f.st.length||f.st.includes(x.stage))&&
@@ -226,8 +228,56 @@ window.renderPrecon=function(){
   const tbl=(items,off,empty)=>items.length?'<div class="pc-tw"><table class="pc-q pc-ql"><thead><tr><th></th><th>Action</th><th>Job</th><th>Program</th><th>Stage</th><th>Waiting</th><th>Owner</th><th></th></tr></thead><tbody>'+items.map((x,i)=>row(x,i+off)).join('')+'</tbody></table></div>'
     :'<table class="pc-q pc-ql"><tbody><tr><td colspan="8"><div class="pc-none">'+empty+'</div></td></tr></tbody></table>';
   const sec=(cls,title,sub,n,body)=>'<section class="pc-panel '+cls+'"><header><h3>'+title+'</h3><span class="pc-count">'+n+'</span><span class="pc-hsub">'+sub+'</span></header>'+body+'</section>';
-  h+=sec('pc-s1','Needs action now','P1 · front-end items where the ball is in our court',p1.length,tbl(p1,0,nF?'No P1 items match these filters.':'&#10003; Nothing urgent. No P1 items right now.'));
-  h+=sec('pc-s2','Permitting → NTP','P2 · in our court, less urgent',p2.length,tbl(p2,500,nF?'No P2 items match these filters.':'No P2 items.'));
+  // ---- grouped P1 / P2 sections (display only) ----
+  PC.ui=PC.ui||{act:{},open:{}};
+  const actOf=x=>x.primary?x.primary.rule.Action:'No action rule';
+  const fdt=v=>{if(v==null||v==='')return'';const s=String(v);if(/^\d{4}-\d{2}-\d{2}/.test(s)||/\d{1,2}\/\d{1,2}\/\d{2,4}/.test(s)){const d=PCE.parseETDate(s)||new Date(s);if(d&&!isNaN(d))return new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',month:'numeric',day:'numeric',year:'numeric'}).format(d);}return s;};
+  const kv=(l,v)=>(v==null||String(v).trim()==='')?'':'<div class="pc-kv"><span>'+l+'</span><b>'+es(String(v))+'</b></div>';
+  const detail=x=>{const j=x.bt||{};const rec=(PC.pulls[x.program]&&PC.pulls[x.program].records.find(r=>String(r.ID)===x.record_id))||null;
+    const scopeF=PCE.SCOPE[x.program];
+    const rules='<div class="pc-dcol"><h4>Rules hit ('+x.hits.length+')</h4>'+(x.hits.length?x.hits.map(hh=>'<div class="pc-hit">'+chip(hh.rule.Priority)+'<div><b>'+es(hh.rule.Action)+'</b><div class="pc-sub">'+es(hh.fields.join('; '))+' · '+es(hh.rule.Stage||'')+' · rule '+es(hh.rule.RuleID||'')+' ('+es(hh.src||'')+')</div></div></div>').join(''):'<div class="pc-sub">No rule matched.</div>')+'</div>';
+    const prog='<div class="pc-dcol"><h4>'+(x.program==='BT'?'Buildertrend job':'Program record · '+x.program)+'</h4>'+
+      (x.program!=='BT'?kv(scopeF||'Status',x.scope_value)+(rec?kv('Status updated',fdt(rec['Status Updated']))+(x.primary&&x.primary.src==='program'&&x.primary.field!==scopeF?kv(x.primary.field,rec[x.primary.field]):''):'')+kv('Record ID',x.record_id)+kv('Matched to BT by',x.match==='id'?'ID':x.match):kv('Group',x.bt_group)+kv('Prefix',x.record_id))+
+      kv('Days waiting',x.days==null?'':(x.days_ge?'≥ ':'')+x.days+' (from '+(x.days_basis||'?')+')')+
+      '<h4>People</h4>'+kv('Superintendent',x.superintendent)+kv('CM',x.cm)+kv('Program CM',x.program_cm)+'</div>';
+    const btc=x.bt?'<div class="pc-dcol"><h4>BT status</h4>'+kv('Job status',j.jobStatus)+kv('Stage',j.constructionStage)+kv('Permit status',j.permitStatus)+kv('Building permit',j.bldgPermitStatus)+
+      '<h4>Pre-con fields</h4>'+kv('ISV scheduled',fdt(j.isvScheduled))+kv('ISV completed',fdt(j.isvCompleted))+kv('CE submitted',fdt(j.costEstimateSubmitted))+kv('CE returned',fdt(j.ceReturned))+kv('CE resubmitted',fdt(j.ceResubmitted))+kv('CE approved',fdt(j.costEstimateApproved))+
+      kv('Permit submitted',fdt(j.bldgPermitSubmitted))+kv('Permit kicked back',fdt(j.permitKickedBack))+kv('Permit issued',fdt(j.bldgPermitIssued))+kv('NTP',fdt(j.ntp))+
+      kv('RFI needed',j.rfiNeeded)+kv('RFI requested',fdt(j.rfiRequested))+kv('RFI received',fdt(j.rfiReceived))+kv('Septic',j.septic)+kv('Sewer type',j.sewerType)+kv('Septic permit issued',fdt(j.septicPermitIssued))+
+      kv('Pre-con mtg scheduled',fdt(j.preConMeetingScheduled))+kv('Pre-con mtg completed',fdt(j.preConMeetingCompleted))+'</div>':'<div class="pc-dcol"><h4>BT status</h4><div class="pc-sub">No matching Buildertrend job.</div></div>';
+    const cc=j.companyCamLink&&/^https?:\/\//i.test(String(j.companyCamLink).trim())?String(j.companyCamLink).trim():'';
+    const links='<div class="pc-dlinks">'+(x.bt?'<a href="#" onclick="pcOpenJob(\''+es(String(x.bt.address).replace(/'/g,"\\'"))+'\');return false">Open in Tracker &#8250;</a>':'')+(cc?'<a href="'+es(cc)+'" target="_blank" rel="noopener">CompanyCam &#8599;</a>':'<span class="pc-sub">No CompanyCam link</span>')+
+      '<a href="#" onclick="navigator.clipboard&&navigator.clipboard.writeText(\''+es(x.record_id).replace(/'/g,"\\'")+'\');this.textContent=\'Copied ✓\';return false">Copy '+(x.program==='BT'?'prefix':'program ID')+' '+es(x.record_id)+'</a><span class="pc-sub">The program exports don\'t include record links.</span></div>';
+    return'<div class="pc-dgrid">'+rules+prog+btc+'</div>'+links;};
+  const grow=(x,i)=>{const t=x.primary;const open=!!PC.ui.open[x.job_key];
+    const days=x.days==null?'<span class="pc-sub">—</span>':'<b>'+(x.days_ge?'≥':'')+x.days+'</b><span class="pc-sub">d</span>';
+    return'<tr class="pc-r'+(open?' open':'')+'" onclick="pcRow(this,\''+es(x.job_key).replace(/'/g,"\\'")+'\')"><td class="pc-pri"><span class="pc-tw-ic">&#8250;</span></td><td class="pc-act" data-l="Action"><div class="pc-at">'+es(t?t.rule.Action:'No action rule')+(x.hits.length>1?' <span class="pc-nr">+'+(x.hits.length-1)+'</span>':'')+'</div><div class="pc-sub">'+(t?es(t.fields.join('; ')):es(x.scope_value||''))+'</div></td>'+
+      '<td data-l="Job"><div class="pc-job">'+es(x.address)+'</div><div class="pc-sub">'+es(x.applicant)+' · '+es(x.record_id)+(x.bt&&x.bt.address&&x.bt.address!==x.address?' · BT: '+es(x.bt.address):'')+'</div></td>'+
+      '<td data-l="Program"><span class="pc-prog" title="'+es(PCE.PROGRAM_NAMES[x.program]||x.bt_group||'')+'">'+x.program+'</span></td>'+
+      '<td data-l="Stage"><span class="pc-stage">'+es(x.stage||'—')+'</span></td><td class="pc-days" data-l="Waiting" title="'+es(x.days_basis||'')+'">'+days+'</td>'+
+      '<td data-l="Owner">'+(es(x.superintendent)||'<span class="pc-sub">—</span>')+(x.cm?'<div class="pc-sub">CM: '+es(x.cm)+'</div>':'')+'</td>'+
+      '<td class="pc-go">'+(x.bt?'<a href="#" onclick="event.stopPropagation();pcOpenJob(\''+es(String(x.bt.address).replace(/'/g,"\\'"))+'\');return false">Open &#8250;</a>':'')+'</td></tr>'+
+      '<tr class="pc-det"'+(open?'':' hidden')+'><td colspan="8">'+(open?detail(x):'')+'</td></tr>';};
+  PC._detail=detail;
+  const grouped=(key,cls,title,sub,items,emptyMsg)=>{
+    const groups={};items.forEach(x=>{const a=actOf(x);(groups[a]=groups[a]||[]).push(x);});
+    const order=Object.keys(groups).sort((a,b)=>groups[b].length-groups[a].length||a.localeCompare(b));
+    const sel=PC.ui.act[key]||'';
+    const own={};items.forEach(x=>{const o=x.superintendent||x.cm||'Unassigned';own[o]=(own[o]||0)+1;});
+    const ownO=Object.keys(own).sort((a,b)=>own[b]-own[a]||a.localeCompare(b));
+    let b='';
+    if(items.length){
+      b+='<div class="pc-strip"><span class="pc-sl">By action</span><button class="pc-ac'+(sel?'':' on')+'" onclick="pcAct(\''+key+'\',\'\')">All <b>'+items.length+'</b></button>'+order.map(a=>'<button class="pc-ac'+(sel===a?' on':'')+'" onclick="pcAct(\''+key+'\',\''+es(a).replace(/'/g,"\\'")+'\')">'+es(a)+' <b>'+groups[a].length+'</b></button>').join('')+'</div>';
+      b+='<div class="pc-strip"><span class="pc-sl">By owner</span>'+ownO.map(o=>{const on=PC.f.who===o;return'<button class="pc-ac pc-ow'+(on?' on':'')+'" '+(o==='Unassigned'?'disabled title="No superintendent or CM in BT"':'onclick="pcSet(\'who\',\''+(on?'':es(o).replace(/'/g,"\\'"))+'\')"')+'>'+es(o)+' <b>'+own[o]+'</b></button>';}).join('')+'</div>';
+      const shown=sel&&groups[sel]?[sel]:order;
+      b+='<div class="pc-tw"><table class="pc-q pc-ql pc-gq"><thead><tr><th></th><th>Action</th><th>Job</th><th>Program</th><th>Stage</th><th>Waiting</th><th>Owner</th><th></th></tr></thead>'+shown.map((a,gi)=>{
+        const g=groups[a].slice().sort((p,q)=>((q.days==null?-1:q.days)-(p.days==null?-1:p.days))||p.address.localeCompare(q.address));
+        const bp={};g.forEach(x=>{bp[x.program]=(bp[x.program]||0)+1;});const old=Math.max(...g.map(x=>x.days==null?-1:x.days));
+        return'<tbody class="pc-grp"><tr class="pc-gh"><td colspan="8"><div class="pc-ghi"><span class="pc-gt">'+es(a)+'</span><span class="pc-count">'+g.length+'</span><span class="pc-gm">'+Object.keys(bp).sort((p,q)=>bp[q]-bp[p]).map(p=>p+' '+bp[p]).join(' · ')+'</span>'+(old>=0?'<span class="pc-gold">oldest <b>'+old+'d</b></span>':'')+'</div></td></tr>'+g.map((x,i)=>grow(x,key+gi+'_'+i)).join('')+'</tbody>';}).join('')+'</table></div>';
+    }else b+='<table class="pc-q pc-ql"><tbody><tr><td colspan="8"><div class="pc-none">'+emptyMsg+'</div></td></tr></tbody></table>';
+    return sec(cls,title,sub,items.length,b);};
+  h+=grouped('p1','pc-s1','Needs action now','P1 · front-end items where the ball is in our court',p1,nF?'No P1 items match these filters.':'&#10003; Nothing urgent. No P1 items right now.');
+  h+=grouped('p2','pc-s2','Permitting → NTP','P2 · in our court, less urgent',p2,nF?'No P2 items match these filters.':'No P2 items.');
   const fold=(id,title,n,body,sub)=>'<details class="pc-fold" id="'+id+'"><summary><span class="pc-chev">&#8250;</span><h3>'+title+'</h3>'+(n!=null?'<span class="pc-count">'+n+'</span>':'')+(sub?'<span class="pc-hsub">'+sub+'</span>':'')+'</summary><div class="pc-fb">'+body+'</div></details>';
   h+='<div class="pc-folds">';
   h+=fold('pc-f-w','Watch',watch.length,tbl(watch,1000,'Nothing on the watch list.'),'monitor, no action yet');
