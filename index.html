@@ -382,6 +382,18 @@ tr.dr:hover td.tcrit-miss,tr.dr.row-permit td.tcrit-miss{background:#fecaca}
 /* ── IMPORT MODAL ───────────────────────────────── */
 #imod{position:fixed;inset:0;background:rgba(9,30,58,.5);z-index:300;display:none;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
 #imod.open{display:flex}
+#btp-modal{position:fixed;inset:0;background:rgba(9,30,58,.55);z-index:320;display:none;align-items:center;justify-content:center}
+#btp-modal.open{display:flex}
+#btp-box{background:#fff;border-radius:12px;width:min(860px,95vw);max-height:88vh;overflow:auto;padding:18px 20px;box-shadow:0 20px 50px rgba(0,0,0,.3);color:#1f2937}
+#btp-hdr{display:flex;justify-content:space-between;align-items:center}#btp-hdr h2{margin:0;font-size:18px}
+.btp-help,.btp-note,.btp-file{font-size:12px;color:#6b7280;margin:6px 0}
+.btp-stats{display:flex;gap:10px;margin:10px 0;flex-wrap:wrap}.btp-stat{flex:1 1 140px;border:1px solid #e5e7eb;border-radius:10px;padding:10px 12px;background:#f9fafb}
+.btp-stat b{display:block;font-size:24px;color:#0f2a4a}.btp-stat span{font-size:12px;color:#6b7280}.btp-stat.warn{background:#fffbeb;border-color:#fbbf24}.btp-stat.warn b{color:#b45309}
+.btp-warn{background:#fffbeb;border:1px solid #fbbf24;color:#92400e;border-radius:8px;padding:8px 10px;font-size:12px;margin:8px 0}
+.btp-sec{border:1px solid #e5e7eb;border-radius:8px;margin:8px 0;padding:6px 10px}.btp-sec summary{cursor:pointer;font-weight:600;font-size:13px}
+.btp-list{max-height:200px;overflow:auto;margin-top:6px}.btp-li{font-size:12px;padding:3px 0;border-bottom:1px dashed #f1f5f9}
+.btp-chip{display:inline-block;font-size:11px;background:#f1f5f9;border-radius:10px;padding:2px 8px;margin:2px}
+.btp-act{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}
 #ibox{background:#fff;border-radius:var(--radius-lg);width:520px;max-width:95vw;padding:28px;box-shadow:var(--shadow-lg)}
 #ibox h2{font-size:18px;font-weight:700;color:var(--blue);margin-bottom:6px}
 #ibox p{font-size:13px;color:var(--gray);margin-bottom:20px;line-height:1.6}
@@ -1441,9 +1453,10 @@ tr.pu-row-green td.tmiss{background:#dcfce7!important}
   </div>
 </div></div>
 
+<div id="btp-modal"><div id="btp-box"><div id="btp-hdr"><h2>&#128269; Import preview</h2><button class="btn btn-gh" onclick="cancelBtPreview()" style="font-size:12px;padding:4px 10px">&#10005;</button></div><p class="btp-help">Nothing has been changed yet. Review what this import will do, then confirm to update the tracker and save to the cloud.</p><div id="btp-body"></div><div class="btp-act"><button class="btn btn-gh" onclick="cancelBtPreview()" style="color:#374151">Cancel</button><button class="btn btn-primary" id="btp-confirm" onclick="confirmBtImport()">Confirm &amp; Save to Cloud</button></div></div></div>
 <div id="imod"><div id="ibox">
   <h2>Import Buildertrend Report</h2>
-  <p>Upload the Buildertrend Excel export (.xlsx). Projects are matched by Street Address — existing ones are updated, new ones are added.</p>
+  <p>Upload the Buildertrend Excel export (.xlsx). Projects are matched by Prefix (when unique), then Job Name, then Street Address. You'll see a preview before anything is saved.</p>
   <div id="fdrop" onclick="document.getElementById('fi2').click()" ondragover="event.preventDefault();this.classList.add('drag')" ondragleave="this.classList.remove('drag')" ondrop="hfd(event)">
     <input type="file" id="fi2" accept=".xlsx,.xls" onchange="hfs(event)">
     <div id="fdi">&#128193;</div><div id="fdt">Click to select or drag and drop</div><div id="fds">Buildertrend Excel export (.xlsx)</div>
@@ -2613,74 +2626,161 @@ async function _jwuProcess(rows,weekOf,addrIdx,notesIdx){if(!rows.length){_jwuSt
 function _jwuSt(type,msg){const el=document.getElementById('jwu-status');el.style.display='block';el.style.background=type==='ok'?'#f0fdf4':'#fef2f2';el.style.color=type==='ok'?'#15803d':'#dc2626';el.innerHTML=msg;}
 const FIELD_LABELS={address:'Address',jobName:'Job Name',program:'Program',city:'City',jobType:'Job Type',permittingJurisdiction:'Permitting Jurisdiction',jobStatus:'Job Status',assignmentReceived:'Assignment Received',surveyOrdered:'Survey Ordered',surveyReceived:'Survey Received',plansOrdered:'Plans Ordered',plansReceived:'Plans Received',septicOrdered:'Septic Design Ordered',septicReceived:'Septic Design Received',isvCompleted:'ISV Completed',costEstimateSubmitted:'Cost Est. Submitted',costEstimateApproved:'Cost Est. Approved',bldgPermitSubmitted:'Bldg Permit Submitted',bldgPermitIssued:'Bldg Permit Issued',bldgPermitNumber:'Bldg Permit #',ntp:'NTP',ntpP:'NTP-P',constructionStart:'Construction Start',constructionDeadline:'Construction Deadline',constructionStage:'Stage',projectedStart:'Proj. Start',projectedCompletion:'Proj. Completion',inspection50:'50% Inspection',inspection100:'100% Inspection',demoPermitSubmitted:'Demo Permit Submitted',demoPermitIssued:'Demo Permit Issued',demoPermitNumber:'Demo Permit #',superintendent:'Superintendent',contractAmount:'Contract Amount',firstName:'First Name',lastName:'Last Name',projectNumber:'Project #',preConDeadline:'Pre-Con Deadline',approvedPreConDelays:'Pre-Con Delay Days',approvedConstrDelays:'Constr. Delay Days',applicantPhone:'Applicant Phone',applicantEmail:'Applicant Email',cm:'CM'};
 
+// ===== Buildertrend main import (dry-run preview → confirm → save) =====
+// [field, type, header names...]  type: tx=text, d=date. Header matching ignores
+// case, extra spaces and trailing '*'. Several names = accepted aliases.
+const BT_COLS=[
+  ['jobName','tx','Job Name'],['streetAddress','tx','Street Address'],['program','tx','Groups'],['city','tx','City'],
+  ['jobType','tx','Job Type'],['permittingJurisdiction','tx','Permitting Jurisdiction'],['jobStatus','tx','Job Status'],
+  ['assignmentReceived','d','Assignment Received'],['surveyOrdered','d','Survey / EC Ordered'],['surveyReceived','d','Survey / EC Received'],
+  ['plansOrdered','d','Plans Ordered'],['plansReceived','d','Plans Received'],
+  ['septicOrdered','d','Septic Ordered','Septic Design Ordered'],['septicReceived','d','Septic Received','Septic Design Received'],
+  ['isvCompleted','d','ISV Completed'],['costEstimateSubmitted','d','Cost Estimate Submitted'],['costEstimateApproved','d','Cost Estimate Approved'],
+  ['bldgPermitSubmitted','d','Building Permit Submitted'],['bldgPermitIssued','d','Building Permit Issued'],['ntp','d','NTP'],
+  ['constructionStart','d','Actual Start'],['inspection50','d','50% Complete Date'],['inspection100','d','100% Complete Date'],
+  ['superintendent','tx','Superintendent'],['constructionDeadline','d','Construction Deadline'],['approvedConstrDelays','tx','Construction Delay Days'],
+  ['demoPermitIssued','d','Demo Permit Issued'],['demoPermitNumber','tx','Demo Permit Number'],['demoPermitSubmitted','d','Demo Permit Submitted'],
+  ['bldgPermitNumber','tx','Building Permit Number'],['ntpP','d','NTP-P'],['approvedPreConDelays','tx','Pre-Con Delay Days'],
+  ['preConDeadline','d','Pre-Construction Deadline'],['firstName','tx','Applicant First Name'],['lastName','tx','Applicant Last Name'],
+  ['applicantPhone','tx','Applicant Phone Number'],['applicantEmail','tx','Applicant Email'],['projectNumber','tx','Prefix'],
+  ['contractAmount','tx','Contract Price'],['projectedStart','d','Proj. Start'],['projectedCompletion','d','Proj. Completion'],
+  ['constructionStage','tx','Status'],['cm','tx','CM'],['permitStatus','tx','Permit Status'],
+  // New pre-construction / status fields (Oct 2026 export)
+  ['actualCompletion','d','Actual Completion'],['readyToStart','tx','Ready to Start'],['companyCamLink','tx','CompanyCam Link'],
+  ['changeOrderStatus','tx','Change Order Status'],['canopyStatus','tx','Canopy Status'],['isvScheduled','tx','ISV Scheduled'],
+  ['ceReturned','d','Cost Estimate Returned'],['ceReturnedReason','tx','Cost Estimate Returned **'],
+  ['ceResubmitted','d','Cost Estimate Resubmitted'],['ceResubNotes','tx','Cost Estimate Resub **'],
+  ['preConMeetingScheduled','d','Pre-Con Meeting Scheduled'],['preConPacketCreated','tx','Pre-Con Packet Created'],['preConMeetingCompleted','d','Pre-Con Meeting Completed'],
+  ['moveoutDate','d','Moveout Date'],['permitKickedBack','d','Permit Kicked Back'],['permitRevisionRequested','d','Permit Revision Requested'],
+  ['permitRevisionsReceived','d','Permit Revisions Received'],['permitResubmitted','d','Permit Resubmitted'],['permitKickbackNotes','tx','Permit Kickback Notes'],
+  ['rfiNeeded','tx','RFI Needed'],['rfiRequested','d','RFI Requested'],['rfiReceived','d','RFI Documents Received'],
+  ['addlRfiNeeded','tx','Additional RFI Needed'],['addlRfiRequested','d','Additional RFI Requested'],['addlRfiReceived','d','Additional RFI Received'],
+  ['trussOrdered','d','Truss Plans Ordered'],['trussReceived','d','Truss Plans Received'],['energyCalcsOrdered','d','Energy Calcs Ordered'],['energyCalcsReceived','d','Energy Calcs Received'],
+  ['sewerType','tx','Sewer Type'],['septic','tx','Septic'],['septicPermitIssued','d','Septic Permit Issued'],['well','tx','Well'],['wellPermitIssued','d','Well Permit Issued'],
+  ['bldgPermitStatus','tx','Building Permit'],['demoPermitStatus','tx','Demo Permit Status'],['parishCounty','tx','Parish/County'],['plansName','tx','Plans Name'],
+  ['foundationType','tx','Slab/Piling/Pier'],['floodZone','tx','Flood Zone'],['elevation','tx','Elevation'],['adaSelections','tx','ADA Selections'],['ada','tx','ADA'],
+  ['storageMoveout','tx','Storage / Moveout'],['storageDrop','d','Storage Drop'],['storagePickup','d','Storage Pickup'],['coRequested','d','Date CO Requested'],['iha','tx','IHA']
+];
+function btHdrKey(h){return String(h||'').toLowerCase().replace(/\s+/g,' ').trim().replace(/(\s*\*)+$/,'').trim();}
+function _btDate(v){if(!v)return'';if(/^\d{4}-\d{2}-\d{2}/.test(v))return v.substring(0,10);const m=v.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);if(m)return m[3]+'-'+m[1].padStart(2,'0')+'-'+m[2].padStart(2,'0');return v;}
+// Pure: turns sheet rows into a plan without touching proj or the cloud.
+function btBuildPlan(raw){
+  let hr=-1;
+  for(let i=0;i<Math.min(6,raw.length);i++){if(raw[i]&&raw[i].some(c=>['job name','street address'].includes(btHdrKey(c)))){hr=i;break;}}
+  if(hr===-1)return{error:'Could not find header row (needs a "Job Name" or "Street Address" column).'};
+  const hds=raw[hr];const rows=raw.slice(hr+1).filter(r=>r&&r.some(c=>c!==null&&c!==undefined&&String(c).trim()!==''));
+  const idx={};hds.forEach((h,i)=>{const k=btHdrKey(h);if(k&&idx[k]===undefined)idx[k]=i;});
+  // Exact '**' headers (reason columns) must not be swallowed by the '*' strip.
+  hds.forEach((h,i)=>{const s=String(h||'').trim();if(/\*\*$/.test(s))idx[s.toLowerCase().replace(/\s+/g,' ').replace(/\s*\*\*$/,' **')]=i;});
+  const colIdx={},used=new Set();
+  BT_COLS.forEach(([f,t,...names])=>{for(const n of names){const k=n.endsWith('**')?n.toLowerCase():btHdrKey(n);if(idx[k]!==undefined){colIdx[f]=idx[k];used.add(idx[k]);break;}}});
+  const unrecognized=hds.map((h,i)=>({h:String(h||'').trim(),i})).filter(x=>x.h&&!used.has(x.i)).map(x=>x.h);
+  const missing=BT_COLS.filter(([f])=>colIdx[f]===undefined).map(([f,t,n])=>n);
+  const cell=(r,f)=>{const i=colIdx[f];if(i===undefined||i>=r.length||r[i]===null||r[i]===undefined)return'';return String(r[i]).trim();};
+  rebuildJobIndex(proj);
+  const items=rows.map((r,n)=>{
+    const nd={};
+    BT_COLS.forEach(([f,t])=>{if(colIdx[f]===undefined)return;const v=cell(r,f);nd[f]=t==='d'?_btDate(v):v;});
+    if(nd.contractAmount==='0')nd.contractAmount='';
+    nd.address=nd.jobName||nd.streetAddress||'';
+    if((nd.permitStatus||'').toLowerCase()==='not required'){nd.bldgPermitSubmitted='N/A';nd.bldgPermitIssued='N/A';nd._naSet=true;}
+    return{row:hr+2+n,nd};
+  });
+  const pnCount={};items.forEach(it=>{const v=it.nd.projectNumber;if(v)pnCount[v]=(pnCount[v]||0)+1;});
+  const pnDupes=Object.keys(pnCount).filter(v=>pnCount[v]>1).map(v=>({prefix:v,rows:items.filter(it=>it.nd.projectNumber===v).map(it=>it.nd.address)}));
+  const pnBlank=items.filter(it=>!it.nd.projectNumber).length;
+  const claimed=new Map();const plan={matched:[],added:[],dupes:[],skipped:[],pnDupes,pnBlank,unrecognized,missing,total:items.length,headerRow:hr+1};
+  items.forEach(it=>{
+    const nd=it.nd;if(!nd.address){plan.skipped.push({row:it.row,why:'No Job Name or Street Address'});return;}
+    let job=null,how='';
+    const pn=nd.projectNumber;
+    if(pn&&pnCount[pn]===1&&_jobIdx.byPn[pn]){job=_jobIdx.byPn[pn];how='Prefix';}
+    if(!job&&nd.jobName){job=resolveJob(nd.jobName);if(job)how='Job Name';}
+    if(!job&&nd.streetAddress){job=resolveJob(nd.streetAddress);if(job)how='Street Address';}
+    if(job&&claimed.has(job.jobId)){plan.dupes.push({nd,row:it.row,job,why:'Also matches '+job.address+' (already matched by row '+claimed.get(job.jobId)+') — skipped'});return;}
+    if(job){claimed.set(job.jobId,it.row);plan.matched.push({nd,job,how,nowHidden:filterProj([{...job,...nd}]).length===0,renamed:job.address.trim()!==nd.address.trim(),trimOnly:job.address!==nd.address&&job.address.trim()===nd.address.trim()});return;}
+    // Near-duplicate heuristic: same house number + first street word as an existing job
+    const sig=s=>{const n=normAddr(s);const m=n.match(/^(\d+)\s+(?:[nsew]{1,2}\s+)?([a-z0-9]+)/);const u=n.match(/\bunit\s+([a-z0-9]+)/);return m?m[1]+' '+m[2]+(u?' #'+u[1]:''):'';};
+    const sg=[sig(nd.jobName),sig(nd.streetAddress)].filter(Boolean);
+    const near=sg.length?proj.find(p=>[p.address,p.streetAddress,...(p.addrAliases||[])].some(a=>a&&sg.includes(sig(a)))):null;
+    plan.added.push({nd,near,hidden:filterProj([nd]).length===0});
+  });
+  return plan;
+}
+let _btPlan=null;
 function pf(file){
   const reader=new FileReader();
   reader.onload=function(e){
     try{
-      if(wuData.weekOf)localStorage.setItem('pic_wu_v1',JSON.stringify(wuData));
       if(typeof XLSX==='undefined'){sir('error','SheetJS not loaded.');return;}
       const wb=XLSX.read(new Uint8Array(e.target.result),{type:'array',cellDates:true});
       const ws=wb.Sheets[wb.SheetNames[0]];
       const raw=XLSX.utils.sheet_to_json(ws,{header:1,raw:false,dateNF:'yyyy-mm-dd'});
-      let hr=-1;
-      for(let i=0;i<Math.min(5,raw.length);i++){if(raw[i]&&raw[i].some(c=>c==='Job Name'||c==='Street Address')){hr=i;break;}}
-      if(hr===-1){sir('error','Could not find header row.');return;}
-      const hds=raw[hr];const rows=raw.slice(hr+1).filter(r=>r&&r.some(c=>c));
-      const cm={};hds.forEach((h,i)=>{if(h)cm[h.trim()]=i;});
-      function g(r,n){const i=cm[n];return(i===undefined||i>=r.length)?'':(r[i]===null||r[i]===undefined)?'':String(r[i]).trim();}
-      function gd3(r,n){const v=g(r,n);if(!v)return'';if(/^\d{4}-\d{2}-\d{2}/.test(v))return v.substring(0,10);const m=v.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);if(m)return m[3]+'-'+m[1].padStart(2,'0')+'-'+m[2].padStart(2,'0');return v;}
-      // Snapshot existing projects before merge (keyed by fuzzy address)
-      const snapshot={};proj.forEach(p=>{if(p.address)snapshot[nmFuzzy(p.address)]={...p};});
-      let up=0,ad=0,sk=0,naSet=0;
-      const renames=[];// {oldAddr, newAddr}
-      const pm={};proj.forEach((p,i)=>{if(p.address)pm[nmFuzzy(p.address)]=i;});
-      const allImportedNd=[];
-      rebuildJobIndex(proj);
-      const _pnUnique={};{const _c={};rows.forEach(r=>{const v=g(r,'Prefix');if(v)_c[v]=(_c[v]||0)+1;});Object.keys(_c).forEach(v=>{if(_c[v]===1)_pnUnique[v]=true;});}
-      const _psKey=Object.keys(cm).find(k=>k.toLowerCase().replace(/\*$/,'')==='permit status')||'';
-      rows.forEach(r=>{
-        const addr=g(r,'Street Address')||g(r,'Job Name');if(!addr){sk++;return;}
-        const nd={address:addr,jobName:g(r,'Job Name'),program:g(r,'Groups'),city:g(r,'City'),jobType:g(r,'Job Type *'),permittingJurisdiction:g(r,'Permitting Jurisdiction*'),jobStatus:g(r,'Job Status*'),assignmentReceived:gd3(r,'Assignment Received*'),surveyOrdered:gd3(r,'Survey / EC Ordered*'),surveyReceived:gd3(r,'Survey / EC Received*'),plansOrdered:gd3(r,'Plans Ordered*'),plansReceived:gd3(r,'Plans Received*'),septicOrdered:gd3(r,'Septic Design Ordered*'),septicReceived:gd3(r,'Septic Design Received*'),isvCompleted:gd3(r,'ISV Completed*'),costEstimateSubmitted:gd3(r,'Cost Estimate Submitted*'),costEstimateApproved:gd3(r,'Cost Estimate Approved*'),bldgPermitSubmitted:gd3(r,'Building Permit Submitted*'),bldgPermitIssued:gd3(r,'Building Permit Issued*'),ntp:gd3(r,'NTP*'),constructionStart:gd3(r,'Actual Start'),inspection50:gd3(r,'50% Complete Date*'),inspection100:gd3(r,'100% Complete Date*'),superintendent:gd3(r,'Superintendent*'),constructionDeadline:gd3(r,'Construction Deadline*'),approvedConstrDelays:g(r,'Construction Delay Days*'),demoPermitIssued:gd3(r,'Demo Permit Issued*'),demoPermitNumber:g(r,'Demo Permit Number*'),demoPermitSubmitted:gd3(r,'Demo Permit Submitted*'),bldgPermitNumber:g(r,'Building Permit Number*'),ntpP:gd3(r,'NTP-P*'),approvedPreConDelays:g(r,'Pre-Con Delay Days*'),preConDeadline:gd3(r,'Pre-Construction Deadline*'),firstName:g(r,'Applicant First Name*'),lastName:g(r,'Applicant Last Name*'),applicantPhone:g(r,'Applicant Phone Number*'),applicantEmail:g(r,'Applicant Email*'),projectNumber:g(r,'Prefix'),contractAmount:g(r,'Contract Price')==='0'?'':g(r,'Contract Price'),projectedStart:gd3(r,'Proj. Start'),projectedCompletion:gd3(r,'Proj. Completion'),constructionStage:g(r,'Status'),cm:g(r,'CM*')};
-        const permitSt=_psKey?g(r,_psKey):'';
-        if(permitSt.toLowerCase()==='not required'){nd.bldgPermitSubmitted='N/A';nd.bldgPermitIssued='N/A';naSet++;}
-        let k=nmFuzzy(addr);
-        if(pm[k]===undefined){const _j=resolveJob(addr,_pnUnique[nd.projectNumber]?nd.projectNumber:'');if(_j){const _i=proj.indexOf(_j);if(_i>=0){k=nmFuzzy(_j.address);pm[k]=_i;}}}
-        if(pm[k]!==undefined){const _ex=proj[pm[k]];if(_ex.bldgPermitSubmitted==='N/A'&&!nd.bldgPermitSubmitted)nd.bldgPermitSubmitted='N/A';if(_ex.bldgPermitIssued==='N/A'&&!nd.bldgPermitIssued)nd.bldgPermitIssued='N/A';}
-        allImportedNd.push(nd);
-        if(pm[k]!==undefined){
-          const existing=proj[pm[k]];
-          if(existing.address&&existing.address!==addr){renames.push({oldAddr:existing.address,newAddr:addr});addAlias(existing,existing.address);}ensureJobId(existing);
-          Object.assign(existing,nd);up++;
-        }else{proj.push(nd);pm[k]=proj.length-1;ad++;}
-      });
-      window._allImportedNd=allImportedNd;
-      // Compute field-level diffs for updated projects
-      const changes=[];
-      proj.forEach(p=>{
-        const k=nmFuzzy(p.address||'');const old=snapshot[k];if(!old)return;
-        const diffs=[];
-        Object.keys(FIELD_LABELS).forEach(f=>{
-          if(f==='address')return;
-          const ov=String(old[f]||'').trim();const nv=String(p[f]||'').trim();
-          if(ov!==nv)diffs.push({field:f,label:FIELD_LABELS[f],from:ov,to:nv});
-        });
-        if(diffs.length)changes.push({address:p.address,diffs});
-      });
-      proj=dedup(filterProj(proj));
-      // Collect newly added projects after filtering so excluded statuses don't appear as new
-      const added=proj.filter(p=>p.address&&!snapshot[nmFuzzy(p.address)]).map(p=>p.address);
-      window._lastChangeLog={timestamp:new Date().toISOString(),renames,added,changes};
-      lsSet('pic_fl_v3',JSON.stringify(proj));
-      pd();af();
-      const totalChanged=changes.length+renames.length+added.length;
-      let renameHtml='';
-      if(renames.length){renameHtml='<div class="import-renames"><strong>&#9888; Address updates noted:</strong>'+renames.map(r=>'<div class="rename-row">&#x2192; <em>'+r.oldAddr+'</em> &rarr; <b>'+r.newAddr+'</b></div>').join('')+'</div>';}
-      sir('success','<strong>Import complete:</strong> '+up+' updated &nbsp;·&nbsp; '+added.length+' added &nbsp;·&nbsp; '+sk+' skipped'+(naSet?' &nbsp;·&nbsp; '+naSet+' set N/A permit':'')+'.&nbsp;'+renameHtml+'<div class="iact" style="margin-top:12px;padding:0;border:none;display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-primary" id="imod-save-btn" onclick="doImportSave()">&#128190; Save to Cloud</button><button class="btn btn-ol" id="cloud-refresh-btn" onclick="refreshFromCloud()">&#8635; Refresh from Cloud</button>'+(totalChanged?'<button class="btn btn-ol" onclick="openChangeLog()">&#128203; View Change Log ('+totalChanged+' changed)</button>':'')+'</div>');
-      st2('Imported: '+up+' updated, '+added.length+' added');
-      doImportSave(true);
-    }catch(err){sir('error','Error: '+err.message);}
+      const plan=btBuildPlan(raw);
+      if(plan.error){sir('error',plan.error);return;}
+      plan.fileName=file.name;_btPlan=plan;
+      sir('success','Preview ready — review and confirm to import.');
+      openBtPreview(plan);
+    }catch(err){sir('error','Error: '+err.message);reportFail('Import preview',err);}
   };
   reader.readAsArrayBuffer(file);
+}
+function _btList(title,arr,fn,open){if(!arr.length)return'';return'<details class="btp-sec"'+(open?' open':'')+'><summary>'+title+' ('+arr.length+')</summary><div class="btp-list">'+arr.slice(0,300).map(fn).join('')+(arr.length>300?'<div class="btp-li">…and '+(arr.length-300)+' more</div>':'')+'</div></details>';}
+function openBtPreview(plan){
+  const near=plan.added.filter(a=>a.near);
+  const renamed=plan.matched.filter(m=>m.renamed);
+  const how=k=>plan.matched.filter(m=>m.how===k).length;
+  const s=(n,l,c)=>'<div class="btp-stat'+(c?' '+c:'')+'"><b>'+n+'</b><span>'+l+'</span></div>';
+  let h='<div class="btp-file">'+es(plan.fileName||'')+' · '+plan.total+' rows (header on row '+plan.headerRow+')</div>';
+  h+='<div class="btp-stats">'+s(plan.matched.length,'Matched (update)')+s(plan.added.length,'New jobs')+s(plan.dupes.length+near.length,'Possible duplicates',(plan.dupes.length+near.length)?'warn':'')+s(plan.skipped.length,'Skipped')+'</div>';
+  const hid=plan.added.filter(a=>a.hidden).length,trim=plan.matched.filter(m=>m.trimOnly).length;
+  h+='<div class="btp-note">Matched by Prefix: '+how('Prefix')+' · Job Name: '+how('Job Name')+' · Street Address: '+how('Street Address')+'. Of the new jobs, '+hid+' will be saved but stay hidden by the usual filters (withdrawn, FL Volusia, excluded addresses), so '+(plan.added.length-hid)+' will appear in the tracker.'+(trim?' '+trim+' matched jobs only lose stray spaces in their name.':'')+(plan.matched.some(m=>m.nowHidden)?' '+plan.matched.filter(m=>m.nowHidden).length+' matched jobs will now be hidden (e.g. withdrawn).':'')+'</div>';
+  if(plan.pnDupes.length||plan.pnBlank)h+='<div class="btp-warn">&#9888; Prefix: '+(plan.pnDupes.length?plan.pnDupes.length+' duplicated ('+plan.pnDupes.map(d=>'<b>'+es(d.prefix)+'</b>: '+d.rows.map(es).join(' / ')).join('; ')+') — matched by Job Name instead. ':'')+(plan.pnBlank?plan.pnBlank+' rows have a blank Prefix (matched by Job Name/Street Address).':'')+'</div>';
+  if(plan.missing.length)h+='<div class="btp-warn">&#9888; Columns not in this file (existing values kept): '+plan.missing.map(es).join(', ')+'</div>';
+  h+=_btList('&#9888; Possible duplicates',[...plan.dupes.map(d=>'<div class="btp-li">Row '+d.row+': <b>'+es(d.nd.address)+'</b> — '+es(d.why)+'</div>'),...near.map(a=>'<div class="btp-li"><b>'+es(a.nd.address)+'</b> (new) looks similar to existing <b>'+es(a.near.address)+'</b></div>')],x=>x,true);
+  h+=_btList('New jobs',plan.added,a=>'<div class="btp-li"><b>'+es(a.nd.address)+'</b> · '+es(a.nd.program||'')+' · '+es(a.nd.constructionStage||'')+(a.nd.projectNumber?' · #'+es(a.nd.projectNumber):'')+(a.hidden?' <i style="color:#9ca3af">(hidden by filters)</i>':'')+'</div>');
+  h+=_btList('Matched jobs that will now be hidden',plan.matched.filter(m=>m.nowHidden),m=>'<div class="btp-li">'+es(m.job.address)+' · '+es(m.nd.jobStatus||'')+' · '+es(m.nd.program||'')+'</div>');
+  h+=_btList('Address/name changes on matched jobs',renamed,m=>'<div class="btp-li">'+es(m.job.address)+' &rarr; <b>'+es(m.nd.address)+'</b> <i>('+m.how+')</i></div>');
+  h+=_btList('Unrecognized columns (not imported)',plan.unrecognized,c=>'<span class="btp-chip">'+es(c)+'</span>');
+  h+=_btList('Skipped rows',plan.skipped,x=>'<div class="btp-li">Row '+x.row+': '+es(x.why)+'</div>');
+  document.getElementById('btp-body').innerHTML=h;
+  const b=document.getElementById('btp-confirm');b.disabled=false;b.textContent='Confirm & Save to Cloud';
+  document.getElementById('btp-modal').classList.add('open');
+}
+function closeBtPreview(){document.getElementById('btp-modal').classList.remove('open');}
+function cancelBtPreview(){_btPlan=null;closeBtPreview();sir('success','Import cancelled — nothing was changed.');}
+function confirmBtImport(){
+  const plan=_btPlan;if(!plan)return;_btPlan=null;
+  const b=document.getElementById('btp-confirm');b.disabled=true;b.textContent='Importing…';
+  const snapshot={};proj.forEach(p=>{ensureJobId(p);snapshot[p.jobId]={...p};});
+  const renames=[],allImportedNd=[];let naSet=0;
+  const clean=nd=>{const o={...nd};if(o._naSet)naSet++;delete o._naSet;return o;};
+  plan.matched.forEach(m=>{
+    const nd=clean(m.nd),ex=m.job;
+    if(ex.bldgPermitSubmitted==='N/A'&&!nd.bldgPermitSubmitted)nd.bldgPermitSubmitted='N/A';
+    if(ex.bldgPermitIssued==='N/A'&&!nd.bldgPermitIssued)nd.bldgPermitIssued='N/A';
+    if(ex.address&&ex.address!==nd.address){renames.push({oldAddr:ex.address,newAddr:nd.address});addAlias(ex,ex.address);}
+    if(nd.streetAddress&&nd.streetAddress!==nd.address)addAlias(ex,nd.streetAddress);
+    Object.assign(ex,nd);ensureJobId(ex);allImportedNd.push(ex);
+  });
+  plan.added.forEach(a=>{const nd=ensureJobId(clean(a.nd));if(nd.streetAddress&&nd.streetAddress!==nd.address)addAlias(nd,nd.streetAddress);proj.push(nd);allImportedNd.push(nd);});
+  window._allImportedNd=allImportedNd.map(p=>({...p}));
+  const changes=[];
+  proj.forEach(p=>{const old=snapshot[p.jobId];if(!old)return;const diffs=[];
+    Object.keys(FIELD_LABELS).forEach(f=>{if(f==='address')return;const ov=String(old[f]||'').trim(),nv=String(p[f]||'').trim();if(ov!==nv)diffs.push({field:f,label:FIELD_LABELS[f],from:ov,to:nv});});
+    if(diffs.length)changes.push({address:p.address,diffs});});
+  proj=dedup(filterProj(proj));
+  const added=proj.filter(p=>!snapshot[p.jobId]).map(p=>p.address);
+  window._lastChangeLog={timestamp:new Date().toISOString(),renames,added,changes};
+  lsSet('pic_fl_v3',JSON.stringify(proj));
+  pd();af();
+  closeBtPreview();
+  const totalChanged=changes.length+renames.length+added.length;
+  let renameHtml='';
+  if(renames.length){renameHtml='<div class="import-renames"><strong>&#9888; Address updates noted:</strong>'+renames.map(r=>'<div class="rename-row">&#x2192; <em>'+es(r.oldAddr)+'</em> &rarr; <b>'+es(r.newAddr)+'</b></div>').join('')+'</div>';}
+  sir('success','<strong>Import complete:</strong> '+plan.matched.length+' updated &nbsp;·&nbsp; '+added.length+' added &nbsp;·&nbsp; '+(plan.skipped.length+plan.dupes.length)+' skipped'+(naSet?' &nbsp;·&nbsp; '+naSet+' set N/A permit':'')+'.&nbsp;'+renameHtml+'<div class="iact" style="margin-top:12px;padding:0;border:none;display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-primary" id="imod-save-btn" onclick="doImportSave()">&#128190; Save to Cloud</button><button class="btn btn-ol" id="cloud-refresh-btn" onclick="refreshFromCloud()">&#8635; Refresh from Cloud</button>'+(totalChanged?'<button class="btn btn-ol" onclick="openChangeLog()">&#128203; View Change Log ('+totalChanged+' changed)</button>':'')+'</div>');
+  st2('Imported: '+plan.matched.length+' updated, '+added.length+' added');
+  doImportSave(true);
 }
 
 function openChangeLog(){
@@ -2744,7 +2844,7 @@ async function doImportSave(auto){
     if(allNd.length){
       try{
         showSaveStatus('saving');
-        await sbUpsertBatch(allNd.map(p=>{const j=resolveJob(p.address);const d=j?{...p,jobId:j.jobId,addrAliases:j.addrAliases}:ensureJobId({...p});return{address:p.address,data:d,updated_at:new Date().toISOString()};}));
+        await sbUpsertBatch(allNd.map(p=>({address:p.address,data:ensureJobId({...p}),updated_at:new Date().toISOString()})));
       }catch(e){console.error('allImportedNd upsert:',e);}
     }
     const ok=await sbSyncProjects();
