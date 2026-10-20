@@ -346,6 +346,27 @@ tr.dr:hover td.tcrit-miss,tr.dr.row-permit td.tcrit-miss{background:#fecaca}
 @media (max-width:700px){.pc-strip{padding:10px 16px 0;flex-wrap:nowrap;overflow-x:auto}.pc-sl{width:auto;margin-right:2px}.pc-ac{white-space:nowrap;flex:none}
 .pc-gq tbody.pc-grp{display:block}.pc-gh{display:block!important;padding:0!important}.pc-gh td{display:block!important;padding:10px 16px!important}.pc-gold{margin-left:0}
 .pc-det{display:block!important;padding:0!important}.pc-det[hidden]{display:none!important}.pc-det td{display:block!important;padding:0 12px 14px!important;flex-basis:100%}.pc-ql td.pc-pri .pc-tw-ic{margin-top:2px}}
+.pc-tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px;padding:20px}
+.pc-tile{all:unset;box-sizing:border-box;cursor:pointer;background:#fff;border:1px solid var(--pc-line);border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:4px;min-height:104px;box-shadow:0 1px 2px rgba(15,27,45,.04);transition:box-shadow .15s,border-color .15s,transform .15s}
+.pc-tile:hover{box-shadow:0 6px 16px rgba(15,27,45,.08);transform:translateY(-1px)}
+.pc-tn{font-size:13px;font-weight:600;color:var(--pc-ink2);line-height:1.3}.pc-tile b{font-size:30px;font-weight:700;letter-spacing:-.5px;line-height:1.1;color:var(--pc-ink);margin-top:auto}.pc-to{font-size:12px;color:var(--pc-mut)}
+.pc-s1{--acc:var(--pc-r1);--acc-bg:#fef2f2}.pc-s2{--acc:var(--pc-r2);--acc-bg:#fffbeb}
+.pc-tile.on{border-color:var(--acc);background:var(--acc-bg);box-shadow:0 0 0 1px var(--acc)}.pc-tile.on b{color:var(--acc)}
+.pc-panel>header{border-bottom:0;padding-bottom:0}.pc-s1>header,.pc-s2>header{box-shadow:none}
+.pc-s1 .pc-count,.pc-s2 .pc-count{background:var(--acc-bg);color:var(--acc)}
+.pc-list{list-style:none;margin:0 20px 20px;padding:0;border:1px solid var(--pc-line);border-radius:12px;overflow:hidden}
+.pc-list li{display:grid;grid-template-columns:1fr auto 64px 64px;align-items:center;gap:16px;padding:12px 16px;border-top:1px solid #f0f2f5;cursor:pointer;font-size:14px}.pc-list li:first-child{border-top:0}.pc-list li:hover{background:#f7f9fc}
+.pc-la{font-weight:600;color:var(--pc-ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.pc-ld{text-align:right;font-weight:600;font-variant-numeric:tabular-nums;color:var(--pc-ink2)}
+.pc-list a{color:var(--pc-acc);font-weight:600;text-decoration:none;font-size:13px;text-align:right;white-space:nowrap}.pc-list a:hover{text-decoration:underline}
+.pc-p2f{display:block}.pc-p2f>summary{cursor:pointer;list-style:none;display:flex;align-items:center;gap:10px;padding:16px 20px}.pc-p2f>summary::-webkit-details-marker{display:none}.pc-p2f[open]>summary .pc-chev{transform:rotate(90deg)}.pc-p2f>summary:hover{background:#fafbfc}
+.pc-p2f .pc-tiles{padding-top:4px}
+#pc-dwrap{position:fixed;inset:0;z-index:950;background:rgba(15,27,45,0);pointer-events:none;transition:background .2s}#pc-dwrap.open{background:rgba(15,27,45,.28);pointer-events:auto}
+#pc-drawer{position:absolute;top:0;right:0;bottom:0;width:min(460px,100%);background:#f7f9fc;box-shadow:-12px 0 32px rgba(15,27,45,.14);transform:translateX(100%);transition:transform .22s ease;display:flex;flex-direction:column;color:#0f1b2d;font-size:14px}#pc-dwrap.open #pc-drawer{transform:none}
+.pcd-h{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:20px 20px 16px;background:#fff;border-bottom:1px solid #e7eaf0}.pcd-t{font-size:18px;font-weight:700}.pcd-s{display:flex;gap:8px;align-items:center;margin-top:6px;font-size:13px;color:#4b5563}
+.pcd-b{flex:1;overflow-y:auto;padding:16px 20px 24px}.pcd-b .pc-dgrid{grid-template-columns:1fr;gap:12px}.pcd-b .pc-dlinks{margin-top:16px}
+@media (max-width:700px){.pc-tiles{grid-template-columns:repeat(2,1fr);gap:10px;padding:14px 16px}.pc-tile{min-height:92px;padding:12px}.pc-tile b{font-size:26px}
+.pc-list{margin:0 16px 16px}.pc-list li{grid-template-columns:1fr auto 44px;gap:10px;padding:12px 14px}.pc-list li a{display:none}
+#pc-drawer{top:auto;left:0;width:100%;height:82vh;border-radius:16px 16px 0 0;transform:translateY(100%);box-shadow:0 -12px 32px rgba(15,27,45,.18)}.pcd-h{border-radius:16px 16px 0 0;position:relative;padding-top:24px}.pcd-h::before{content:'';position:absolute;top:8px;left:50%;width:36px;height:4px;border-radius:2px;background:#d1d5db;transform:translateX(-50%)}}
 @media (max-width:900px){.pc-cards{grid-template-columns:repeat(2,1fr)}.pcu-grid{grid-template-columns:repeat(2,1fr)}}
 @media (max-width:700px){
 #pc-view{padding:16px 14px 80px}.pc-top h2{font-size:20px}.pc-top-act{width:100%}.pc-top-act .btn{flex:1}
@@ -1152,6 +1173,7 @@ tr.pu-row-green td.tmiss{background:#dcfce7!important}
 </div>
 
 <div id="pc-view"><div class="pc-top"><div class="pc-top-t"><h2>Pre-Con Priority</h2><p>Pre-construction jobs where the ball is in our court, most urgent first.</p></div><div class="pc-top-act"><button class="btn btn-ol pc-ol" onclick="openPcRules()">Rules</button><button class="btn btn-primary" onclick="openUploads()">&#8679; Program Exports</button></div></div><div id="pc-body"></div></div>
+<div id="pc-dwrap" onclick="if(event.target===this)pcDrawerClose()"><aside id="pc-drawer"><div class="pcd-h"></div><div class="pcd-b"></div></aside></div>
 <div id="pcu-modal"><div id="pcu-box"><div class="pc-mhdr"><div><h2>Upload program exports</h2><p>The program is detected from each file. The pull time comes from a <code>PREFIX_YYYY-MM-DD_HHMM</code> file name or the upload time, and you can edit it. Nothing is saved until you confirm.</p></div><button class="pc-x" onclick="closeUploads()" aria-label="Close">&#10005;</button></div>
 <div class="pcu-body"><div id="pcu-drop" onclick="document.getElementById('pcu-file').click()" ondragover="event.preventDefault()" ondrop="pcuDrop(event)"><span class="pcu-di">&#8679;</span><b>Choose files</b> or drag them here<div class="pc-sub" style="margin-top:2px">.xlsx or .csv · LC, OC, PIN, RFL, SRQ, PAS, GA</div><input type="file" id="pcu-file" multiple accept=".xlsx,.xls,.csv" style="display:none" onchange="pcuPick(event)"></div>
 <div id="pcu-dbnote" class="pc-banner" style="display:none"><span class="pc-bi">!</span><div><b>Database setup needed.</b> The Pre-Con tables don't exist in Supabase yet, so files can only be used in this browser. Run <code>sql/precon_tables.sql</code> to enable saving.</div></div>
