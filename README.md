@@ -28,3 +28,12 @@ A single-page web app for tracking disaster-recovery jobs through the stages Pre
 
 ## Run locally
 Open `index.html` in a browser, or run `python3 -m http.server` and go to http://localhost:8000.
+
+## Pre-Con Priority dashboard & Program Exports
+
+- **Pre-Con** (home page) shows the jobs where the ball is in our court: data-as-of per program (ET, staleness flags), P1/P2/Watch/Not-ours cards, a program × priority matrix, a filterable priority queue (filters live in the URL hash `#precon?...`), Recent Changes for the last 7 days, a Gaps panel, and a read-only Rules view.
+- **⇧ Program Exports** (header): upload one or more program exports (LC, OC, PIN, RFL, SRQ, PAS, GA). The program is auto-detected. The pull time comes from `PREFIX_YYYY-MM-DD_HHMM` in the file name, or the upload time if there isn't one (you can edit it). Before anything is saved, each file shows a dry-run preview: bad-pull guard, column checks, BT match stats, queue impact, and status changes. **Confirm** saves the files; **Cancel** saves nothing.
+- Rules engine: `precon_engine.js` (a port of `reference_engine.py`). Rules seed: `precon_rules_seed.js` (from `precon_rules_seed.csv`).
+
+### One-time database setup
+Supabase dashboard → project → **SQL Editor** → **New query** → paste the contents of `sql/precon_tables.sql` → **Run** → reload the app. You can re-run it safely. Until the setup is done, the app shows a "Database setup needed" notice and uploads stay in this browser only.
