@@ -173,6 +173,8 @@ window.pcAct=(k,v)=>{PC.ui=PC.ui||{act:{},open:{}};PC.ui.act[k]=v;renderPrecon()
 window.pcDrawer=key=>{const x=(PC.result.queue||[]).find(q=>q.job_key===key);if(!x)return;const d=document.getElementById('pc-drawer');const t=x.primary;
   d.querySelector('.pcd-h').innerHTML='<div><div class="pcd-t">'+es(x.address)+'</div><div class="pcd-s"><span class="pc-prog">'+x.program+'</span>'+es(t?t.rule.Action:'')+(x.days!=null?' · '+(x.days_ge?'≥':'')+x.days+'d':'')+'</div></div><button class="pc-x" onclick="pcDrawerClose()" aria-label="Close">&#10005;</button>';
   d.querySelector('.pcd-b').innerHTML=PC._detail(x);d.querySelector('.pcd-b').scrollTop=0;document.getElementById('pc-dwrap').classList.add('open');};
+window.pcCal=(op,v)=>{const c=PC.ui.cal;const[y,m,d]=c.anchor.split('-').map(Number);const dt=new Date(Date.UTC(y,m-1,d,12));const k=x=>x.toISOString().slice(0,10);
+  if(op==='mode')c.mode=v;else if(op==='today'){c.anchor=k(new Date());c.day='';}else if(op==='day')c.day=c.day===v?'':v;else{const s=op==='next'?1:-1;if(c.mode==='month'){dt.setUTCDate(1);dt.setUTCMonth(dt.getUTCMonth()+s);}else dt.setUTCDate(dt.getUTCDate()+7*s);c.anchor=k(dt);c.day='';}renderPrecon();};
 window.pcDrawerClose=()=>document.getElementById('pc-dwrap').classList.remove('open');
 document.addEventListener('keydown',e=>{if(e.key==='Escape')pcDrawerClose();});
 window.pcRow=(tr,key)=>{if(window.getSelection&&String(window.getSelection()))return;PC.ui=PC.ui||{act:{},open:{}};const on=!PC.ui.open[key];if(on)PC.ui.open[key]=1;else delete PC.ui.open[key];tr.classList.toggle('open',on);const d=tr.nextElementSibling;if(on&&!d.firstChild.innerHTML){const x=(PC.result.queue||[]).find(q=>q.job_key===key);if(x)d.firstChild.innerHTML=PC._detail(x);}d.hidden=!on;};
@@ -200,10 +202,12 @@ window.renderPrecon=function(){
   if(PC.db!=='ready')h+='<div class="pc-banner"><span class="pc-bi">!</span><div><b>Database setup needed.</b> '+es(PC.dbMsg)+' Run <code>sql/precon_tables.sql</code> in Supabase to save uploads for everyone. Until then, uploads work <b>in this browser only</b>.'+(PC.local?' <span class="pc-muted">Showing locally loaded data.</span>':'')+'</div></div>';
   else if(PC.local)h+='<div class="pc-banner"><span class="pc-bi">i</span><div>Showing data loaded in this browser only.</div></div>';
   if(!Object.keys(PC.pulls).length)h+='<div class="pc-empty"><div class="pc-empty-ic">&#8679;</div><b>No program exports loaded yet</b><span>Upload the LC, OC, PIN, RFL, SRQ, PAS and GA exports to build the priority queue.</span><button class="btn btn-primary" onclick="openUploads()">Upload program exports</button></div>';
-  // ---- stat cards ----
+  // ---- stat cards (hero) ----
   const inScope=res.queue;const cnt=k=>inScope.filter(x=>x.priority===k).length;
-  h+='<div class="pc-cards">'+[['1','Needs action now','P1 · front end'],['2','Permitting → NTP','P2'],['Watch','Watch','Monitor'],['none','Not our court','Waiting on others']].map(([k,l,s])=>{const on=PC.f.pr.length===1&&PC.f.pr[0]===k;
-    return'<button class="pc-card pc-c'+(k==='Watch'?'w':k==='none'?'n':k)+(on?' on':'')+'" onclick="pcCell(\'\',\''+(on?'':k)+'\')"><span class="pc-cl">'+l+'</span><b>'+cnt(k)+'</b><span class="pc-cs">'+s+'</span></button>';}).join('')+'</div>';
+  const oldestOf=k=>{const d=inScope.filter(x=>x.priority===k&&x.days!=null).map(x=>x.days);return d.length?Math.max(...d):null;};
+  const wk7=now-7*86400000;const newIn=k=>inScope.filter(x=>x.priority===k&&x.days!=null&&x.days<=7).length;
+  h+='<div class="pc-cards">'+[['1','Needs action now'],['2','Permitting → NTP'],['Watch','Watch'],['none','Not our court']].map(([k,l])=>{const on=PC.f.pr.length===1&&PC.f.pr[0]===k;const o=oldestOf(k);const n=newIn(k);
+    return'<button class="pc-card pc-c'+(k==='Watch'?'w':k==='none'?'n':k)+(on?' on':'')+'" onclick="pcCell(\'\',\''+(on?'':k)+'\')"><span class="pc-cl">'+l+'</span><b>'+cnt(k)+'</b><span class="pc-cs">'+(n?'+'+n+' this week':'&nbsp;')+(o!=null?' · oldest '+o+'d':'')+'</span></button>';}).join('')+'</div>';
   {const pq=inScope.filter(x=>x.program!=='BT');const c=k=>pq.filter(x=>x.priority===k).length;h+='<div class="pc-note2">Program records in scope: <b>'+pq.length+'</b> (P1 '+c('1')+' · P2 '+c('2')+' · Watch '+c('Watch')+' · Not ours '+c('none')+') · BT-only jobs: <b>'+(inScope.length-pq.length)+'</b></div>';}
   const progs=[...PCE.PROGRAMS,'BT'];
   // ---- filter bar ----
@@ -255,27 +259,53 @@ window.renderPrecon=function(){
       '<a href="#" onclick="navigator.clipboard&&navigator.clipboard.writeText(\''+es(x.record_id).replace(/'/g,"\\'")+'\');this.textContent=\'Copied ✓\';return false">Copy '+(x.program==='BT'?'prefix':'program ID')+' '+es(x.record_id)+'</a></div>';
     return'<div class="pc-dgrid">'+rules+prog+btc+'</div>'+links;};
   PC._detail=detail;
-  const tiles=(key,items)=>{
-    const groups={};items.forEach(x=>{const a=actOf(x);(groups[a]=groups[a]||[]).push(x);});
-    const order=Object.keys(groups).sort((a,b)=>groups[b].length-groups[a].length||a.localeCompare(b));
-    let sel=PC.ui.act[key];if(!sel||!groups[sel])sel=order[0];
-    const old=g=>Math.max(...g.map(x=>x.days==null?-1:x.days));
-    let b='<div class="pc-tiles">'+order.map(a=>{const o=old(groups[a]);return'<button class="pc-tile'+(a===sel?' on':'')+'" onclick="pcAct(\''+key+'\',\''+es(a).replace(/'/g,"\\'")+'\')"><span class="pc-tn">'+es(a)+'</span><b>'+groups[a].length+'</b><span class="pc-to">'+(o>=0?'oldest '+o+'d':'&nbsp;')+'</span></button>';}).join('')+'</div>';
-    const g=groups[sel].slice().sort((p,q)=>((q.days==null?-1:q.days)-(p.days==null?-1:p.days))||p.address.localeCompare(q.address));
-    b+='<ul class="pc-list">'+g.map(x=>'<li onclick="pcDrawer(\''+es(x.job_key).replace(/'/g,"\\'")+'\')"><span class="pc-la">'+es(x.address)+'</span><span class="pc-prog">'+x.program+'</span><span class="pc-ld">'+(x.days==null?'—':(x.days_ge?'≥':'')+x.days+'d')+'</span>'+
-      (x.bt?'<a href="#" onclick="event.stopPropagation();pcOpenJob(\''+es(String(x.bt.address).replace(/'/g,"\\'"))+'\');return false">Open &#8250;</a>':'<span></span>')+'</li>').join('')+'</ul>';
-    return b;};
+  const COL={'1':'#ef4444','2':'#f59e0b','Watch':'#3b82f6','none':'#94a3b8'};
   const empty=m=>'<div class="pc-none">'+m+'</div>';
-  h+='<section class="pc-panel pc-s1"><header><h3>Needs action now</h3><span class="pc-count">'+p1.length+'</span></header>'+(p1.length?tiles('p1',p1):empty(nF?'No P1 items match these filters.':'&#10003; Nothing urgent right now.'))+'</section>';
-  h+='<details class="pc-panel pc-s2 pc-p2f" id="pc-f-p2"><summary><span class="pc-chev">&#8250;</span><h3>Permitting → NTP</h3><span class="pc-count">'+p2.length+'</span></summary>'+(p2.length?tiles('p2',p2):empty(nF?'No P2 items match these filters.':'No P2 items.'))+'</details>';
+  const jl=(arr)=>'<ul class="pc-list">'+arr.slice().sort((p,q)=>((q.days==null?-1:q.days)-(p.days==null?-1:p.days))||p.address.localeCompare(q.address)).map(x=>'<li onclick="pcDrawer(\''+es(x.job_key).replace(/'/g,"\\'")+'\')"><i class="pc-ldot" style="background:'+COL[x.priority]+'"></i><span class="pc-la">'+es(x.address)+'</span><span class="pc-prog">'+x.program+'</span><span class="pc-ld">'+(x.days==null?'—':(x.days_ge?'≥':'')+x.days+'d')+'</span><span class="pc-lo">&#8250;</span></li>').join('')+'</ul>';
+  const ours=[...p1,...p2];
+  // donut
+  const tot=fl.length;let acc=0;const RD=52,C=2*Math.PI*RD;
+  const segs=['1','2','Watch','none'].map(k=>{const n=fl.filter(x=>x.priority===k).length;const len=tot?C*n/tot:0;const s='<circle r="'+RD+'" cx="70" cy="70" fill="none" stroke="'+COL[k]+'" stroke-width="20" stroke-dasharray="'+Math.max(len-2,0)+' '+(C-Math.max(len-2,0))+'" stroke-dashoffset="'+(-acc)+'" transform="rotate(-90 70 70)" style="cursor:pointer" onclick="pcCell(\'\',\''+k+'\')"><title>'+PRI_LABEL[k]+': '+n+'</title></circle>';acc+=len;return s;}).join('');
+  const donut='<div class="pc-chart pc-donut"><h4>Priority split</h4><div class="pc-dn"><svg viewBox="0 0 140 140" width="140" height="140"><circle r="'+RD+'" cx="70" cy="70" fill="none" stroke="#f1f5f9" stroke-width="20"/>'+segs+'<text x="70" y="68" text-anchor="middle" class="pc-dnn">'+tot+'</text><text x="70" y="86" text-anchor="middle" class="pc-dnl">jobs</text></svg><div class="pc-leg">'+['1','2','Watch','none'].map(k=>'<div><i style="background:'+COL[k]+'"></i>'+PRI_LABEL[k]+'<b>'+fl.filter(x=>x.priority===k).length+'</b></div>').join('')+'</div></div></div>';
+  // aging (P1+P2)
+  const B=[['0–7d',0,7],['8–14d',8,14],['15–30d',15,30],['30d+',31,1e9]];const bc=B.map(([l,a,b])=>({l,p1:p1.filter(x=>x.days!=null&&x.days>=a&&x.days<=b).length,p2:p2.filter(x=>x.days!=null&&x.days>=a&&x.days<=b).length}));
+  const bm=Math.max(1,...bc.map(b=>b.p1+b.p2));const unk=ours.filter(x=>x.days==null).length;
+  const aging='<div class="pc-chart"><h4>Days waiting <span>P1 + P2</span></h4><div class="pc-age">'+bc.map(b=>'<div class="pc-ab"><div class="pc-abar"><div style="height:'+(b.p2/bm*100)+'%;background:'+COL['2']+'"></div><div style="height:'+(b.p1/bm*100)+'%;background:'+COL['1']+'"></div></div><b>'+(b.p1+b.p2)+'</b><span>'+b.l+'</span></div>').join('')+'</div>'+(unk?'<div class="pc-cfoot">'+unk+' without a status date</div>':'')+'</div>';
+  // actions bar chart
+  const groups={};ours.forEach(x=>{const a=actOf(x);(groups[a]=groups[a]||{p1:[],p2:[]})[x.priority==='1'?'p1':'p2'].push(x);});
+  const order=Object.keys(groups).sort((a,b)=>(groups[b].p1.length-groups[a].p1.length)||((groups[b].p1.length+groups[b].p2.length)-(groups[a].p1.length+groups[a].p2.length))||a.localeCompare(b));
+  let sel=PC.ui.act.bar;if(!sel||!groups[sel])sel=order[0];
+  const am=Math.max(1,...order.map(a=>groups[a].p1.length+groups[a].p2.length));
+  let lastP='';const bars=ours.length?'<div class="pc-hb">'+order.map(a=>{const gp=groups[a].p1.length?'1':'2';const dv=gp!==lastP?'<div class="pc-hdv"><i style="background:'+COL[gp]+'"></i>'+(gp==='1'?'P1 · Needs action now':'P2 · Permitting → NTP')+'</div>':'';lastP=gp;return dv+(()=>{const g=groups[a];return'<button class="pc-hr'+(a===sel?' on':'')+'" onclick="pcAct(\'bar\',\''+es(a).replace(/'/g,"\\'")+'\')"><span class="pc-hl">'+es(a)+'</span><span class="pc-ht"><span style="width:'+(g.p1.length/am*100)+'%;background:'+COL['1']+'"></span><span style="width:'+(g.p2.length/am*100)+'%;background:'+COL['2']+'"></span></span><b>'+(g.p1.length+g.p2.length)+'</b></button>';})();}).join('')+'</div>':empty('&#10003; Nothing in our court with these filters.');
+  const selG=sel&&groups[sel]?[...groups[sel].p1,...groups[sel].p2]:[];
+  h+='<div class="pc-grid2"><section class="pc-chart pc-acts"><h4>What needs doing <span>P1 + P2 by action · click a bar</span></h4>'+bars+'</section>'+
+    '<section class="pc-chart pc-sel"><h4>'+(sel?es(sel):'Jobs')+' <span class="pc-count">'+selG.length+'</span></h4>'+(selG.length?jl(selG):empty('Pick an action.'))+'</section></div>';
+  // program stacked bars
+  const pm=Math.max(1,...progs.map(p=>fl.filter(x=>x.program===p).length));
+  const progChart='<div class="pc-chart pc-progc"><h4>By program <span>click to filter</span></h4><div class="pc-pb">'+progs.map(p=>{const it=fl.filter(x=>x.program===p);return'<div class="pc-pr"><span class="pc-pl" onclick="pcCell(\''+p+'\',\'\')">'+(p==='BT'?'BT-only':p)+'</span><span class="pc-pt">'+['1','2','Watch','none'].map(k=>{const n=it.filter(x=>x.priority===k).length;return n?'<span title="'+PRI_LABEL[k]+': '+n+'" onclick="pcCell(\''+p+'\',\''+k+'\')" style="width:'+(n/pm*100)+'%;background:'+COL[k]+'"></span>':'';}).join('')+'</span><b>'+it.length+'</b></div>';}).join('')+'</div></div>';
+  h+='<div class="pc-grid3">'+donut+aging+progChart+'</div>';
+  // calendar
+  const EV=[['preConMeetingScheduled','Pre-con meeting','#8b5cf6'],['isvScheduled','ISV scheduled','#06b6d4'],['preConDeadline','Pre-con deadline','#ef4444'],['ntp','NTP','#10b981'],['ntpP','NTP-P','#34d399'],['bldgPermitSubmitted','Permit submitted','#f59e0b'],['permitKickedBack','Permit kicked back','#f97316'],['permitResubmitted','Permit resubmitted','#eab308'],['bldgPermitIssued','Permit issued','#84cc16'],['costEstimateSubmitted','CE submitted','#3b82f6'],['ceReturned','CE returned','#ec4899'],['ceResubmitted','CE resubmitted','#6366f1']];
+  const ymd=d=>{const p=new Intl.DateTimeFormat('en-CA',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit'}).format(d);return p;};
+  const evs={};fl.forEach(x=>{if(!x.bt)return;EV.forEach(([f,l,c])=>{const v=x.bt[f];if(!v||!/\d/.test(String(v)))return;const d=PCE.parseETDate(String(v));if(!d||isNaN(d))return;const k=ymd(d);(evs[k]=evs[k]||[]).push({x,l,c});});});
+  PC._evs=evs;const cal=PC.ui.cal=PC.ui.cal||{mode:'month',anchor:ymd(new Date()),day:''};const today=ymd(new Date());
+  const [ay,am2,ad]=cal.anchor.split('-').map(Number);let days=[];
+  if(cal.mode==='month'){const first=new Date(Date.UTC(ay,am2-1,1,12));const st=new Date(first);st.setUTCDate(1-first.getUTCDay());for(let i=0;i<42;i++){const d=new Date(st);d.setUTCDate(st.getUTCDate()+i);days.push(d);}if(days.slice(35).every(d=>d.getUTCMonth()!==am2-1))days=days.slice(0,35);}
+  else{const a=new Date(Date.UTC(ay,am2-1,ad,12));a.setUTCDate(a.getUTCDate()-a.getUTCDay());for(let i=0;i<7;i++){const d=new Date(a);d.setUTCDate(a.getUTCDate()+i);days.push(d);}}
+  const k8=d=>d.toISOString().slice(0,10);
+  const title=cal.mode==='month'?new Date(Date.UTC(ay,am2-1,1,12)).toLocaleString('en-US',{month:'long',year:'numeric',timeZone:'UTC'}):'Week of '+days[0].toLocaleString('en-US',{month:'short',day:'numeric',timeZone:'UTC'});
+  const used=new Set();days.forEach(d=>(evs[k8(d)]||[]).forEach(e=>used.add(e.l)));
+  const cells=days.map(d=>{const k=k8(d);const e=evs[k]||[];const out=cal.mode==='month'&&d.getUTCMonth()!==am2-1;const ty=[...new Map(e.map(v=>[v.l,v.c])).entries()];
+    return'<button class="pc-cd'+(out?' out':'')+(k===today?' today':'')+(k===cal.day?' on':'')+(e.length?' has':'')+'" onclick="pcCal(\'day\',\''+k+'\')"><span class="pc-cn">'+d.getUTCDate()+'</span>'+(cal.mode==='week'?e.slice(0,6).map(v=>'<span class="pc-cev" style="--c:'+v.c+'">'+es(v.x.address)+'</span>').join('')+(e.length>6?'<span class="pc-cmore">+'+(e.length-6)+'</span>':''):'<span class="pc-dots">'+ty.slice(0,4).map(([l,c])=>'<i style="background:'+c+'"></i>').join('')+'</span>'+(e.length>1?'<span class="pc-cc">'+e.length+'</span>':''))+'</button>';}).join('');
+  const dayEv=cal.day&&evs[cal.day]||[];
+  const dayList=cal.day?'<div class="pc-cdl"><h5>'+new Date(cal.day+'T12:00:00Z').toLocaleString('en-US',{weekday:'long',month:'short',day:'numeric',timeZone:'UTC'})+'</h5>'+(dayEv.length?'<ul class="pc-list">'+dayEv.map(v=>'<li onclick="pcDrawer(\''+es(v.x.job_key).replace(/'/g,"\\'")+'\')"><i class="pc-ldot" style="background:'+v.c+'"></i><span class="pc-la">'+es(v.x.address)+'</span><span class="pc-evl">'+es(v.l)+'</span><span class="pc-prog">'+v.x.program+'</span><span class="pc-lo">&#8250;</span></li>').join('')+'</ul>':'<div class="pc-none">No events.</div>')+'</div>':'';
+  h+='<section class="pc-chart pc-cal"><div class="pc-calh"><h4>Calendar</h4><div class="pc-calnav"><button onclick="pcCal(\'prev\')" aria-label="Previous">&#8249;</button><b>'+title+'</b><button onclick="pcCal(\'next\')" aria-label="Next">&#8250;</button><button class="pc-calt" onclick="pcCal(\'today\')">Today</button></div><div class="pc-seg pc-calm"><button class="pc-f'+(cal.mode==='month'?' on':'')+'" onclick="pcCal(\'mode\',\'month\')">Month</button><button class="pc-f'+(cal.mode==='week'?' on':'')+'" onclick="pcCal(\'mode\',\'week\')">Week</button></div></div>'+
+    '<div class="pc-cg '+cal.mode+'">'+['S','M','T','W','T','F','S'].map(w=>'<span class="pc-wk">'+w+'</span>').join('')+cells+'</div>'+
+    '<div class="pc-cleg">'+EV.filter(e=>used.has(e[1])).map(e=>'<span><i style="background:'+e[2]+'"></i>'+e[1]+'</span>').join('')+(used.size?'':'<span class="pc-sub">No dated events in this '+cal.mode+'.</span>')+'</div>'+dayList+'</section>';
   const fold=(id,title,n,body,sub)=>'<details class="pc-fold" id="'+id+'"><summary><span class="pc-chev">&#8250;</span><h3>'+title+'</h3>'+(n!=null?'<span class="pc-count">'+n+'</span>':'')+'</summary><div class="pc-fb">'+body+'</div></details>';
   h+='<div class="pc-folds">';
   h+=fold('pc-f-w','Watch',watch.length,tbl(watch,1000,'Nothing on the watch list.'),'monitor, no action yet');
   h+=fold('pc-f-n','Not our court',none.length,tbl(none,2000,'Nothing here.'),'waiting on program or others');
-  // matrix
-  h+=fold('pc-f-m','By program',inScope.length,'<div class="pc-tw"><table class="pc-matrix"><thead><tr><th>Program</th><th>P1</th><th>P2</th><th>Watch</th><th>Not ours</th><th>Total</th></tr></thead><tbody>'+progs.map(p=>{const it=inScope.filter(x=>x.program===p);const c=k=>it.filter(x=>x.priority===k).length;
-    return'<tr><td title="'+es(PCE.PROGRAM_NAMES[p]||'Buildertrend-only jobs')+'"><b>'+(p==='BT'?'BT-only':p)+'</b> <span class="pc-sub">'+es(PCE.PROGRAM_NAMES[p]||'Buildertrend only')+'</span></td>'+['1','2','Watch','none'].map(k=>'<td class="pc-cell'+(c(k)?' k'+(k==='Watch'?'w':k==='none'?'n':k):' z')+'" onclick="pcCell(\''+p+'\',\''+k+'\')">'+c(k)+'</td>').join('')+'<td class="pc-cell" onclick="pcCell(\''+p+'\',\'\')"><b>'+it.length+'</b></td></tr>';}).join('')+
-    '<tr class="pc-tot"><td>Total</td>'+['1','2','Watch','none'].map(k=>'<td>'+cnt(k)+'</td>').join('')+'<td>'+inScope.length+'</td></tr></tbody></table></div><div class="pc-sub" style="margin-top:8px">Click a number to filter the queue.</div>','program × priority');
   // recent changes
   const wk=now-7*86400000;const scopeKeys=new Set(inScope.map(x=>x.program+'|'+x.record_id));
   let ch=PC.changes.filter(c=>new Date(c.changed_at).getTime()>=wk&&scopeKeys.has(c.program+'|'+c.record_id));
