@@ -16,6 +16,12 @@ A single-page web app for tracking disaster-recovery jobs through the stages Pre
 7. **Shared queues:** adding or removing a job only writes that one row. Every 60 seconds the app pulls the latest queue from Supabase so everyone's changes show up.
 8. **Errors:** failed saves or syncs show a ⚠ toast and log `[sync] ...` to the browser console.
 
+## Main Buildertrend import
+- **Upload:** use the Buildertrend "Jobsites" export (.xlsx). Header matching ignores case, extra spaces and trailing `*`, and accepts both old and new septic column names.
+- **Matching order:** unique, non-blank `Prefix` (project ID) → `Job Name` → `Street Address` → known aliases. The tracker address is the Job Name, and `Street Address` is stored separately as `streetAddress`.
+- **New fields:** pre-construction and status columns (Ready to Start, Building/Demo Permit status, CE returned/resubmitted, permit kickbacks/revisions, RFIs, truss/energy calcs, pre-con meeting/packet, septic/sewer, moveout/storage, CompanyCam link, Actual Completion, …) are stored in each job's `data` JSON. No schema change is needed.
+- **Preview first:** a dry-run preview shows matched, new, possible-duplicate and skipped rows, Prefix duplicates and blanks, and unrecognized or missing columns. Nothing changes until you click **Confirm & Save to Cloud**. Columns missing from a file leave existing values untouched.
+
 ## Deploy
 - Vercel builds automatically from GitHub. Pushes to `master` go to production at https://project-tracking-hub.vercel.app. Other branches and PRs get preview URLs.
 - GitHub Pages also serves `master`: https://collinsaint.github.io/project-tracking-hub/
