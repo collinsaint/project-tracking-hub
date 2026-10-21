@@ -288,16 +288,16 @@ window.renderPrecon=function(){
   h+='<div class="pc-grid3">'+donut+aging+progChart+'</div>';
   // building permit breakdown (BT jobs not yet started)
   {const isD=v=>v!=null&&/\d/.test(String(v))&&String(v).trim()!=='0';
-   const pre=btJobs().filter(j=>String(j.constructionStage||'').toUpperCase()==='PRESALE');
+   const pre=btJobs().filter(j=>String(j.constructionStage||'').toUpperCase()==='PRESALE'&&!/^00[AB]\b/i.test(String(j.jobStatus||'').trim()));
    const na=[],iss=[],sub=[],ns=[];
    pre.forEach(j=>{if(j.bldgPermitSubmitted==='N/A'||j.bldgPermitIssued==='N/A')na.push(j);else if(isD(j.bldgPermitIssued))iss.push(j);else if(isD(j.bldgPermitSubmitted))sub.push(j);else ns.push(j);});
    const B={iss:['Permit issued','#10b981',iss,'bldgPermitIssued'],sub:['Submitted · pending','#f59e0b',sub,'bldgPermitSubmitted'],ns:['Not submitted','#ef4444',ns,''],na:['Permit not required','#94a3b8',na,'']};
    const tot=iss.length+sub.length+ns.length;const ps=PC.ui.perm||'';
    const tile=k=>{const b=B[k];return'<button class="pc-pmt'+(ps===k?' on':'')+'" style="--c:'+b[1]+'" onclick="PC.ui.perm=PC.ui.perm===\''+k+'\'?\'\':\''+k+'\';renderPrecon()"><b>'+b[2].length+'</b><span>'+b[0]+'</span></button>';};
-   const bar='<div class="pc-pmbar">'+['iss','sub','ns'].map(k=>B[k][2].length?'<i style="flex:'+B[k][2].length+';background:'+B[k][1]+'" title="'+B[k][0]+': '+B[k][2].length+'"></i>':'').join('')+'</div>';
+   const bar='<div class="pc-pmbar">'+['iss','sub','ns'].map(k=>B[k][2].length?'<i role="button" style="flex:'+B[k][2].length+';background:'+B[k][1]+';cursor:pointer" onclick="PC.ui.perm=PC.ui.perm===\''+k+'\'?\'\':\''+k+'\';renderPrecon()" title="'+B[k][0]+': '+B[k][2].length+'"></i>':'').join('')+'</div>';
    let list='';if(ps&&B[ps]){const b=B[ps];const arr=b[2].slice().sort((x,y)=>String(x.address).localeCompare(String(y.address)));
-     list='<div class="pc-pml"><h5>'+b[0]+' <span class="pc-count">'+arr.length+'</span></h5>'+(arr.length?'<ul class="pc-list">'+arr.map(j=>'<li><i class="pc-ldot" style="background:'+b[1]+'"></i><span class="pc-la">'+es(j.address||'')+'<small class="pc-sub"> '+es(j.jobStatus||'')+'</small></span>'+(b[3]&&j[b[3]]?'<span class="pc-ld">'+es(String(j[b[3]]).slice(0,10))+'</span>':'')+'<span class="pc-prog">'+es(String(j.program||'').replace(/^[A-Z]+ - (FL )?/,''))+'</span></li>').join('')+'</ul>':'<div class="pc-none">None.</div>')+'</div>';}
-   h+='<section class="pc-chart pc-perm"><h4>Building permits <span>pre-construction jobs (BT stage Presale) · tap a count</span></h4>'+
+     list='<div class="pc-pml"><h5>'+b[0]+' <span class="pc-count">'+arr.length+'</span></h5>'+(arr.length?'<ul class="pc-list">'+arr.map(j=>'<li><i class="pc-ldot" style="background:'+b[1]+'"></i><span class="pc-la">'+es(j.address||'')+'<small class="pc-sub"> '+es(j.jobStatus||'')+'</small></span>'+(b[3]&&j[b[3]]?'<span class="pc-ld">'+es(String(j[b[3]]).slice(0,10))+'</span>':'')+'<span class="pc-prog">'+es((()=>{const g=String(j.program||'');const c=Object.keys(PCE.GROUPS).find(k=>PCE.GROUPS[k]===g);return c?pn(c):g.replace(/^[A-Z]+ - (FL )?/,'');})())+'</span></li>').join('')+'</ul>':'<div class="pc-none">None.</div>')+'</div>';}
+   h+='<section class="pc-chart pc-perm"><h4>Building permits <span>pre-construction jobs (BT Presale, excl. withdrawn &amp; on hold) · tap a count or bar</span></h4>'+
      '<div class="pc-pmhead"><div class="pc-pmtot"><b>'+pre.length+'</b><span>pre-con jobs</span></div><div class="pc-pmsplit"><div class="pc-pmrow"><span>Have permit <b>'+iss.length+'</b></span><span>No permit <b>'+(sub.length+ns.length)+'</b></span></div>'+bar+'</div></div>'+
      '<div class="pc-pmtiles">'+tile('iss')+tile('sub')+tile('ns')+'</div><div class="pc-pmna">'+tile('na')+'<small>excluded from the split</small></div>'+list+'</section>';}
   // calendar
