@@ -117,7 +117,7 @@ function evaluate(pulls,projects,rules,opts){
       if(!sc.length||!PRECON_STAGES.includes(sc[0].Stage))return;
       st.inScope++;
       let hits=[];
-      flds.forEach(f=>{if(colset.has(f)&&has(rec[f]))matchRules(R.idx[p+'|'+f].filter(r=>(r.Active||'Y')==='Y'),rec[f]).forEach(r=>{if(r.OurCourt==='Y'||r.Priority==='Watch')hits.push({rule:r,field:f,value:String(rec[f]),src:'program'});});});
+      flds.forEach(f=>{if(colset.has(f)&&has(rec[f]))matchRules(R.idx[p+'|'+f].filter(r=>(r.Active||'Y')==='Y'&&(!r.WhenStatus||norm(rec.Status).includes(norm(r.WhenStatus)))),rec[f]).forEach(r=>{if(r.OurCourt==='Y'||r.Priority==='Watch')hits.push({rule:r,field:f,value:String(rec[f]),src:'program'});});});
       const j=m.method==='id'?m.job:(m.method==='address'&&opts.addressHits?m.job:null);
       if(j){if(p==='LC')j._lcSewer=rec['Sewer System'];
         // The program export is the source of truth for how far along a record is: drop BT Job Status
