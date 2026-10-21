@@ -119,7 +119,11 @@ function evaluate(pulls,projects,rules,opts){
       let hits=[];
       flds.forEach(f=>{if(colset.has(f)&&has(rec[f]))matchRules(R.idx[p+'|'+f].filter(r=>(r.Active||'Y')==='Y'),rec[f]).forEach(r=>{if(r.OurCourt==='Y'||r.Priority==='Watch')hits.push({rule:r,field:f,value:String(rec[f]),src:'program'});});});
       const j=m.method==='id'?m.job:(m.method==='address'&&opts.addressHits?m.job:null);
-      if(j){if(p==='LC')j._lcSewer=rec['Sewer System'];hits=hits.concat(btHits(R,j,opts.phase4));}
+      if(j){if(p==='LC')j._lcSewer=rec['Sewer System'];
+        // The program export is the source of truth for how far along a record is: drop BT Job Status
+        // site-visit/assignment hits when the program itself reports a later stage (e.g. a stale BT '02 - Pending Site Visit
+        // Scheduling' when the program already says Pre-construction Conference).
+        const si=Math.max(-1,...[sc[0].Stage,...hits.map(h=>h.rule.Stage)].filter(st=>st!=='Pre-Con (phase)').map(st=>PRECON_STAGES.indexOf(st)));hits=hits.concat(btHits(R,j,opts.phase4).filter(h=>!(h.field==='Job Status'&&(h.rule.Stage==='Assignment'||h.rule.Stage==='Site Visit')&&si>PRECON_STAGES.indexOf(h.rule.Stage))));}
       const rk=rankHits(hits);const top=rk.hits[0];
       if(m.job){const c=jsCode(m.job.jobStatus);if(c&&c.n>=20)gaps.stageMismatch.push({program:p,id:rec.ID,address:rec.Address,program_value:rec[SCOPE[p]],bt_status:m.job.jobStatus});}
       if(p!=='PAS'){const jj=m.job;if(!jj||!(btHas(jj.rfiRequested)||btHas(jj.addlRfiRequested)||/^(yes|true)$/i.test(jj.rfiNeeded||'')))gaps.unknownRfi.push({program:p,id:rec.ID,address:rec.Address});}
