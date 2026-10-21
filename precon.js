@@ -169,6 +169,33 @@ window.closePrecon=function(){window.pcDrawerClose&&pcDrawerClose();const v=docu
 window.pcToggle=(k,v)=>{const a=PC.f[k];const i=a.indexOf(v);if(i>=0)a.splice(i,1);else a.push(v);writeHash();renderPrecon();};
 window.pcSet=(k,v)=>{PC.f[k]=v;writeHash();renderPrecon();};
 window.pcOpt=(k,v)=>{PC.opts[k]=v;writeHash();renderPrecon();};
+// ---- Building permits job table (sortable + filterable) ----
+const pmProg=j=>{const g=String(j.program||'');const c=Object.keys(PCE.GROUPS).find(k=>PCE.GROUPS[k]===g);return c?pn(c):g.replace(/^[A-Z]+ - (FL )?/,'');};
+const pmD=v=>{if(!v||!/\d/.test(String(v)))return null;const d=PCE.parseETDate(String(v));return d&&!isNaN(d)?d:null;};
+const pmFmt=d=>d?d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric',timeZone:'America/New_York'}):'—';
+const pmHold=j=>/^00B/i.test(String(j.jobStatus||'').trim());
+window.pcPermSet=(k,v)=>{const t=PC.ui.pt=PC.ui.pt||{};if(k==='sort'){if(t.sort===v)t.dir=-(t.dir||1);else{t.sort=v;t.dir=1;}}else t[k]=v;pcPermTbl(k==='q');};
+window.pcPermTbl=function(keepFocus){if(!PC._perm)return;const box=document.getElementById(PC._perm.el||'pc-pml');if(!box)return;const {b}=PC._perm;const df=b[3];const dcols=Array.isArray(df)?df:(df?[[df,df==='bldgPermitIssued'?'Issued':'Submitted']]:[]);const tcol=b[4]||null;
+  const t=PC.ui.pt=PC.ui.pt||{};t.sort=t.sort||'asg';t.dir=t.dir||1;t.q=t.q||'';t.prog=t.prog||'';t.st=t.st||'';t.hold=t.hold||'all';
+  const now=Date.now();
+  const rows=b[2].map(j=>{const a=pmD(j.assignmentReceived);const dc=dcols.map(([f])=>pmD(j[f]));return{dc,tx:tcol?String(j[tcol[0]]||''):'',j,addr:String(j.address||''),pre:String(j.projectNumber||''),prog:pmProg(j),st:String(j.jobStatus||''),hold:pmHold(j),asg:a,days:a?Math.floor((now-a.getTime())/864e5):null,pd};});
+  const progs=[...new Set(rows.map(r=>r.prog))].sort(),sts=[...new Set(rows.map(r=>r.st))].sort((x,y)=>x.localeCompare(y,undefined,{numeric:true}));
+  const q=t.q.trim().toLowerCase();
+  let f=rows.filter(r=>(!q||r.addr.toLowerCase().includes(q)||r.pre.toLowerCase().includes(q))&&(!t.prog||r.prog===t.prog)&&(!t.st||r.st===t.st)&&(t.hold==='all'||(t.hold==='only'?r.hold:!r.hold)));
+  const key={addr:r=>r.addr.toLowerCase(),prog:r=>r.prog,st:r=>r.st,asg:r=>r.asg?r.asg.getTime():null,days:r=>r.days,tx:r=>r.tx}[t.sort]||(/^d\d$/.test(t.sort)?(r=>{const d=r.dc[+t.sort[1]];return d?d.getTime():null;}):(r=>r.asg?r.asg.getTime():null));
+  f.sort((x,y)=>{const a=key(x),c=key(y);if(a==null&&c==null)return 0;if(a==null)return 1;if(c==null)return -1;return(a<c?-1:a>c?1:0)*t.dir;});
+  const blanks=rows.filter(r=>!r.asg).length;
+  const th=(k,l,cls)=>'<th class="'+(cls||'')+(t.sort===k?' on':'')+'"><button onclick="pcPermSet(\'sort\',\''+k+'\')">'+l+'<i>'+(t.sort===k?(t.dir>0?'▲':'▼'):'↕')+'</i></button></th>';
+  const opt=(arr,cur,all)=>'<option value="">'+all+'</option>'+arr.map(v=>'<option'+(v===cur?' selected':'')+' value="'+es(v)+'">'+es(v)+'</option>').join('');
+  
+  box.innerHTML='<div class="pc-pth"><h5>'+b[0]+' <span class="pc-count">'+f.length+(f.length!==rows.length?' of '+rows.length:'')+'</span></h5>'+(blanks?'<span class="pc-sub">'+blanks+' without an assignment date</span>':'')+'</div>'+
+    '<div class="pc-ptf"><input id="pc-ptq" type="search" placeholder="Search address or prefix" value="'+es(t.q)+'" oninput="pcPermSet(\'q\',this.value)">'+
+    '<select onchange="pcPermSet(\'prog\',this.value)">'+opt(progs,t.prog,'All programs')+'</select>'+
+    '<select onchange="pcPermSet(\'st\',this.value)">'+opt(sts,t.st,'All statuses')+'</select>'+
+    '<div class="pc-ptseg">'+[['all','All'],['hide','Hide on hold'],['only','On hold only']].map(([v,l])=>'<button class="'+(t.hold===v?'on':'')+'" onclick="pcPermSet(\'hold\',\''+v+'\')">'+l+'</button>').join('')+'</div></div>'+
+    (f.length?'<div class="pc-ptw"><table class="pc-ptab"><thead><tr>'+th('addr','Address','pc-ptsa')+th('prog','Program')+th('st','Status')+(tcol?th('tx',tcol[1]):'')+th('asg','Assigned')+th('days','Days')+dcols.map((c,i)=>th('d'+i,c[1])).join('')+'</tr></thead><tbody>'+
+    f.map(r=>'<tr><td class="pc-ptsa" data-l="Address"><b>'+es(r.addr)+'</b>'+(r.hold?' <em class="pc-hold">On Hold</em>':'')+(r.pre?'<small>'+es(r.pre)+'</small>':'')+'</td><td data-l="Program"><span class="pc-prog">'+es(r.prog)+'</span></td><td data-l="Status" class="pc-ptst">'+es(r.st)+'</td>'+(tcol?'<td data-l="'+tcol[1]+'" class="pc-ptst">'+(es(r.tx)||'—')+'</td>':'')+'<td data-l="Assigned" class="pc-nw">'+pmFmt(r.asg)+'</td><td data-l="Days" class="pc-nw">'+(r.days==null?'—':r.days+'d')+'</td>'+dcols.map((c,i)=>'<td data-l="'+c[1]+'" class="pc-nw">'+pmFmt(r.dc[i])+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>':'<div class="pc-none">No jobs match these filters.</div>');
+  if(keepFocus){const i=document.getElementById('pc-ptq');if(i){i.focus();i.setSelectionRange(i.value.length,i.value.length);}}};
 window.pcCell=(p,pr)=>{PC.f.p=p?[p]:[];PC.f.pr=pr?[pr]:[];writeHash();renderPrecon();document.getElementById('pc-queue')?.scrollIntoView({behavior:'smooth'});};
 window.pcClear=()=>{PC.f={p:[],pr:[],st:[],who:'',q:''};writeHash();renderPrecon();};
 window.pcChg=(k,v)=>{PC.chg[k]=v;renderPrecon();};
@@ -276,14 +303,27 @@ window.renderPrecon=function(){
   const bm=Math.max(1,...bc.map(b=>b.p1+b.p2));const unk=ours.filter(x=>x.days==null).length;
   const aging='<div class="pc-chart"><h4>Days waiting <span>P1 + P2</span></h4><div class="pc-age">'+bc.map(b=>'<div class="pc-ab"><div class="pc-abar"><div style="height:'+(b.p2/bm*100)+'%;background:'+COL['2']+'"></div><div style="height:'+(b.p1/bm*100)+'%;background:'+COL['1']+'"></div></div><b>'+(b.p1+b.p2)+'</b><span>'+b.l+'</span></div>').join('')+'</div>'+(unk?'<div class="pc-cfoot">'+unk+' without a status date</div>':'')+'</div>';
   // actions bar chart
-  const groups={};ours.forEach(x=>{const a=actOf(x);(groups[a]=groups[a]||{p1:[],p2:[]})[x.priority==='1'?'p1':'p2'].push(x);});
+  const isPermAct=a=>/permit/i.test(a||'');
+  const actNP=x=>{const hs=(x.hits||[]).filter(h=>(h.rule.Priority==='1'||h.rule.Priority==='2')&&!isPermAct(h.rule.Action));return hs.length?hs[0].rule.Action:(x.primary&&!isPermAct(x.primary.rule.Action)?x.primary.rule.Action:null);};
+  const groups={};ours.forEach(x=>{const a=actNP(x);if(!a)return;(groups[a]=groups[a]||{p1:[],p2:[]})[x.priority==='1'?'p1':'p2'].push(x);});
   const order=Object.keys(groups).sort((a,b)=>(groups[b].p1.length-groups[a].p1.length)||((groups[b].p1.length+groups[b].p2.length)-(groups[a].p1.length+groups[a].p2.length))||a.localeCompare(b));
-  let sel=PC.ui.act.bar;if(!sel||!groups[sel])sel=order[0];
+  // Construction-readiness groups built from the tracker's Presale list (withdrawn excluded)
+  const pres=((typeof proj!=='undefined'&&Array.isArray(proj)&&proj.length)?proj:btJobs()).filter(j=>String(j.constructionStage||'').toUpperCase()==='PRESALE'&&!isWithdrawn(j));
+  const pushC=pres.filter(j=>pmD(j.bldgPermitIssued)&&pmD(j.ntpP));
+  const today0=new Date(new Date().toLocaleDateString('en-CA',{timeZone:'America/New_York'})+'T00:00:00');
+  const PAPER={RFL:{s:'Pre-Construction Meeting Scheduled Date',c:'Pre-Construction Meeting Completed Date',st:'Preconstruction Status'},OC:{s:'PreCon - Pre-Construction Meeting Scheduled Date',c:'Pre-Construction Meeting Completed Date',st:'PreCon - Most Advanced Status Export'}};
+  const presSet=new Set(pres);const mtgIdx=PCE.PRECON_STAGES.indexOf('Pre-Con Meeting');const RX=PCE.prepRules(PC.rules);
+  const paper=[];res.queue.forEach(x=>{const P=PAPER[x.program];if(!P||!x.bt||!presSet.has(x.bt))return;const rec=PC.pulls[x.program]&&PC.pulls[x.program].records.find(r=>String(r.ID)===x.record_id);if(!rec)return;
+    const sd=pmD(rec[P.s]);if(!sd||sd>=today0)return;const cd=pmD(rec[P.c]);const pst=String(rec[P.st]||'');
+    const rr=PCE.matchRules(RX.idx[x.program+'|'+P.st],pst);const stI=rr.length?PCE.PRECON_STAGES.indexOf(rr[0].Stage):-1;
+    if(stI<=mtgIdx||!cd)paper.push(Object.assign({},x.bt,{_mS:rec[P.s],_mC:rec[P.c]||'',_pst:pst}));});
+  const SPEC={'§push':['Push into construction','#10b981',pushC,[['bldgPermitIssued','Permit issued'],['ntpP','NTP-P']]],'§paper':['Upload pre-construction paperwork','#8b5cf6',paper,[['_mS','Meeting'],['_mC','Completed']],['_pst','Program status']]};
+  let sel=PC.ui.act.bar;if(!sel||(!groups[sel]&&!SPEC[sel]))sel=order[0];
   const am=Math.max(1,...order.map(a=>groups[a].p1.length+groups[a].p2.length));
-  let lastP='';const bars=ours.length?'<div class="pc-hb">'+order.map(a=>{const gp=groups[a].p1.length?'1':'2';const dv=gp!==lastP?'<div class="pc-hdv"><i style="background:'+COL[gp]+'"></i>'+(gp==='1'?'P1 · Needs action now':'P2 · Permitting → NTP')+'</div>':'';lastP=gp;return dv+(()=>{const g=groups[a];return'<button class="pc-hr'+(a===sel?' on':'')+'" onclick="pcAct(\'bar\',\''+es(a).replace(/'/g,"\\'")+'\')"><span class="pc-hl">'+es(a)+'</span><span class="pc-ht"><span style="width:'+(g.p1.length/am*100)+'%;background:'+COL['1']+'"></span><span style="width:'+(g.p2.length/am*100)+'%;background:'+COL['2']+'"></span></span><b>'+(g.p1.length+g.p2.length)+'</b></button>';})();}).join('')+'</div>':empty('&#10003; Nothing in our court with these filters.');
-  const selG=sel&&groups[sel]?[...groups[sel].p1,...groups[sel].p2]:[];
+  let lastP='';const bars=ours.length?'<div class="pc-hb">'+order.map(a=>{const gp=groups[a].p1.length?'1':'2';const dv=gp!==lastP?'<div class="pc-hdv"><i style="background:'+COL[gp]+'"></i>'+(gp==='1'?'P1 · Needs action now':'P2 · Permitting → NTP')+'</div>':'';lastP=gp;return dv+(()=>{const g=groups[a];return'<button class="pc-hr'+(a===sel?' on':'')+'" onclick="pcAct(\'bar\',\''+es(a).replace(/'/g,"\\'")+'\')"><span class="pc-hl">'+es(a)+'</span><span class="pc-ht"><span style="width:'+(g.p1.length/am*100)+'%;background:'+COL['1']+'"></span><span style="width:'+(g.p2.length/am*100)+'%;background:'+COL['2']+'"></span></span><b>'+(g.p1.length+g.p2.length)+'</b></button>';})();}).join('')+'<div class="pc-hdv"><i style="background:#10b981"></i>Construction readiness</div>'+Object.entries(SPEC).map(([k,v])=>'<button class="pc-hr'+(k===sel?' on':'')+'" onclick="pcAct(\'bar\',\''+k+'\')"><span class="pc-hl">'+es(v[0])+'</span><span class="pc-ht"><span style="width:'+Math.min(100,v[2].length/am*100)+'%;background:'+v[1]+'"></span></span><b>'+v[2].length+'</b></button>').join('')+'</div>':empty('&#10003; Nothing in our court with these filters.');
+  const selG=sel&&groups[sel]?[...groups[sel].p1,...groups[sel].p2]:[];const spec=SPEC[sel];if(spec){PC._perm={k:sel,b:spec,el:'pc-pml2'};setTimeout(pcPermTbl,0);}
   h+='<div class="pc-grid2"><section class="pc-chart pc-acts"><h4>What needs doing <span>P1 + P2 by action · click a bar</span></h4>'+bars+'</section>'+
-    '<section class="pc-chart pc-sel"><h4>'+(sel?es(sel):'Jobs')+' <span class="pc-count">'+selG.length+'</span></h4>'+(selG.length?jl(selG):empty('Pick an action.'))+'</section></div>';
+    (spec?'<section class="pc-chart pc-sel"><div class="pc-pml" id="pc-pml2"></div></section></div>':'<section class="pc-chart pc-sel"><h4>'+(sel?es(sel):'Jobs')+' <span class="pc-count">'+selG.length+'</span></h4>'+(selG.length?jl(selG):empty('Pick an action.'))+'</section></div>');
   // program stacked bars
   const pm=Math.max(1,...progs.map(p=>fl.filter(x=>x.program===p).length));
   const progChart='<div class="pc-chart pc-progc"><h4>By program <span>click to filter</span></h4><div class="pc-pb">'+progs.map(p=>{const it=fl.filter(x=>x.program===p);return'<div class="pc-pr"><span class="pc-pl" onclick="pcCell(\''+p+'\',\'\')">'+pn(p)+'</span><span class="pc-pt">'+['1','2','Watch','none'].map(k=>{const n=it.filter(x=>x.priority===k).length;return n?'<span title="'+PRI_LABEL[k]+': '+n+'" onclick="pcCell(\''+p+'\',\''+k+'\')" style="width:'+(n/pm*100)+'%;background:'+COL[k]+'"></span>':'';}).join('')+'</span><b>'+it.length+'</b></div>';}).join('')+'</div></div>';
@@ -297,8 +337,7 @@ window.renderPrecon=function(){
    const tot=iss.length+sub.length+ns.length;const ps=PC.ui.perm||'';
    const tile=k=>{const b=B[k];return'<button class="pc-pmt'+(ps===k?' on':'')+'" style="--c:'+b[1]+'" onclick="PC.ui.perm=PC.ui.perm===\''+k+'\'?\'\':\''+k+'\';renderPrecon()"><b>'+b[2].length+'</b><span>'+b[0]+'</span></button>';};
    const bar='<div class="pc-pmbar">'+['iss','sub','ns'].map(k=>B[k][2].length?'<i role="button" style="flex:'+B[k][2].length+';background:'+B[k][1]+';cursor:pointer" onclick="PC.ui.perm=PC.ui.perm===\''+k+'\'?\'\':\''+k+'\';renderPrecon()" title="'+B[k][0]+': '+B[k][2].length+'"></i>':'').join('')+'</div>';
-   let list='';if(ps&&B[ps]){const b=B[ps];const arr=b[2].slice().sort((x,y)=>String(x.address).localeCompare(String(y.address)));
-     list='<div class="pc-pml"><h5>'+b[0]+' <span class="pc-count">'+arr.length+'</span></h5>'+(arr.length?'<ul class="pc-list">'+arr.map(j=>'<li><i class="pc-ldot" style="background:'+b[1]+'"></i><span class="pc-la">'+es(j.address||'')+(/^00B/i.test(String(j.jobStatus||'').trim())?' <em class="pc-hold">On Hold</em>':'')+'<small class="pc-sub"> '+es(j.jobStatus||'')+'</small></span>'+(b[3]&&j[b[3]]?'<span class="pc-ld">'+es(String(j[b[3]]).slice(0,10))+'</span>':'')+'<span class="pc-prog">'+es((()=>{const g=String(j.program||'');const c=Object.keys(PCE.GROUPS).find(k=>PCE.GROUPS[k]===g);return c?pn(c):g.replace(/^[A-Z]+ - (FL )?/,'');})())+'</span></li>').join('')+'</ul>':'<div class="pc-none">None.</div>')+'</div>';}
+   let list='';if(ps&&B[ps]){PC._perm={k:ps,b:B[ps],el:'pc-pml'};list='<div class="pc-pml" id="pc-pml"></div>';setTimeout(pcPermTbl,0);}
    h+='<section class="pc-chart pc-perm"><h4>Building permits <span>pre-construction jobs (tracker&#39;s Presale list) · tap a count or bar</span></h4>'+
      '<div class="pc-pmhead"><div class="pc-pmtot"><b>'+pre.length+'</b><span>pre-con jobs</span></div><div class="pc-pmsplit"><div class="pc-pmrow"><span>Have permit <b>'+iss.length+'</b></span><span>No permit <b>'+(sub.length+ns.length)+'</b></span></div>'+bar+'</div></div>'+
      '<div class="pc-pmtiles">'+tile('iss')+tile('sub')+tile('ns')+'</div><div class="pc-pmna">'+tile('na')+'<small>excluded from the split</small></div>'+list+'</section>';}
