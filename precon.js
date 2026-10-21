@@ -286,6 +286,20 @@ window.renderPrecon=function(){
   const pm=Math.max(1,...progs.map(p=>fl.filter(x=>x.program===p).length));
   const progChart='<div class="pc-chart pc-progc"><h4>By program <span>click to filter</span></h4><div class="pc-pb">'+progs.map(p=>{const it=fl.filter(x=>x.program===p);return'<div class="pc-pr"><span class="pc-pl" onclick="pcCell(\''+p+'\',\'\')">'+pn(p)+'</span><span class="pc-pt">'+['1','2','Watch','none'].map(k=>{const n=it.filter(x=>x.priority===k).length;return n?'<span title="'+PRI_LABEL[k]+': '+n+'" onclick="pcCell(\''+p+'\',\''+k+'\')" style="width:'+(n/pm*100)+'%;background:'+COL[k]+'"></span>':'';}).join('')+'</span><b>'+it.length+'</b></div>';}).join('')+'</div></div>';
   h+='<div class="pc-grid3">'+donut+aging+progChart+'</div>';
+  // building permit breakdown (BT jobs not yet started)
+  {const isD=v=>v!=null&&/\d/.test(String(v))&&String(v).trim()!=='0';
+   const pre=btJobs().filter(j=>String(j.constructionStage||'').toUpperCase()==='PRESALE'&&/^(0[1-9]|1\d|20)(\D|$)/.test(String(j.jobStatus||'').trim()));
+   const na=[],iss=[],sub=[],ns=[];
+   pre.forEach(j=>{if(j.bldgPermitSubmitted==='N/A'||j.bldgPermitIssued==='N/A')na.push(j);else if(isD(j.bldgPermitIssued))iss.push(j);else if(isD(j.bldgPermitSubmitted))sub.push(j);else ns.push(j);});
+   const B={iss:['Permit issued','#10b981',iss,'bldgPermitIssued'],sub:['Submitted · pending','#f59e0b',sub,'bldgPermitSubmitted'],ns:['Not submitted','#ef4444',ns,''],na:['Permit not required','#94a3b8',na,'']};
+   const tot=iss.length+sub.length+ns.length;const ps=PC.ui.perm||'';
+   const tile=k=>{const b=B[k];return'<button class="pc-pmt'+(ps===k?' on':'')+'" style="--c:'+b[1]+'" onclick="PC.ui.perm=PC.ui.perm===\''+k+'\'?\'\':\''+k+'\';renderPrecon()"><b>'+b[2].length+'</b><span>'+b[0]+'</span></button>';};
+   const bar='<div class="pc-pmbar">'+['iss','sub','ns'].map(k=>B[k][2].length?'<i style="flex:'+B[k][2].length+';background:'+B[k][1]+'" title="'+B[k][0]+': '+B[k][2].length+'"></i>':'').join('')+'</div>';
+   let list='';if(ps&&B[ps]){const b=B[ps];const arr=b[2].slice().sort((x,y)=>String(x.address).localeCompare(String(y.address)));
+     list='<div class="pc-pml"><h5>'+b[0]+' <span class="pc-count">'+arr.length+'</span></h5>'+(arr.length?'<ul class="pc-list">'+arr.map(j=>'<li><i class="pc-ldot" style="background:'+b[1]+'"></i><span class="pc-la">'+es(j.address||'')+'<small class="pc-sub"> · '+es(j.jobStatus||'')+'</small></span>'+(b[3]&&j[b[3]]?'<span class="pc-ld">'+es(String(j[b[3]]).slice(0,10))+'</span>':'')+'<span class="pc-prog">'+es(String(j.program||'').replace(/^[A-Z]+ - (FL )?/,''))+'</span></li>').join('')+'</ul>':'<div class="pc-none">None.</div>')+'</div>';}
+   h+='<section class="pc-chart pc-perm"><h4>Building permits <span>pre-construction jobs (BT presale, not started) · tap a count</span></h4>'+
+     '<div class="pc-pmhead"><div class="pc-pmtot"><b>'+pre.length+'</b><span>pre-con jobs</span></div><div class="pc-pmsplit"><div class="pc-pmrow"><span>Have permit <b>'+iss.length+'</b></span><span>No permit <b>'+(sub.length+ns.length)+'</b></span></div>'+bar+'</div></div>'+
+     '<div class="pc-pmtiles">'+tile('iss')+tile('sub')+tile('ns')+'</div><div class="pc-pmna">'+tile('na')+'<small>excluded from the split</small></div>'+list+'</section>';}
   // calendar
   const EV=[['preConMeetingScheduled','Pre-con meeting','#8b5cf6'],['isvScheduled','ISV scheduled','#06b6d4'],['preConDeadline','Pre-con deadline','#ef4444'],['ntp','NTP','#10b981'],['ntpP','NTP-P','#34d399'],['bldgPermitSubmitted','Permit submitted','#f59e0b'],['permitKickedBack','Permit kicked back','#f97316'],['permitResubmitted','Permit resubmitted','#eab308'],['bldgPermitIssued','Permit issued','#84cc16'],['costEstimateSubmitted','CE submitted','#3b82f6'],['ceReturned','CE returned','#ec4899'],['ceResubmitted','CE resubmitted','#6366f1']];
   const ymd=d=>{const p=new Intl.DateTimeFormat('en-CA',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit'}).format(d);return p;};
