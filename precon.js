@@ -232,7 +232,7 @@ function businessDaysSince(d){let n=0;const x=new Date(d);const now=new Date();w
 window.renderPrecon=function(){
   const body=document.getElementById('pc-body');if(!body)return;
   const R=PCE.prepRules(PC.rules);
-  let res;try{res=PCE.evaluate(PC.pulls,btJobs(),PC.rules,{excludeJob:isWithdrawn,phase4:PC.opts.phase4,showHold:PC.opts.showHold,changes:PC.changes,activeFilter:true});}catch(e){reportFail('Pre-Con dashboard',e);return;}
+  let res;try{res=PCE.evaluate(PC.pulls,btJobs(),PC.rules,{excludeJob:j=>isWithdrawn(j)||(!PC.opts.showHold&&pmHold(j)),phase4:PC.opts.phase4,showHold:PC.opts.showHold,changes:PC.changes,activeFilter:true});}catch(e){reportFail('Pre-Con dashboard',e);return;}
   // BT-only jobs must still be active in the hub (no withdrawn / Volusia)
   const act=new Set(btActive().map(j=>j.address));res.queue=res.queue.filter(x=>x.program!=='BT'||act.has(x.address));
   PC.result=res;const now=Date.now();
@@ -323,7 +323,8 @@ window.renderPrecon=function(){
   const groups={};ours.forEach(x=>{const a=actNP(x);if(!a)return;(groups[a]=groups[a]||{p1:[],p2:[]})[x.priority==='1'?'p1':'p2'].push(x);});
   const order=Object.keys(groups).sort((a,b)=>(groups[b].p1.length-groups[a].p1.length)||((groups[b].p1.length+groups[b].p2.length)-(groups[a].p1.length+groups[a].p2.length))||a.localeCompare(b));
   // Construction-readiness groups built from the tracker's Presale list (withdrawn excluded)
-  const pres=((typeof proj!=='undefined'&&Array.isArray(proj)&&proj.length)?proj:btJobs()).filter(j=>String(j.constructionStage||'').toUpperCase()==='PRESALE'&&!isWithdrawn(j));
+  // BT On Hold (00B) is excluded from every What-needs-doing category like withdrawn (Collin); Building permits card keeps its own list
+  const pres=((typeof proj!=='undefined'&&Array.isArray(proj)&&proj.length)?proj:btJobs()).filter(j=>String(j.constructionStage||'').toUpperCase()==='PRESALE'&&!isWithdrawn(j)&&(PC.opts.showHold||!pmHold(j)));
   // Georgia HRRP: program status '04c. Pending Notice to Proceed' counts as NTP-P (Collin: these can start once the permit is issued)
   // Strict per-program construction rules (Collin, Oct 21): BT/tracker first, program export fallback
   const REC=new Map();res.queue.forEach(x=>{if(!x.bt||x.program==='BT')return;const rec=PC.pulls[x.program]&&PC.pulls[x.program].records.find(r=>String(r.ID)===x.record_id);if(rec)REC.set(String(x.bt.projectNumber||x.bt.address),{p:x.program,rec});});
