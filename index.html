@@ -400,6 +400,8 @@ tr.dr:hover td.tcrit-miss,tr.dr.row-permit td.tcrit-miss{background:#fecaca}
 .pc-grid2,.pc-grid3{grid-template-columns:1fr;gap:12px}.pc-chart{padding:16px;border-radius:16px}.pc-hr{grid-template-columns:1fr 28px;gap:4px 8px;padding:7px 6px}.pc-hl{grid-column:1/-1;white-space:normal}.pc-ht{height:10px}
 .pc-cd{min-height:44px;padding:5px;border-radius:9px}.pc-cg{gap:4px}.pc-cc{display:none}.pc-dots i{width:6px;height:6px}.pc-cg.week{grid-template-columns:1fr}.pc-cg.week .pc-wk{display:none}.pc-cg.week .pc-cd{min-height:0;flex-direction:row;flex-wrap:wrap;align-items:center}
 .pc-calnav b{min-width:0;font-size:14px}.pc-list li{grid-template-columns:10px 1fr auto 40px 12px!important}.pc-cdl .pc-evl{display:none}}
+body.mob #pc-view{bottom:60px}
+@media (max-width:700px){.pc-mact{display:grid;grid-template-columns:1fr 1fr;gap:8px}.pc-mact #pcu-confirm{grid-column:1/-1;order:-1}.pc-mact .btn{margin:0!important;white-space:normal}}
 @media (max-width:900px){.pc-cards{grid-template-columns:repeat(2,1fr)}.pcu-grid{grid-template-columns:repeat(2,1fr)}}
 @media (max-width:700px){
 #pc-view{padding:16px 14px 80px}.pc-top h2{font-size:20px}.pc-top-act{width:100%}.pc-top-act .btn{flex:1}
@@ -3791,8 +3793,11 @@ function goToTracker(){
   closeDashboard();
   setViewHash('');
   syncNavActive();
+  try{mobileNavSet('tracker');}catch(e){}
 }
 function openDashboard(){
+  if(typeof closePrecon==='function')closePrecon();
+  try{mobileNavSet('tracker');}catch(e){}
   if(jqView)toggleJQView();
   if(coqView)toggleCOQView();
   if(permView)togglePermView();
@@ -3810,7 +3815,7 @@ function closeDashboard(){
 }
 function restoreViewFromHash(){
   const h=(location.hash||'').replace('#','');
-  if(h===''||h.startsWith('precon')){if(typeof openPrecon==='function')openPrecon();return;}
+  if(h.startsWith('precon')){if(typeof openPrecon==='function'){openPrecon();try{mobileNavSet('precon');}catch(e){}}return;}
   if(h==='dashboard')openDashboard();
   else if(h==='metrics'){openDashboard();openMetricsView();}
   else if(h==='jq'&&!jqView)toggleJQView();
@@ -5420,11 +5425,14 @@ function mobileNavSet(v){
 }
 function mobileNav(v){
   if(v===_mobView)return;
-  if(_mobView==='perm')togglePermView();
+  if(_mobView==='precon'&&typeof closePrecon==='function')closePrecon();
+  else if(_mobView==='perm')togglePermView();
   else if(_mobView==='jq')toggleJQView();
   else if(_mobView==='coq')toggleCOQView();
   else if(_mobView==='tasks')toggleTaskView();
-  if(v==='perm')togglePermView();
+  if(v==='precon'&&typeof openPrecon==='function')openPrecon();
+  else if(v==='tracker')goToTracker();
+  else if(v==='perm')togglePermView();
   else if(v==='jq')toggleJQView();
   else if(v==='coq')toggleCOQView();
   else if(v==='tasks')toggleTaskView();
@@ -5470,6 +5478,8 @@ window.addEventListener('resize',updateMobSticky);
     </div>
     <button class="mob-mbtn" onclick="openTaskModal();closeMobMenu()"><span class="mob-mico">&#43;</span>Add Task</button>
     <button class="mob-mbtn" onclick="openImport();closeMobMenu()"><span class="mob-mico">&#8679;</span>Import Buildertrend</button>
+    <button class="mob-mbtn" onclick="closeMobMenu();openUploads()"><span class="mob-mico">&#8679;</span>Upload Program Exports</button>
+    <button class="mob-mbtn" onclick="closeMobMenu();mobileNav('tracker');openDashboard()"><span class="mob-mico">&#9636;</span>Dashboard</button>
     <button class="mob-mbtn" onclick="refreshFromCloud();closeMobMenu()"><span class="mob-mico">&#8635;</span>Refresh from Cloud</button>
     <button class="mob-mbtn" onclick="exportCSV();closeMobMenu()"><span class="mob-mico">&#8681;</span>Export CSV</button>
     <button class="mob-mbtn" id="mob-edit-btn" onclick="toggleEditMode();closeMobMenu()"><span class="mob-mico">&#9998;</span>Edit Mode</button>
@@ -5481,6 +5491,9 @@ window.addEventListener('resize',updateMobSticky);
 <div id="mob-nav">
   <button class="mnb mna" id="mnb-tracker" onclick="mobileNav('tracker')">
     <span class="mni">&#127968;</span><span class="mnl">Home</span>
+  </button>
+  <button class="mnb" id="mnb-precon" onclick="mobileNav('precon')">
+    <span class="mni">&#9650;</span><span class="mnl">Pre-Con</span>
   </button>
   <button class="mnb" id="mnb-perm" onclick="mobileNav('perm')">
     <span class="mni">&#9679;</span><span class="mnl">Permits</span>
