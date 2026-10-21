@@ -174,6 +174,18 @@ const pmProg=j=>{const g=String(j.program||'');const c=Object.keys(PCE.GROUPS).f
 const pmD=v=>{if(!v||!/\d/.test(String(v)))return null;const d=PCE.parseETDate(String(v));return d&&!isNaN(d)?d:null;};
 const pmFmt=d=>d?d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric',timeZone:'America/New_York'}):'—';
 const pmHold=j=>/^00B/i.test(String(j.jobStatus||'').trim());
+
+// compact insight charts under the What-needs-doing side panel
+function pcInsight(items,title){const v=items.filter(i=>i.d!=null&&isFinite(i.d)&&i.d>=0);if(!v.length)return'';const ds=v.map(i=>i.d).sort((a,b)=>a-b);
+  const avg=Math.round(ds.reduce((a,b)=>a+b,0)/ds.length),med=ds.length%2?ds[(ds.length-1)/2]:Math.round((ds[ds.length/2-1]+ds[ds.length/2])/2),mx=ds[ds.length-1];
+  const B=[['0–30',0,30,'#10b981'],['31–60',31,60,'#eab308'],['61–90',61,90,'#f97316'],['90+',91,1e9,'#ef4444']].map(b=>({l:b[0],c:b[3],n:ds.filter(d=>d>=b[1]&&d<=b[2]).length}));
+  const col=d=>d<=30?'#10b981':d<=60?'#eab308':d<=90?'#f97316':'#ef4444';
+  const pm={};v.forEach(i=>{(pm[i.p]=pm[i.p]||[]).push(i.d);});const pr=Object.entries(pm).map(([k,a])=>({k,n:a.length,avg:Math.round(a.reduce((x,y)=>x+y,0)/a.length)})).sort((a,b)=>b.avg-a.avg);const pmax=Math.max(1,...pr.map(r=>r.avg));
+  const top=v.slice().sort((a,b)=>b.d-a.d).slice(0,8);
+  return'<div class="pc-ins"><h5>'+es(title)+'</h5><div class="pc-ins-k"><div><b>'+avg+'d</b><span>Average</span></div><div><b>'+med+'d</b><span>Median</span></div><div><b>'+mx+'d</b><span>Longest</span></div><div><b>'+v.length+'</b><span>Jobs</span></div></div>'+
+   '<div class="pc-ins-s">Aging</div><div class="pc-ins-age">'+B.map(b=>b.n?'<span style="flex:'+b.n+';background:'+b.c+'" title="'+b.l+' days: '+b.n+'">'+b.n+'</span>':'').join('')+'</div><div class="pc-ins-leg">'+B.map(b=>'<span><i style="background:'+b.c+'"></i>'+b.l+'d <b>'+b.n+'</b></span>').join('')+'</div>'+
+   (pr.length>1?'<div class="pc-ins-s">Average wait by program</div>'+pr.map(r=>'<div class="pc-ins-r"><span>'+es(r.k)+' <em>'+r.n+'</em></span><i><s style="width:'+(r.avg/pmax*100)+'%;background:'+col(r.avg)+'"></s></i><b>'+r.avg+'d</b></div>').join(''):'')+
+   '<div class="pc-ins-s">Longest waiting</div>'+top.map(i=>'<div class="pc-ins-r"><span>'+es(String(i.l||'').split(',')[0])+'</span><i><s style="width:'+(i.d/Math.max(1,mx)*100)+'%;background:'+col(i.d)+'"></s></i><b>'+i.d+'d</b></div>').join('')+'</div>';}
 window.pcPermSet=(k,v)=>{const t=PC.ui.pt=PC.ui.pt||{};if(k==='sort'){if(t.sort===v)t.dir=-(t.dir||1);else{t.sort=v;t.dir=1;}}else if(k==='clear'){t.prog='';t.st='';t.hold='hide';}else t[k]=v;pcPermTbl(k==='q');};
 window.pcPermTbl=function(keepFocus){if(!PC._perm)return;const box=document.getElementById(PC._perm.el||'pc-pml');if(!box)return;const {b}=PC._perm;const df=b[3];const dcols=Array.isArray(df)?df:(df?[[df,df==='bldgPermitIssued'?'Issued':'Submitted']]:[]);const tcol=b[4]||null;const tcol2=b[6]||null;const tcol3=b[7]||null;
   const t=PC.ui.pt=PC.ui.pt||{};t.sort=t.sort||'asg';t.dir=t.dir||1;t.q=t.q||'';t.prog=t.prog||'';t.st=t.st||'';t.hold=t.hold||'hide';
@@ -360,7 +372,7 @@ window.renderPrecon=function(){
     return Object.assign({},x.bt||{address:x.address,projectNumber:x.record_id,program:pn(x.program),jobStatus:'(no BT match)'},{_ps:(x.program==='BT'?'BT only':pn(x.program)+': '+(x.scope_value||rec.Status||''))+(sub?' · '+sub:''),_why:why});}):[];
   const selG=sel&&groups[sel]?[...groups[sel].p1,...groups[sel].p2]:[];const spec=cardK?[(cardK==='none'?'Not our court':'Watch'),'#94a3b8',cardRows,[],['_ps','Program status'],'',['_why','Why']]:SPEC[sel];if(spec){PC._perm={k:sel,b:spec,el:'pc-pml2'};setTimeout(pcPermTbl,0);}
   h+='<div class="pc-grid2"><section class="pc-chart pc-acts"><h4>What needs doing <span>P1 + P2 by action · click a bar</span></h4>'+bars+'</section>'+
-    (spec?'<section class="pc-chart pc-sel"><div class="pc-pml" id="pc-pml2"></div></section></div>':'<section class="pc-chart pc-sel"><h4>'+(sel?es(sel):'Jobs')+' <span class="pc-count">'+selG.length+'</span></h4>'+(selG.length?jl(selG):empty('Pick an action.'))+'</section></div>');
+    (spec?'<section class="pc-chart pc-sel"><div class="pc-pml" id="pc-pml2"></div>'+pcInsight(spec[2].map(j=>{const a=pmD(j.assignmentReceived);return{l:j.address,p:pmProg(j),d:a?Math.floor((Date.now()-a.getTime())/864e5):null};}),'Days since assignment')+'</section></div>':'<section class="pc-chart pc-sel"><h4>'+(sel?es(sel):'Jobs')+' <span class="pc-count">'+selG.length+'</span></h4>'+(selG.length?jl(selG):empty('Pick an action.'))+pcInsight(selG.map(x=>({l:x.address,p:pn(x.program==='BT'?(x.bt_group||'BT'):x.program),d:x.days==null?null:x.days})),'Days waiting')+'</section></div>');
   // program stacked bars
   const pm=Math.max(1,...progs.map(p=>fl.filter(x=>x.program===p).length));
   const progChart='<div class="pc-chart pc-progc"><h4>By program <span>click to filter</span></h4><div class="pc-pb">'+progs.map(p=>{const it=fl.filter(x=>x.program===p);return'<div class="pc-pr"><span class="pc-pl" onclick="pcCell(\''+p+'\',\'\')">'+pn(p)+'</span><span class="pc-pt">'+['1','2','Watch','none'].map(k=>{const n=it.filter(x=>x.priority===k).length;return n?'<span title="'+PRI_LABEL[k]+': '+n+'" onclick="pcCell(\''+p+'\',\''+k+'\')" style="width:'+(n/pm*100)+'%;background:'+COL[k]+'"></span>':'';}).join('')+'</span><b>'+it.length+'</b></div>';}).join('')+'</div></div>';
