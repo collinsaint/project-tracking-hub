@@ -6,6 +6,7 @@ const PC={rules:window.PRECON_RULES_SEED||[],rulesSource:'seed',db:'unknown',dbM
   opts:{phase4:false,showHold:false},f:{p:[],pr:[],st:[],who:'',q:''},chg:{our:false,entered:false},result:null,loaded:false,uploads:[]};
 window.PC=PC;
 const LS_KEY='pic_precon_local_v1';
+const pn=c=>(PCE.PROGRAM_NAMES&&PCE.PROGRAM_NAMES[c])||c;
 const T={pulls:'precon_pulls',recs:'precon_program_records',log:'precon_change_log',rules:'precon_rules'};
 const isMissing=e=>e&&(e.code==='42P01'||e.code==='PGRST205'||/does not exist|could not find the table|schema cache/i.test(e.message||''));
 const fmtET=d=>{if(!d)return'—';const x=d instanceof Date?d:new Date(d);if(isNaN(x))return'—';return x.toLocaleString('en-US',{timeZone:'America/New_York',month:'numeric',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'})+' ET';};
@@ -82,11 +83,11 @@ function uploadAnalysis(u){
 function renderUploadPreview(){
   const list=document.getElementById('pcu-list');
   if(!PC.uploads.length){list.innerHTML='';return;}
-  const opts=PCE.PROGRAMS.map(p=>'<option value="'+p+'">'+p+' — '+PCE.PROGRAM_NAMES[p]+'</option>').join('');
+  const opts=PCE.PROGRAMS.map(p=>'<option value="'+p+'">'+PCE.PROGRAM_NAMES[p]+'</option>').join('');
   const newest={};PC.uploads.forEach(u=>{if(u.program&&!u.error&&(!newest[u.program]||u.pullAt>newest[u.program].pullAt))newest[u.program]=u;});
   list.innerHTML=PC.uploads.map((u,i)=>{
     if(u.error)return'<div class="pcu-file err"><b>'+es(u.name)+'</b><div>Could not read file: '+es(u.error)+'</div></div>';
-    const a=u._a=uploadAnalysis(u);if(newest[u.program]&&newest[u.program]!==u&&!a.block)a.block='A newer '+u.program+' file is in this upload ('+newest[u.program].name+'); only the newest is used.';
+    const a=u._a=uploadAnalysis(u);if(newest[u.program]&&newest[u.program]!==u&&!a.block)a.block='A newer '+pn(u.program)+' file is in this upload ('+newest[u.program].name+'); only the newest is used.';
     if(a.block)u.include=false;
     const s=a.stats||{};const d=(k)=>{const b=a.before[k],c=a.after[k];return c+(b!==c&&PC.pulls[u.program]?' <span class="pc-delta">('+(c>b?'+':'')+(c-b)+')</span>':'');};
     const sc=a.changes||[];const st=sc.filter(c=>c.field!=='(record)'),rec=sc.filter(c=>c.field==='(record)');
@@ -172,7 +173,7 @@ window.pcChg=(k,v)=>{PC.chg[k]=v;renderPrecon();};
 window.pcOpenJob=addr=>{closePrecon();goToTracker();if(typeof openProjectByAddr==='function')openProjectByAddr(addr);};
 window.pcAct=(k,v)=>{PC.ui=PC.ui||{act:{},open:{}};PC.ui.act[k]=v;renderPrecon();};
 window.pcDrawer=key=>{const x=(PC.result.queue||[]).find(q=>q.job_key===key);if(!x)return;const d=document.getElementById('pc-drawer');const t=x.primary;
-  d.querySelector('.pcd-h').innerHTML='<div><div class="pcd-t">'+es(x.address)+'</div><div class="pcd-s"><span class="pc-prog">'+x.program+'</span>'+es(t?t.rule.Action:'')+(x.days!=null?' · '+(x.days_ge?'≥':'')+x.days+'d':'')+'</div></div><button class="pc-x" onclick="pcDrawerClose()" aria-label="Close">&#10005;</button>';
+  d.querySelector('.pcd-h').innerHTML='<div><div class="pcd-t">'+es(x.address)+'</div><div class="pcd-s"><span class="pc-prog">'+pn(x.program)+'</span>'+es(t?t.rule.Action:'')+(x.days!=null?' · '+(x.days_ge?'≥':'')+x.days+'d':'')+'</div></div><button class="pc-x" onclick="pcDrawerClose()" aria-label="Close">&#10005;</button>';
   d.querySelector('.pcd-b').innerHTML=PC._detail(x);d.querySelector('.pcd-b').scrollTop=0;document.getElementById('pc-dwrap').classList.add('open');};
 window.pcCal=(op,v)=>{const c=PC.ui.cal;const[y,m,d]=c.anchor.split('-').map(Number);const dt=new Date(Date.UTC(y,m-1,d,12));const k=x=>x.toISOString().slice(0,10);
   if(op==='mode')c.mode=v;else if(op==='today'){c.anchor=k(new Date());c.day='';}else if(op==='day')c.day=c.day===v?'':v;else{const s=op==='next'?1:-1;if(c.mode==='month'){dt.setUTCDate(1);dt.setUTCMonth(dt.getUTCMonth()+s);}else dt.setUTCDate(dt.getUTCDate()+7*s);c.anchor=k(dt);c.day='';}renderPrecon();};
@@ -193,8 +194,8 @@ window.renderPrecon=function(){
   const act=new Set(btActive().map(j=>j.address));res.queue=res.queue.filter(x=>x.program!=='BT'||act.has(x.address));
   PC.result=res;const now=Date.now();
   // ---- header: data freshness ----
-  const srcs=PCE.PROGRAMS.map(p=>{const pl=PC.pulls[p];if(!pl)return'<span class="pc-src miss" title="No pull uploaded">'+p+' <i>none</i></span>';
-    const stale=now-new Date(pl.meta.pull_at).getTime()>3*3600000;return'<span class="pc-src'+(stale?' stale':'')+'" title="'+es(pl.meta.file_name||'')+'">'+p+' <i>'+fmtET(pl.meta.pull_at)+'</i></span>';}).join('');
+  const srcs=PCE.PROGRAMS.map(p=>{const pl=PC.pulls[p];if(!pl)return'<span class="pc-src miss" title="No pull uploaded">'+pn(p)+' <i>none</i></span>';
+    const stale=now-new Date(pl.meta.pull_at).getTime()>3*3600000;return'<span class="pc-src'+(stale?' stale':'')+'" title="'+es(pl.meta.file_name||'')+'">'+pn(p)+' <i>'+fmtET(pl.meta.pull_at)+'</i></span>';}).join('');
   const bt=localStorage.getItem('pic_bt_import_at');
   const nStale=PCE.PROGRAMS.filter(p=>!PC.pulls[p]||now-new Date(PC.pulls[p].meta.pull_at).getTime()>3*3600000).length;
   let h='<details class="pc-asof"><summary><span class="pc-dot '+(nStale?'warn':'ok')+'"></span><b>Data as of</b> '+(nStale?nStale+' of '+PCE.PROGRAMS.length+' program pulls missing or older than 3 h':'All program pulls are current')+
@@ -202,7 +203,7 @@ window.renderPrecon=function(){
     '<span class="pc-src'+(bt&&businessDaysSince(bt)>=1?' stale':'')+(bt?'':' miss')+'">BT <i>'+(bt?fmtET(bt):'unknown')+'</i></span></div></details>';
   if(PC.db!=='ready')h+='<div class="pc-banner"><span class="pc-bi">!</span><div><b>Database setup needed.</b> '+es(PC.dbMsg)+' Run <code>sql/precon_tables.sql</code> in Supabase to save uploads for everyone. Until then, uploads work <b>in this browser only</b>.'+(PC.local?' <span class="pc-muted">Showing locally loaded data.</span>':'')+'</div></div>';
   else if(PC.local)h+='<div class="pc-banner"><span class="pc-bi">i</span><div>Showing data loaded in this browser only.</div></div>';
-  if(!Object.keys(PC.pulls).length)h+='<div class="pc-empty"><div class="pc-empty-ic">&#8679;</div><b>No program exports loaded yet</b><span>Upload the LC, OC, PIN, RFL, SRQ, PAS and GA exports to build the priority queue.</span><button class="btn btn-primary" onclick="openUploads()">Upload program exports</button></div>';
+  if(!Object.keys(PC.pulls).length)h+='<div class="pc-empty"><div class="pc-empty-ic">&#8679;</div><b>No program exports loaded yet</b><span>Upload the Lee Cares, Orange County, Pinellas Recovers, RebuildFL, ResilientSRQ, Pasco Better Future and Georgia HRRP exports to build the priority queue.</span><button class="btn btn-primary" onclick="openUploads()">Upload program exports</button></div>';
   // ---- stat cards (hero) ----
   const inScope=res.queue;const cnt=k=>inScope.filter(x=>x.priority===k).length;
   const oldestOf=k=>{const d=inScope.filter(x=>x.priority===k&&x.days!=null).map(x=>x.days);return d.length?Math.max(...d):null;};
@@ -217,7 +218,7 @@ window.renderPrecon=function(){
   const fc=(k,v,l)=>'<button class="pc-f'+(PC.f[k].includes(v)?' on':'')+'" onclick="pcToggle(\''+k+'\',\''+es(v)+'\')">'+es(l||v)+'</button>';
   const nF=PC.f.p.length+PC.f.pr.length+PC.f.st.length+(PC.f.who?1:0)+(PC.f.q?1:0);
   h+='<div class="pc-filters" id="pc-queue"><div class="pc-frow"><div class="pc-search"><span>&#9906;</span><input type="search" placeholder="Search address, ID, applicant…" value="'+es(PC.f.q)+'" onchange="pcSet(\'q\',this.value)"></div>'+
-    '<div class="pc-seg">'+progs.map(p=>fc('p',p,p==='BT'?'BT-only':p)).join('')+'</div>'+
+    '<div class="pc-seg">'+progs.map(p=>fc('p',p,pn(p))).join('')+'</div>'+
     '<select onchange="pcSet(\'who\',this.value)"><option value="">All supers / CMs</option>'+who.map(w=>'<option'+(w===PC.f.who?' selected':'')+'>'+es(w)+'</option>').join('')+'</select>'+
     (nF?'<button class="pc-clear" onclick="pcClear()">Clear '+nF+' filter'+(nF>1?'s':'')+' &#10005;</button>':'')+'</div>'+
     '<details class="pc-more"'+(PC.f.pr.length||PC.f.st.length||PC.opts.showHold||PC.opts.phase4?' open':'')+'><summary>More filters</summary><div class="pc-frow"><span class="pc-fl">Priority</span><div class="pc-seg">'+['1','2','Watch','none'].map(k=>fc('pr',k,PRI_LABEL[k])).join('')+'</div></div>'+
@@ -231,7 +232,7 @@ window.renderPrecon=function(){
     const days=x.days==null?'<span class="pc-sub">—</span>':'<b>'+(x.days_ge?'≥':'')+x.days+'</b><span class="pc-sub">d</span>';
     return'<tr><td class="pc-pri">'+chip(x.priority)+'</td><td class="pc-act" data-l="Action"><div class="pc-at">'+(t?es(t.rule.Action):'<span class="pc-sub">No action rule</span>')+more+'</div><div class="pc-sub">'+(t?es(t.fields.join('; ')):es(x.scope_value||''))+'</div></td>'+
       '<td data-l="Job"><div class="pc-job">'+es(x.address)+'</div><div class="pc-sub">'+es(x.applicant)+' · '+es(x.record_id)+btn+'</div></td>'+
-      '<td data-l="Program"><span class="pc-prog" title="'+es(PCE.PROGRAM_NAMES[x.program]||x.bt_group||'')+'">'+(x.program==='BT'?'BT':x.program)+'</span>'+(x.program==='BT'&&x.bt_group?'<div class="pc-sub">'+es(x.bt_group)+'</div>':'')+'</td>'+
+      '<td data-l="Program"><span class="pc-prog" title="'+es(PCE.PROGRAM_NAMES[x.program]||x.bt_group||'')+'">'+(x.program==='BT'?'BT':pn(x.program))+'</span>'+(x.program==='BT'&&x.bt_group?'<div class="pc-sub">'+es(x.bt_group)+'</div>':'')+'</td>'+
       '<td data-l="Stage"><span class="pc-stage">'+es(x.stage||'—')+'</span></td><td class="pc-days" data-l="Waiting" title="'+es(x.days_basis||'')+'">'+days+'</td>'+
       '<td data-l="Owner">'+(es(x.superintendent)||'<span class="pc-sub">—</span>')+(x.cm?'<div class="pc-sub">CM: '+es(x.cm)+'</div>':x.program_cm?'<div class="pc-sub" title="Program CM">('+es(x.program_cm)+')</div>':'')+'</td>'+
       '<td class="pc-go">'+(x.bt?'<a href="#" onclick="pcOpenJob(\''+es(String(x.bt.address).replace(/'/g,"\\'"))+'\');return false">Open &#8250;</a>':'')+'</td></tr>';};
@@ -246,7 +247,7 @@ window.renderPrecon=function(){
   const detail=x=>{const j=x.bt||{};const rec=(PC.pulls[x.program]&&PC.pulls[x.program].records.find(r=>String(r.ID)===x.record_id))||null;
     const scopeF=PCE.SCOPE[x.program];
     const rules='<div class="pc-dcol"><h4>'+(x.hits.length>1?'Actions ('+x.hits.length+')':'Action')+'</h4>'+(x.hits.length?x.hits.map(hh=>'<div class="pc-hit">'+chip(hh.rule.Priority)+'<div><b>'+es(hh.rule.Action)+'</b><div class="pc-sub">'+es(hh.fields.join('; '))+'</div></div></div>').join(''):'<div class="pc-sub">No rule matched.</div>')+'</div>';
-    const prog='<div class="pc-dcol"><h4>'+(x.program==='BT'?'Buildertrend job':'Program record · '+x.program)+'</h4>'+
+    const prog='<div class="pc-dcol"><h4>'+(x.program==='BT'?'Buildertrend job':'Program record · '+pn(x.program))+'</h4>'+
       (x.program!=='BT'?kv(scopeF||'Status',x.scope_value)+(rec?kv('Status updated',fdt(rec['Status Updated']))+(x.primary&&x.primary.src==='program'&&x.primary.field!==scopeF?kv(x.primary.field,rec[x.primary.field]):''):'')+kv('Record ID',x.record_id)+kv('Matched to BT by',x.match==='id'?'ID':x.match):kv('Group',x.bt_group)+kv('Prefix',x.record_id))+
       kv('Days waiting',x.days==null?'':(x.days_ge?'≥ ':'')+x.days)+
       '<h4>People</h4>'+kv('Superintendent',x.superintendent)+kv('CM',x.cm)+kv('Program CM',x.program_cm)+'</div>';
@@ -262,7 +263,7 @@ window.renderPrecon=function(){
   PC._detail=detail;
   const COL={'1':'#ef4444','2':'#f59e0b','Watch':'#3b82f6','none':'#94a3b8'};
   const empty=m=>'<div class="pc-none">'+m+'</div>';
-  const jl=(arr)=>'<ul class="pc-list">'+arr.slice().sort((p,q)=>((q.days==null?-1:q.days)-(p.days==null?-1:p.days))||p.address.localeCompare(q.address)).map(x=>'<li onclick="pcDrawer(\''+es(x.job_key).replace(/'/g,"\\'")+'\')"><i class="pc-ldot" style="background:'+COL[x.priority]+'"></i><span class="pc-la">'+es(x.address)+'</span><span class="pc-prog">'+x.program+'</span><span class="pc-ld">'+(x.days==null?'—':(x.days_ge?'≥':'')+x.days+'d')+'</span><span class="pc-lo">&#8250;</span></li>').join('')+'</ul>';
+  const jl=(arr)=>'<ul class="pc-list">'+arr.slice().sort((p,q)=>((q.days==null?-1:q.days)-(p.days==null?-1:p.days))||p.address.localeCompare(q.address)).map(x=>'<li onclick="pcDrawer(\''+es(x.job_key).replace(/'/g,"\\'")+'\')"><i class="pc-ldot" style="background:'+COL[x.priority]+'"></i><span class="pc-la">'+es(x.address)+'</span><span class="pc-prog">'+pn(x.program)+'</span><span class="pc-ld">'+(x.days==null?'—':(x.days_ge?'≥':'')+x.days+'d')+'</span><span class="pc-lo">&#8250;</span></li>').join('')+'</ul>';
   const ours=[...p1,...p2];
   // donut
   const tot=fl.length;let acc=0;const RD=52,C=2*Math.PI*RD;
@@ -283,7 +284,7 @@ window.renderPrecon=function(){
     '<section class="pc-chart pc-sel"><h4>'+(sel?es(sel):'Jobs')+' <span class="pc-count">'+selG.length+'</span></h4>'+(selG.length?jl(selG):empty('Pick an action.'))+'</section></div>';
   // program stacked bars
   const pm=Math.max(1,...progs.map(p=>fl.filter(x=>x.program===p).length));
-  const progChart='<div class="pc-chart pc-progc"><h4>By program <span>click to filter</span></h4><div class="pc-pb">'+progs.map(p=>{const it=fl.filter(x=>x.program===p);return'<div class="pc-pr"><span class="pc-pl" onclick="pcCell(\''+p+'\',\'\')">'+(p==='BT'?'BT-only':p)+'</span><span class="pc-pt">'+['1','2','Watch','none'].map(k=>{const n=it.filter(x=>x.priority===k).length;return n?'<span title="'+PRI_LABEL[k]+': '+n+'" onclick="pcCell(\''+p+'\',\''+k+'\')" style="width:'+(n/pm*100)+'%;background:'+COL[k]+'"></span>':'';}).join('')+'</span><b>'+it.length+'</b></div>';}).join('')+'</div></div>';
+  const progChart='<div class="pc-chart pc-progc"><h4>By program <span>click to filter</span></h4><div class="pc-pb">'+progs.map(p=>{const it=fl.filter(x=>x.program===p);return'<div class="pc-pr"><span class="pc-pl" onclick="pcCell(\''+p+'\',\'\')">'+pn(p)+'</span><span class="pc-pt">'+['1','2','Watch','none'].map(k=>{const n=it.filter(x=>x.priority===k).length;return n?'<span title="'+PRI_LABEL[k]+': '+n+'" onclick="pcCell(\''+p+'\',\''+k+'\')" style="width:'+(n/pm*100)+'%;background:'+COL[k]+'"></span>':'';}).join('')+'</span><b>'+it.length+'</b></div>';}).join('')+'</div></div>';
   h+='<div class="pc-grid3">'+donut+aging+progChart+'</div>';
   // calendar
   const EV=[['preConMeetingScheduled','Pre-con meeting','#8b5cf6'],['isvScheduled','ISV scheduled','#06b6d4'],['preConDeadline','Pre-con deadline','#ef4444'],['ntp','NTP','#10b981'],['ntpP','NTP-P','#34d399'],['bldgPermitSubmitted','Permit submitted','#f59e0b'],['permitKickedBack','Permit kicked back','#f97316'],['permitResubmitted','Permit resubmitted','#eab308'],['bldgPermitIssued','Permit issued','#84cc16'],['costEstimateSubmitted','CE submitted','#3b82f6'],['ceReturned','CE returned','#ec4899'],['ceResubmitted','CE resubmitted','#6366f1']];
@@ -299,7 +300,7 @@ window.renderPrecon=function(){
   const cells=days.map(d=>{const k=k8(d);const e=evs[k]||[];const out=cal.mode==='month'&&d.getUTCMonth()!==am2-1;const ty=[...new Map(e.map(v=>[v.l,v.c])).entries()];
     return'<button class="pc-cd'+(out?' out':'')+(k===today?' today':'')+(k===cal.day?' on':'')+(e.length?' has':'')+'" onclick="pcCal(\'day\',\''+k+'\')"><span class="pc-cn">'+d.getUTCDate()+'</span>'+(cal.mode==='week'?e.slice(0,6).map(v=>'<span class="pc-cev" style="--c:'+v.c+'">'+es(v.x.address)+'</span>').join('')+(e.length>6?'<span class="pc-cmore">+'+(e.length-6)+'</span>':''):'<span class="pc-dots">'+ty.slice(0,4).map(([l,c])=>'<i style="background:'+c+'"></i>').join('')+'</span>'+(e.length>1?'<span class="pc-cc">'+e.length+'</span>':''))+'</button>';}).join('');
   const dayEv=cal.day&&evs[cal.day]||[];
-  const dayList=cal.day?'<div class="pc-cdl"><h5>'+new Date(cal.day+'T12:00:00Z').toLocaleString('en-US',{weekday:'long',month:'short',day:'numeric',timeZone:'UTC'})+'</h5>'+(dayEv.length?'<ul class="pc-list">'+dayEv.map(v=>'<li onclick="pcDrawer(\''+es(v.x.job_key).replace(/'/g,"\\'")+'\')"><i class="pc-ldot" style="background:'+v.c+'"></i><span class="pc-la">'+es(v.x.address)+'</span><span class="pc-evl">'+es(v.l)+'</span><span class="pc-prog">'+v.x.program+'</span><span class="pc-lo">&#8250;</span></li>').join('')+'</ul>':'<div class="pc-none">No events.</div>')+'</div>':'';
+  const dayList=cal.day?'<div class="pc-cdl"><h5>'+new Date(cal.day+'T12:00:00Z').toLocaleString('en-US',{weekday:'long',month:'short',day:'numeric',timeZone:'UTC'})+'</h5>'+(dayEv.length?'<ul class="pc-list">'+dayEv.map(v=>'<li onclick="pcDrawer(\''+es(v.x.job_key).replace(/'/g,"\\'")+'\')"><i class="pc-ldot" style="background:'+v.c+'"></i><span class="pc-la">'+es(v.x.address)+'</span><span class="pc-evl">'+es(v.l)+'</span><span class="pc-prog">'+pn(v.x.program)+'</span><span class="pc-lo">&#8250;</span></li>').join('')+'</ul>':'<div class="pc-none">No events.</div>')+'</div>':'';
   h+='<section class="pc-chart pc-cal"><div class="pc-calh"><h4>Calendar</h4><div class="pc-calnav"><button onclick="pcCal(\'prev\')" aria-label="Previous">&#8249;</button><b>'+title+'</b><button onclick="pcCal(\'next\')" aria-label="Next">&#8250;</button><button class="pc-calt" onclick="pcCal(\'today\')">Today</button></div><div class="pc-seg pc-calm"><button class="pc-f'+(cal.mode==='month'?' on':'')+'" onclick="pcCal(\'mode\',\'month\')">Month</button><button class="pc-f'+(cal.mode==='week'?' on':'')+'" onclick="pcCal(\'mode\',\'week\')">Week</button></div></div>'+
     '<div class="pc-cg '+cal.mode+'">'+['S','M','T','W','T','F','S'].map(w=>'<span class="pc-wk">'+w+'</span>').join('')+cells+'</div>'+
     '<div class="pc-cleg">'+EV.filter(e=>used.has(e[1])).map(e=>'<span><i style="background:'+e[2]+'"></i>'+e[1]+'</span>').join('')+(used.size?'':'<span class="pc-sub">No dated events in this '+cal.mode+'.</span>')+'</div>'+dayList+'</section>';
@@ -315,18 +316,18 @@ window.renderPrecon=function(){
   if(PC.chg.our)ch=ch.filter(c=>c.nowY);if(PC.chg.entered)ch=ch.filter(c=>c.entered);
   ch.sort((a,b)=>String(b.changed_at).localeCompare(String(a.changed_at)));
   h+=fold('pc-f-c','Recent changes',ch.length,'<div class="pc-frow" style="margin-bottom:10px"><label class="pc-sw"><input type="checkbox" '+(PC.chg.our?'checked':'')+' onchange="pcChg(\'our\',this.checked)"> Now in our court</label><label class="pc-sw"><input type="checkbox" '+(PC.chg.entered?'checked':'')+' onchange="pcChg(\'entered\',this.checked)"> Entered our court</label></div>'+
-    (ch.length?'<div class="pc-tw pc-scroll"><table class="pc-q"><thead><tr><th>Changed (ET)</th><th>Program</th><th>ID</th><th>Address</th><th>Applicant</th><th>Field</th><th>Old → New</th><th>Our court</th><th>Source</th></tr></thead><tbody>'+ch.slice(0,300).map(c=>'<tr><td class="pc-nw">'+(c.changed_at_precision==='detected'?'≤ ':'')+fmtET(c.changed_at)+'</td><td><span class="pc-prog">'+c.program+'</span></td><td class="pc-nw">'+es(c.record_id)+'</td><td>'+es(c.address)+'</td><td>'+es(c.applicant)+'</td><td>'+es(c.field)+'</td><td><span class="pc-sub">'+es(c.old_value)+'</span> → <b>'+es(c.new_value)+'</b></td><td>'+(c.entered?'<span class="pc-chip pc-p1">Entered</span>':c.nowY?'Yes':'')+'</td><td class="pc-sub">'+es(c.source)+'</td></tr>').join('')+'</tbody></table></div>'
+    (ch.length?'<div class="pc-tw pc-scroll"><table class="pc-q"><thead><tr><th>Changed (ET)</th><th>Program</th><th>ID</th><th>Address</th><th>Applicant</th><th>Field</th><th>Old → New</th><th>Our court</th><th>Source</th></tr></thead><tbody>'+ch.slice(0,300).map(c=>'<tr><td class="pc-nw">'+(c.changed_at_precision==='detected'?'≤ ':'')+fmtET(c.changed_at)+'</td><td><span class="pc-prog">'+pn(c.program)+'</span></td><td class="pc-nw">'+es(c.record_id)+'</td><td>'+es(c.address)+'</td><td>'+es(c.applicant)+'</td><td>'+es(c.field)+'</td><td><span class="pc-sub">'+es(c.old_value)+'</span> → <b>'+es(c.new_value)+'</b></td><td>'+(c.entered?'<span class="pc-chip pc-p1">Entered</span>':c.nowY?'Yes':'')+'</td><td class="pc-sub">'+es(c.source)+'</td></tr>').join('')+'</tbody></table></div>'
       :'<div class="pc-none">No changes in the last 7 days. Changes appear after a second pull of the same program, or from “Updated” dates on the first pull.</div>'),'last 7 days, pre-con scope');
   // gaps
   const g=res.gaps;const um=Object.entries(g.unmapped).map(([k,n])=>{const[p,f,v]=k.split('|');return{p,f,v,n};}).sort((a,b)=>b.n-a.n);
   const gl=(t,arr,fn)=>'<details class="pc-gap"><summary><span>'+t+'</span> <b class="'+(arr.length?'':'z')+'">('+arr.length+')</b></summary><div class="pc-gl">'+(arr.length?arr.slice(0,300).map(fn).join(''):'<div class="pc-sub">None</div>')+'</div></details>';
-  const idf=x=>'<div>'+x.program+' · '+es(x.id)+' · '+es(x.address||'')+'</div>';
+  const idf=x=>'<div>'+pn(x.program)+' · '+es(x.id)+' · '+es(x.address||'')+'</div>';
   const gTot=g.unknownRfi.length+g.unknownSeptic.length+g.unmatched.length+g.ambiguous.length+g.stageMismatch.length+um.length+g.missingFields.length;
   h+=fold('pc-f-g','Data gaps',gTot,'<div class="pc-gaps">'+
-    gl('Unknown RFI',g.unknownRfi,idf)+gl('Unknown septic',g.unknownSeptic,x=>'<div>'+x.program+' · '+es(x.id)+' · '+es(x.address)+' · <i>'+es(x.septic||'blank')+'</i></div>')+
-    gl('Unmatched (no BT job by case # or address)',g.unmatched,x=>'<div>'+x.program+' · '+es(x.id)+' · '+es(x.address||'')+' · '+es(x.applicant||'')+'</div>')+
-    gl('Ambiguous matches',g.ambiguous,idf)+gl('Stage mismatch (program pre-con, BT 20+)',g.stageMismatch,x=>'<div>'+x.program+' · '+es(x.id)+' · '+es(x.address)+' · '+es(x.program_value)+' vs BT '+es(x.bt_status)+'</div>')+
-    gl('Unmapped values',um,x=>'<div>'+x.p+' · '+es(x.f)+' = <b>'+es(x.v)+'</b> ('+x.n+')</div>')+gl('Missing fields',g.missingFields,x=>'<div>'+x.program+' · '+es(x.field)+'</div>')+'</div>','matching & data quality');
+    gl('Unknown RFI',g.unknownRfi,idf)+gl('Unknown septic',g.unknownSeptic,x=>'<div>'+pn(x.program)+' · '+es(x.id)+' · '+es(x.address)+' · <i>'+es(x.septic||'blank')+'</i></div>')+
+    gl('Unmatched (no BT job by case # or address)',g.unmatched,x=>'<div>'+pn(x.program)+' · '+es(x.id)+' · '+es(x.address||'')+' · '+es(x.applicant||'')+'</div>')+
+    gl('Ambiguous matches',g.ambiguous,idf)+gl('Stage mismatch (program pre-con, BT 20+)',g.stageMismatch,x=>'<div>'+pn(x.program)+' · '+es(x.id)+' · '+es(x.address)+' · '+es(x.program_value)+' vs BT '+es(x.bt_status)+'</div>')+
+    gl('Unmapped values',um,x=>'<div>'+x.p+' · '+es(x.f)+' = <b>'+es(x.v)+'</b> ('+x.n+')</div>')+gl('Missing fields',g.missingFields,x=>'<div>'+pn(x.program)+' · '+es(x.field)+'</div>')+'</div>','matching & data quality');
   h+=fold('pc-f-r','Rules',PC.rules.length,'<div class="pc-frow"><span class="pc-sub">The queue is driven by '+PC.rules.length+' status → priority rules ('+(PC.rulesSource==='seed'?'bundled seed':'Supabase')+'). Read-only.</span><button class="btn btn-ol pc-ol" onclick="openPcRules()">View rules</button></div>','read-only');
   h+='</div>';
   const op=[...body.querySelectorAll('details[id]')].filter(d=>d.open).map(d=>d.id),mo=body.querySelector('.pc-more')?.open,ao=body.querySelector('.pc-asof')?.open;
