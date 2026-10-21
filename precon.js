@@ -288,7 +288,7 @@ window.renderPrecon=function(){
   h+='<div class="pc-grid3">'+donut+aging+progChart+'</div>';
   // building permit breakdown (BT jobs not yet started)
   {const isD=v=>v!=null&&/\d/.test(String(v))&&String(v).trim()!=='0';
-   const pre=btJobs().filter(j=>String(j.constructionStage||'').toUpperCase()==='PRESALE'&&!/^00[AB]\b/i.test(String(j.jobStatus||'').trim()));
+   const pre=((typeof proj!=='undefined'&&Array.isArray(proj)&&proj.length)?proj:btJobs()).filter(j=>String(j.constructionStage||'').toUpperCase()==='PRESALE'&&!/^00[AB]\b/i.test(String(j.jobStatus||'').trim()));
    const na=[],iss=[],sub=[],ns=[];
    pre.forEach(j=>{if(j.bldgPermitSubmitted==='N/A'||j.bldgPermitIssued==='N/A')na.push(j);else if(isD(j.bldgPermitIssued))iss.push(j);else if(isD(j.bldgPermitSubmitted))sub.push(j);else ns.push(j);});
    const B={iss:['Permit issued','#10b981',iss,'bldgPermitIssued'],sub:['Submitted · pending','#f59e0b',sub,'bldgPermitSubmitted'],ns:['Not submitted','#ef4444',ns,''],na:['Permit not required','#94a3b8',na,'']};
