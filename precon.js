@@ -303,7 +303,7 @@ window.renderPrecon=function(){
   const bm=Math.max(1,...bc.map(b=>b.p1+b.p2));const unk=ours.filter(x=>x.days==null).length;
   const aging='<div class="pc-chart"><h4>Days waiting <span>P1 + P2</span></h4><div class="pc-age">'+bc.map(b=>'<div class="pc-ab"><div class="pc-abar"><div style="height:'+(b.p2/bm*100)+'%;background:'+COL['2']+'"></div><div style="height:'+(b.p1/bm*100)+'%;background:'+COL['1']+'"></div></div><b>'+(b.p1+b.p2)+'</b><span>'+b.l+'</span></div>').join('')+'</div>'+(unk?'<div class="pc-cfoot">'+unk+' without a status date</div>':'')+'</div>';
   // actions bar chart
-  const isPermAct=a=>/permit/i.test(a||'')||a==='Push to pre-con / NTP';
+  const isPermAct=a=>/permit/i.test(a||'')||a==='Push to pre-con / NTP'||a==='Submit NTP request';
   const isPermHit=h=>isPermAct(h.rule.Action)||/permit/i.test(String(h.field||'')+' '+String(h.value||'')+' '+String(h.rule.Value||''));
   const actNP=x=>{const hs=(x.hits||[]).filter(h=>(h.rule.Priority==='1'||h.rule.Priority==='2')&&!isPermHit(h));return hs.length?hs[0].rule.Action:null;};
   const groups={};ours.forEach(x=>{const a=actNP(x);if(!a)return;(groups[a]=groups[a]||{p1:[],p2:[]})[x.priority==='1'?'p1':'p2'].push(x);});
