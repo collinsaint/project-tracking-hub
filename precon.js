@@ -311,9 +311,9 @@ window.renderPrecon=function(){
   // Construction-readiness groups built from the tracker's Presale list (withdrawn excluded)
   const pres=((typeof proj!=='undefined'&&Array.isArray(proj)&&proj.length)?proj:btJobs()).filter(j=>String(j.constructionStage||'').toUpperCase()==='PRESALE'&&!isWithdrawn(j));
   // Georgia HRRP: program status '04c. Pending Notice to Proceed' counts as NTP-P (Collin: these can start once the permit is issued)
-  const gaNtp=new Map();res.queue.forEach(x=>{if(x.program!=='GA'||!x.bt)return;const rec=PC.pulls.GA&&PC.pulls.GA.records.find(r=>String(r.ID)===x.record_id);if(rec&&/^04c\b/i.test(String(rec.Status||'').trim()))gaNtp.set(x.bt,String(rec.Status));});
+  const gaNtp=new Map();res.queue.forEach(x=>{if(x.program!=='GA'||!x.bt)return;const rec=PC.pulls.GA&&PC.pulls.GA.records.find(r=>String(r.ID)===x.record_id);if(rec&&(/^04c\b/i.test(String(rec.Status||'').trim())||/Pending Questionnaire/i.test(String(rec['PreCon - PCC Substatus']||''))))gaNtp.set(x.bt,String(rec.Status)+(rec['PreCon - PCC Substatus']?' · '+rec['PreCon - PCC Substatus']:''));});
   const hasNtpP=j=>!!pmD(j.ntpP)||gaNtp.has(j);
-  // Georgia NTP-P jobs (BT ntpP or GA status 04c) go to construction even without a permit issued date
+  // Georgia NTP-P jobs (BT ntpP, GA status 04c, or PCC substatus Pending Questionnaire per Collin) go to construction even without a permit issued date
   const pushC=pres.filter(j=>hasNtpP(j)&&(pmD(j.bldgPermitIssued)||/Georgia HRRP/i.test(j.program||''))).map(j=>Object.assign({},j,{_gaSt:gaNtp.get(j)||''}));
   const today0=new Date(new Date().toLocaleDateString('en-CA',{timeZone:'America/New_York'})+'T00:00:00');
   const PAPER={RFL:{s:'Pre-Construction Meeting Scheduled Date',c:'Pre-Construction Meeting Completed Date',st:'Preconstruction Status'},OC:{s:'PreCon - Pre-Construction Meeting Scheduled Date',c:'Pre-Construction Meeting Completed Date',st:'PreCon - Most Advanced Status Export'}};
