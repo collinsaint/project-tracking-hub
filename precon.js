@@ -176,29 +176,31 @@ const pmFmt=d=>d?d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:
 const pmHold=j=>/^00B/i.test(String(j.jobStatus||'').trim());
 
 // compact insight charts under the What-needs-doing side panel
-function pcInsight(items,title){const v=items.filter(i=>i.d!=null&&isFinite(i.d)&&i.d>=0);if(!v.length)return'';const ds=v.map(i=>i.d).sort((a,b)=>a-b);
+function pcPstat(arr){const m={};arr.forEach(j=>{m[j._pst]=(m[j._pst]||0)+1;});const e=Object.entries(m).sort((a,b)=>b[1]-a[1]);if(!e.length)return'';const mx=Math.max(...e.map(x=>x[1]));const cur=(PC.ui.pt||{}).ps||'';
+  return'<div class="pc-ins"><h5>Building permit status</h5><p class="pc-ins-n">From BT Building Permit status. Tap a row to filter the table.</p>'+e.map(([k,n])=>'<button class="pc-ins-r pc-ins-b'+(cur===k?' on':'')+'" onclick="pcPermSet(\'ps\','+(cur===k?'\'\'':'\''+es(k).replace(/'/g,"\\'")+'\'')+')"><span>'+es(k)+'</span><i><s style="width:'+(n/mx*100)+'%;background:#14b8a6"></s></i><b>'+n+'</b></button>').join('')+'</div>';}
+function pcInsight(items,title,note){const v=items.filter(i=>i.d!=null&&isFinite(i.d)&&i.d>=0);if(!v.length)return'';const ds=v.map(i=>i.d).sort((a,b)=>a-b);
   const avg=Math.round(ds.reduce((a,b)=>a+b,0)/ds.length),med=ds.length%2?ds[(ds.length-1)/2]:Math.round((ds[ds.length/2-1]+ds[ds.length/2])/2),mx=ds[ds.length-1];
   const B=[['0–30',0,30,'#10b981'],['31–60',31,60,'#eab308'],['61–90',61,90,'#f97316'],['90+',91,1e9,'#ef4444']].map(b=>({l:b[0],c:b[3],n:ds.filter(d=>d>=b[1]&&d<=b[2]).length}));
   const col=d=>d<=30?'#10b981':d<=60?'#eab308':d<=90?'#f97316':'#ef4444';
   const pm={};v.forEach(i=>{(pm[i.p]=pm[i.p]||[]).push(i.d);});const pr=Object.entries(pm).map(([k,a])=>({k,n:a.length,avg:Math.round(a.reduce((x,y)=>x+y,0)/a.length)})).sort((a,b)=>b.avg-a.avg);const pmax=Math.max(1,...pr.map(r=>r.avg));
   const top=v.slice().sort((a,b)=>b.d-a.d).slice(0,8);
-  return'<div class="pc-ins"><h5>'+es(title)+'</h5><div class="pc-ins-k"><div><b>'+avg+'d</b><span>Average</span></div><div><b>'+med+'d</b><span>Median</span></div><div><b>'+mx+'d</b><span>Longest</span></div><div><b>'+v.length+'</b><span>Jobs</span></div></div>'+
+  return'<div class="pc-ins"><h5>'+es(title)+'</h5>'+(note?'<p class="pc-ins-n">'+es(note)+'</p>':'')+'<div class="pc-ins-k"><div><b>'+avg+'d</b><span>Average</span></div><div><b>'+med+'d</b><span>Median</span></div><div><b>'+mx+'d</b><span>Longest</span></div><div><b>'+v.length+'</b><span>Jobs</span></div></div>'+
    '<div class="pc-ins-s">Aging</div><div class="pc-ins-age">'+B.map(b=>b.n?'<span style="flex:'+b.n+';background:'+b.c+'" title="'+b.l+' days: '+b.n+'">'+b.n+'</span>':'').join('')+'</div><div class="pc-ins-leg">'+B.map(b=>'<span><i style="background:'+b.c+'"></i>'+b.l+'d <b>'+b.n+'</b></span>').join('')+'</div>'+
    (pr.length>1?'<div class="pc-ins-s">Average wait by program</div>'+pr.map(r=>'<div class="pc-ins-r"><span>'+es(r.k)+' <em>'+r.n+'</em></span><i><s style="width:'+(r.avg/pmax*100)+'%;background:'+col(r.avg)+'"></s></i><b>'+r.avg+'d</b></div>').join(''):'')+
    '<div class="pc-ins-s">Longest waiting</div>'+top.map(i=>'<div class="pc-ins-r"><span>'+es(String(i.l||'').split(',')[0])+'</span><i><s style="width:'+(i.d/Math.max(1,mx)*100)+'%;background:'+col(i.d)+'"></s></i><b>'+i.d+'d</b></div>').join('')+'</div>';}
-window.pcPermSet=(k,v)=>{const t=PC.ui.pt=PC.ui.pt||{};if(k==='sort'){if(t.sort===v)t.dir=-(t.dir||1);else{t.sort=v;t.dir=1;}}else if(k==='clear'){t.prog='';t.st='';t.hold='hide';}else t[k]=v;pcPermTbl(k==='q');};
+window.pcPermSet=(k,v)=>{const t=PC.ui.pt=PC.ui.pt||{};if(k==='sort'){if(t.sort===v)t.dir=-(t.dir||1);else{t.sort=v;t.dir=1;}}else if(k==='clear'){t.prog='';t.st='';t.ps='';t.hold='hide';}else t[k]=v;if(k==='ps'){renderPrecon();return;}pcPermTbl(k==='q');};
 window.pcPermTbl=function(keepFocus){if(!PC._perm)return;const box=document.getElementById(PC._perm.el||'pc-pml');if(!box)return;const {b}=PC._perm;const df=b[3];const dcols=Array.isArray(df)?df:(df?[[df,df==='bldgPermitIssued'?'Issued':'Submitted']]:[]);const tcol=b[4]||null;const tcol2=b[6]||null;const tcol3=b[7]||null;
   const t=PC.ui.pt=PC.ui.pt||{};t.sort=t.sort||'asg';t.dir=t.dir||1;t.q=t.q||'';t.prog=t.prog||'';t.st=t.st||'';t.hold=t.hold||'hide';
   const now=Date.now();
   const rows=b[2].map(j=>{const a=pmD(j.assignmentReceived);const dc=dcols.map(([f])=>pmD(j[f]));return{dc,tx:tcol?String(j[tcol[0]]||''):'',tx2:tcol2?String(j[tcol2[0]]||''):'',tx3:tcol3?String(j[tcol3[0]]||''):'',j,addr:String(j.address||''),pre:String(j.projectNumber||''),prog:pmProg(j),st:String(j.jobStatus||''),hold:pmHold(j),asg:a,days:a?Math.floor((now-a.getTime())/864e5):null,pd};});
   const progs=[...new Set(rows.map(r=>r.prog))].sort(),sts=[...new Set(rows.map(r=>r.st))].sort((x,y)=>x.localeCompare(y,undefined,{numeric:true}));
   const q=t.q.trim().toLowerCase();
-  let f=rows.filter(r=>(!q||r.addr.toLowerCase().includes(q)||r.pre.toLowerCase().includes(q))&&(!t.prog||r.prog===t.prog)&&(!t.st||r.st===t.st)&&(t.hold==='all'||(t.hold==='only'?r.hold:!r.hold)));
+  let f=rows.filter(r=>(!q||r.addr.toLowerCase().includes(q)||r.pre.toLowerCase().includes(q))&&(!t.prog||r.prog===t.prog)&&(!t.st||r.st===t.st)&&(!t.ps||String(r.j._pst||'')===t.ps)&&(t.hold==='all'||(t.hold==='only'?r.hold:!r.hold)));
   const key={addr:r=>r.addr.toLowerCase(),prog:r=>r.prog,st:r=>r.st,asg:r=>r.asg?r.asg.getTime():null,days:r=>r.days,tx:r=>r.tx,tx2:r=>r.tx2,tx3:r=>r.tx3}[t.sort]||(/^d\d$/.test(t.sort)?(r=>{const d=r.dc[+t.sort[1]];return d?d.getTime():null;}):(r=>r.asg?r.asg.getTime():null));
   f.sort((x,y)=>{const a=key(x),c=key(y);if(a==null&&c==null)return 0;if(a==null)return 1;if(c==null)return -1;return(a<c?-1:a>c?1:0)*t.dir;});
   const blanks=rows.filter(r=>!r.asg).length;
   const th=(k,l,cls)=>'<th class="'+(cls||'')+(t.sort===k?' on':'')+'"><button onclick="pcPermSet(\'sort\',\''+k+'\')">'+l+'<i>'+(t.sort===k?(t.dir>0?'▲':'▼'):'↕')+'</i></button></th>';
-  const nAct=(t.prog?1:0)+(t.st?1:0)+(t.hold!=='hide'?1:0);const opt=(arr,cur,all)=>'<option value="">'+all+'</option>'+arr.map(v=>'<option'+(v===cur?' selected':'')+' value="'+es(v)+'">'+es(v)+'</option>').join('');
+  const nAct=(t.prog?1:0)+(t.st?1:0)+(t.ps?1:0)+(t.hold!=='hide'?1:0);const opt=(arr,cur,all)=>'<option value="">'+all+'</option>'+arr.map(v=>'<option'+(v===cur?' selected':'')+' value="'+es(v)+'">'+es(v)+'</option>').join('');
   
   box.innerHTML='<div class="pc-pth"><h5>'+b[0]+' <span class="pc-count">'+f.length+(f.length!==rows.length?' of '+rows.length:'')+'</span></h5>'+(blanks?'<span class="pc-sub">'+blanks+' without an assignment date</span>':'')+'</div>'+
     '<div class="pc-ptf"><input id="pc-ptq" type="search" placeholder="Search address or prefix" value="'+es(t.q)+'" oninput="pcPermSet(\'q\',this.value)">'+
@@ -214,7 +216,7 @@ window.pcCell=(p,pr)=>{PC.f.p=p?[p]:[];PC.f.pr=pr?[pr]:[];writeHash();renderPrec
 window.pcClear=()=>{PC.f={p:[],pr:[],st:[],who:'',q:''};writeHash();renderPrecon();};
 window.pcChg=(k,v)=>{PC.chg[k]=v;renderPrecon();};
 window.pcOpenJob=addr=>{closePrecon();goToTracker();if(typeof openProjectByAddr==='function')openProjectByAddr(addr);};
-window.pcAct=(k,v)=>{PC.ui=PC.ui||{act:{},open:{}};PC.ui.act[k]=v;renderPrecon();};
+window.pcAct=(k,v)=>{PC.ui=PC.ui||{act:{},open:{}};PC.ui.act[k]=v;if(k==='bar'&&PC.ui.pt)PC.ui.pt.ps='';renderPrecon();};
 window.pcDrawer=key=>{const x=(PC.result.queue||[]).find(q=>q.job_key===key);if(!x)return;const d=document.getElementById('pc-drawer');const t=x.primary;
   d.querySelector('.pcd-h').innerHTML='<div><div class="pcd-t">'+es(x.address)+'</div><div class="pcd-s"><span class="pc-prog">'+pn(x.program)+'</span>'+es(t?t.rule.Action:'')+(x.days!=null?' · '+(x.days_ge?'≥':'')+x.days+'d':'')+'</div></div><button class="pc-x" onclick="pcDrawerClose()" aria-label="Close">&#10005;</button>';
   d.querySelector('.pcd-b').innerHTML=PC._detail(x);d.querySelector('.pcd-b').scrollTop=0;document.getElementById('pc-dwrap').classList.add('open');};
@@ -232,7 +234,7 @@ function businessDaysSince(d){let n=0;const x=new Date(d);const now=new Date();w
 window.renderPrecon=function(){
   const body=document.getElementById('pc-body');if(!body)return;
   const R=PCE.prepRules(PC.rules);
-  let res;try{res=PCE.evaluate(PC.pulls,btJobs(),PC.rules,{excludeJob:isWithdrawn,phase4:PC.opts.phase4,showHold:PC.opts.showHold,changes:PC.changes,activeFilter:true});}catch(e){reportFail('Pre-Con dashboard',e);return;}
+  let res;try{res=PCE.evaluate(PC.pulls,btJobs(),PC.rules,{excludeJob:j=>isWithdrawn(j)||(!PC.opts.showHold&&pmHold(j)),phase4:PC.opts.phase4,showHold:PC.opts.showHold,changes:PC.changes,activeFilter:true});}catch(e){reportFail('Pre-Con dashboard',e);return;}
   // BT-only jobs must still be active in the hub (no withdrawn / Volusia)
   const act=new Set(btActive().map(j=>j.address));res.queue=res.queue.filter(x=>x.program!=='BT'||act.has(x.address));
   PC.result=res;const now=Date.now();
@@ -323,7 +325,8 @@ window.renderPrecon=function(){
   const groups={};ours.forEach(x=>{const a=actNP(x);if(!a)return;(groups[a]=groups[a]||{p1:[],p2:[]})[x.priority==='1'?'p1':'p2'].push(x);});
   const order=Object.keys(groups).sort((a,b)=>(groups[b].p1.length-groups[a].p1.length)||((groups[b].p1.length+groups[b].p2.length)-(groups[a].p1.length+groups[a].p2.length))||a.localeCompare(b));
   // Construction-readiness groups built from the tracker's Presale list (withdrawn excluded)
-  const pres=((typeof proj!=='undefined'&&Array.isArray(proj)&&proj.length)?proj:btJobs()).filter(j=>String(j.constructionStage||'').toUpperCase()==='PRESALE'&&!isWithdrawn(j));
+  // BT On Hold (00B) is excluded from every What-needs-doing category like withdrawn (Collin); Building permits card keeps its own list
+  const pres=((typeof proj!=='undefined'&&Array.isArray(proj)&&proj.length)?proj:btJobs()).filter(j=>String(j.constructionStage||'').toUpperCase()==='PRESALE'&&!isWithdrawn(j)&&(PC.opts.showHold||!pmHold(j)));
   // Georgia HRRP: program status '04c. Pending Notice to Proceed' counts as NTP-P (Collin: these can start once the permit is issued)
   // Strict per-program construction rules (Collin, Oct 21): BT/tracker first, program export fallback
   const REC=new Map();res.queue.forEach(x=>{if(!x.bt||x.program==='BT')return;const rec=PC.pulls[x.program]&&PC.pulls[x.program].records.find(r=>String(r.ID)===x.record_id);if(rec)REC.set(String(x.bt.projectNumber||x.bt.address),{p:x.program,rec});});
@@ -344,6 +347,12 @@ window.renderPrecon=function(){
     if(k==='pc'){o._ce=ceOk(j,R);o._c2=pcmOk(j,R);o._ok=!!(o._ce&&o._c2);}
     else if(k==='srq'){o._ce='n/a';o._c2=dt(j.ntpP)?'NTP-P '+dt(j.ntpP):'';o._ok=!!o._c2;}
     else{const r=R&&R.p==='GA'?R.rec:null;const st=r?String(r.Status||'').trim():'',sub=r?String(r['PreCon - PCC Substatus']||'').trim():'';o._ce='n/a';o._c2=st?st+(sub?' · '+sub:''):'';o._ok=/^04c\b/i.test(st)&&/Pending Contractor Request/i.test(sub);if(/^04c\b/i.test(st))gaNtp.set(j,st);}
+    // ready-since date: latest required condition date (future dates ignored); status-only conditions noted
+    {const now=new Date();const ds=[],st=[],dn=[],sn=[];const add=(lab,v)=>{const d=pmD(v);if(d&&d<=now){ds.push(d);if(lab!=='permit')dn.push(d);}else{st.push(lab);if(lab!=='permit')sn.push(lab);}};
+     if(!nr)add('permit',j.bldgPermitIssued);
+     if(k==='pc'){const r=R&&R.rec;add('CE',j.costEstimateApproved||(R&&R.p==='PIN'?r['Cost Estimate Approved by Client Date']:''));add('pre-con',j.preConMeetingCompleted||(r?r['Pre-Construction Meeting Completed Date']:''));}
+     else if(k==='srq')add('NTP-P',j.ntpP);else st.push('GA status');
+     o._rd=ds.length?new Date(Math.max(...ds)):null;o._rdNote=st;o._rdN=dn.length?new Date(Math.max(...dn)):null;o._rdNNote=sn;o._pst=String(j.bldgPermitStatus||'').trim()||'(blank)';}
     return o;};
   const allC=pres.map(j=>{const c=evalC(j);return c?Object.assign({},j,c):null;}).filter(Boolean);
   PC._cons=allC;const pushC=allC.filter(j=>j._ok&&j._perm);
@@ -372,7 +381,7 @@ window.renderPrecon=function(){
     return Object.assign({},x.bt||{address:x.address,projectNumber:x.record_id,program:pn(x.program),jobStatus:'(no BT match)'},{_ps:(x.program==='BT'?'BT only':pn(x.program)+': '+(x.scope_value||rec.Status||''))+(sub?' · '+sub:''),_why:why});}):[];
   const selG=sel&&groups[sel]?[...groups[sel].p1,...groups[sel].p2]:[];const spec=cardK?[(cardK==='none'?'Not our court':'Watch'),'#94a3b8',cardRows,[],['_ps','Program status'],'',['_why','Why']]:SPEC[sel];if(spec){PC._perm={k:sel,b:spec,el:'pc-pml2'};setTimeout(pcPermTbl,0);}
   h+='<div class="pc-grid2"><section class="pc-chart pc-acts"><h4>What needs doing <span>P1 + P2 by action · click a bar</span></h4>'+bars+'</section>'+
-    (spec?'<section class="pc-chart pc-sel"><div class="pc-pml" id="pc-pml2"></div>'+pcInsight(spec[2].map(j=>{const a=pmD(j.assignmentReceived);return{l:j.address,p:pmProg(j),d:a?Math.floor((Date.now()-a.getTime())/864e5):null};}),'Days since assignment')+'</section></div>':'<section class="pc-chart pc-sel"><h4>'+(sel?es(sel):'Jobs')+' <span class="pc-count">'+selG.length+'</span></h4>'+(selG.length?jl(selG):empty('Pick an action.'))+pcInsight(selG.map(x=>({l:x.address,p:pn(x.program==='BT'?(x.bt_group||'BT'):x.program),d:x.days==null?null:x.days})),'Days waiting')+'</section></div>');
+    (spec?'<section class="pc-chart pc-sel"><div class="pc-pml" id="pc-pml2"></div>'+(sel==='§push'&&!cardK?pcInsight(spec[2].map(j=>{const a=j._rd||pmD(j.assignmentReceived);return{l:j.address,p:pmProg(j),d:a?Math.floor((Date.now()-a.getTime())/864e5):null};}),'Days since ready to start','Ready date = latest of the job\'s required condition dates (permit issued unless not required, CE approved, pre-con meeting completed, NTP-P for SRQ); future dates ignored. '+spec[2].filter(j=>j._rdNote&&j._rdNote.length).length+' job(s) had a condition with no usable date (met by status only, or a future date), so the other dates were used; '+spec[2].filter(j=>!j._rd).length+' fell back to the assignment date.'):(sel==='§readynp'&&!cardK?pcInsight(spec[2].map(j=>{const a=j._rdN||pmD(j.assignmentReceived);return{l:j.address,p:pmProg(j),d:a?Math.floor((Date.now()-a.getTime())/864e5):null};}),'Days since ready (except permit)','Date = latest of CE approved, pre-con meeting completed, NTP-P (SRQ); future dates ignored. '+spec[2].filter(j=>j._rdNNote&&j._rdNNote.length).length+' job(s) had a condition with no usable date (status only or future), so the other dates were used; '+spec[2].filter(j=>!j._rdN).length+' fell back to the assignment date.')+pcPstat(spec[2]):pcInsight(spec[2].map(j=>{const a=pmD(j.assignmentReceived);return{l:j.address,p:pmProg(j),d:a?Math.floor((Date.now()-a.getTime())/864e5):null};}),'Days since assignment')))+'</section></div>':'<section class="pc-chart pc-sel"><h4>'+(sel?es(sel):'Jobs')+' <span class="pc-count">'+selG.length+'</span></h4>'+(selG.length?jl(selG):empty('Pick an action.'))+pcInsight(selG.map(x=>({l:x.address,p:pn(x.program==='BT'?(x.bt_group||'BT'):x.program),d:x.days==null?null:x.days})),'Days waiting')+'</section></div>');
   // program stacked bars
   const pm=Math.max(1,...progs.map(p=>fl.filter(x=>x.program===p).length));
   const progChart='<div class="pc-chart pc-progc"><h4>By program <span>click to filter</span></h4><div class="pc-pb">'+progs.map(p=>{const it=fl.filter(x=>x.program===p);return'<div class="pc-pr"><span class="pc-pl" onclick="pcCell(\''+p+'\',\'\')">'+pn(p)+'</span><span class="pc-pt">'+['1','2','Watch','none'].map(k=>{const n=it.filter(x=>x.priority===k).length;return n?'<span title="'+PRI_LABEL[k]+': '+n+'" onclick="pcCell(\''+p+'\',\''+k+'\')" style="width:'+(n/pm*100)+'%;background:'+COL[k]+'"></span>':'';}).join('')+'</span><b>'+it.length+'</b></div>';}).join('')+'</div></div>';

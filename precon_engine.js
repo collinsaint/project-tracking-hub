@@ -16,7 +16,7 @@ const ID_PATTERN={LC:/^LC-/i,OC:/^OC-/i,PIN:/^PC-/i,RFL:/^FL-\d{4}-/i,SRQ:/^\d+\
 // Phase 4 rules use BT custom fields; reference_engine.py only used these BT inputs.
 const PHASE1_BT_FIELDS=['Job Status','Permit Status'];
 const PHASE1_DERIVED=['BLDG_PERMIT_SUBMITTED_NOT_ISSUED','BLDG_PERMIT_ISSUED_NO_NTP'];
-const BT_FIELD={'Job Status':'jobStatus','Permit Status':'permitStatus','Building Permit':'bldgPermitStatus','Septic':'septic','Sewer Type':'sewerType','Canopy Status':'canopyStatus'};
+const BT_FIELD={'Job Status':'jobStatus','Permit Status':'permitStatus','Building Permit':'bldgPermitStatus','Septic':'septic','Sewer Type':'sewerType'};
 
 const norm=v=>String(v==null?'':v).replace(/\u00a0/g,' ').replace(/\s+/g,' ').trim().toLowerCase();
 const has=v=>v!==undefined&&v!==null&&String(v).trim()!=='';
