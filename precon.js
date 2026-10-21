@@ -176,7 +176,7 @@ const pmFmt=d=>d?d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:
 const pmHold=j=>/^00B/i.test(String(j.jobStatus||'').trim());
 window.pcPermSet=(k,v)=>{const t=PC.ui.pt=PC.ui.pt||{};if(k==='sort'){if(t.sort===v)t.dir=-(t.dir||1);else{t.sort=v;t.dir=1;}}else t[k]=v;pcPermTbl(k==='q');};
 window.pcPermTbl=function(keepFocus){if(!PC._perm)return;const box=document.getElementById(PC._perm.el||'pc-pml');if(!box)return;const {b}=PC._perm;const df=b[3];const dcols=Array.isArray(df)?df:(df?[[df,df==='bldgPermitIssued'?'Issued':'Submitted']]:[]);const tcol=b[4]||null;
-  const t=PC.ui.pt=PC.ui.pt||{};t.sort=t.sort||'asg';t.dir=t.dir||1;t.q=t.q||'';t.prog=t.prog||'';t.st=t.st||'';t.hold=t.hold||'all';
+  const t=PC.ui.pt=PC.ui.pt||{};t.sort=t.sort||'asg';t.dir=t.dir||1;t.q=t.q||'';t.prog=t.prog||'';t.st=t.st||'';t.hold=t.hold||'hide';
   const now=Date.now();
   const rows=b[2].map(j=>{const a=pmD(j.assignmentReceived);const dc=dcols.map(([f])=>pmD(j[f]));return{dc,tx:tcol?String(j[tcol[0]]||''):'',j,addr:String(j.address||''),pre:String(j.projectNumber||''),prog:pmProg(j),st:String(j.jobStatus||''),hold:pmHold(j),asg:a,days:a?Math.floor((now-a.getTime())/864e5):null,pd};});
   const progs=[...new Set(rows.map(r=>r.prog))].sort(),sts=[...new Set(rows.map(r=>r.st))].sort((x,y)=>x.localeCompare(y,undefined,{numeric:true}));
