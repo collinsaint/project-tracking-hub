@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
@@ -1015,6 +1015,44 @@ body.mob #tbox{width:95vw;max-width:95vw}
 body.mob #tmod{padding:16px 8px 8px}
 body.mob #toast{right:12px;bottom:70px}
 body.mob .edit-bar-inner{flex-wrap:wrap;gap:6px;padding:6px 12px}
+/* ===== Mobile overhaul (fix/mobile-overhaul) ===== */
+/* iOS safe-area: bottom nav clears the home indicator */
+body.mob #mob-nav{height:calc(60px + env(safe-area-inset-bottom,0px));padding-bottom:env(safe-area-inset-bottom,0px)}
+body.mob{padding-bottom:calc(60px + env(safe-area-inset-bottom,0px))}
+body.mob #pc-view{bottom:calc(60px + env(safe-area-inset-bottom,0px))}
+body.mob #hdr{padding-left:max(14px,env(safe-area-inset-left,0px));padding-right:max(14px,env(safe-area-inset-right,0px))}
+/* iOS auto-zooms on focus of inputs <16px */
+body.mob input:not([type=checkbox]):not([type=radio]),body.mob select,body.mob textarea{font-size:16px}
+/* Dashboard: full-screen layer above the sticky tracker header */
+body.mob #dash-view{top:56px;z-index:93;bottom:calc(60px + env(safe-area-inset-bottom,0px))}
+/* Stats grid: no 2-line labels */
+body.mob .sl{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;font-size:7.5px}
+/* Filters panel: clean stacked form */
+body.mob #fpop{padding:14px;gap:12px;align-items:stretch}
+body.mob #fpop .fg{width:100%;align-items:stretch;text-align:left}
+body.mob #fpop .fl{text-align:left}
+body.mob #fpop .fs,body.mob #fpop .msel-btn,body.mob #fpop select,body.mob #fpop input{width:100%;min-height:44px;box-sizing:border-box;border-radius:8px}
+body.mob #fpop-footer{justify-content:stretch}
+body.mob #fpop-footer button{flex:1;min-height:44px}
+/* Tap targets >=36px */
+body.mob .jb{min-height:36px;padding:8px 14px}
+body.mob .mob-sort-btn{min-height:36px;padding:6px 12px}
+body.mob .jq-vb{min-height:36px;padding:8px 12px}
+body.mob .tk-mv,body.mob .tk-del{min-height:36px;padding:8px 12px}
+body.mob .tk-col-add{width:36px;height:36px}
+body.mob .pc-f{min-height:36px;padding:8px 12px}
+body.mob #dclose{min-width:44px;min-height:44px}
+body.mob .dhdr-coq-btn,body.mob #dhdr-coq-btn{min-height:36px}
+body.mob .mob-mbtn{min-height:48px}
+/* JQ program summary cards: use full width */
+body.mob .jq-prog-cards{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 10px;box-sizing:border-box}
+body.mob .jq-pc{min-width:0;padding:8px 6px}
+body.mob .jq-pc:first-child{grid-column:1/-1}
+body.mob .jq-pc-stats{gap:10px}
+body.mob .tb-filter-bar select{flex:1 1 calc(50% - 6px);min-width:0;min-height:40px}
+body.mob .tb-filter-bar button{min-height:36px}
+body.mob #fpop .msel-btn{font-size:16px}
+body.mob .pc-pl{min-height:28px;display:inline-flex;align-items:center}
 
 /* ── WEEKLY UPDATES ─────────────────────────────── */
 #wuview{background:#eef1f6;min-height:calc(100vh - 52px);display:none}
