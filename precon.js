@@ -175,14 +175,14 @@ const pmD=v=>{if(!v||!/\d/.test(String(v)))return null;const d=PCE.parseETDate(S
 const pmFmt=d=>d?d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric',timeZone:'America/New_York'}):'—';
 const pmHold=j=>/^00B/i.test(String(j.jobStatus||'').trim());
 window.pcPermSet=(k,v)=>{const t=PC.ui.pt=PC.ui.pt||{};if(k==='sort'){if(t.sort===v)t.dir=-(t.dir||1);else{t.sort=v;t.dir=1;}}else if(k==='clear'){t.prog='';t.st='';t.hold='hide';}else t[k]=v;pcPermTbl(k==='q');};
-window.pcPermTbl=function(keepFocus){if(!PC._perm)return;const box=document.getElementById(PC._perm.el||'pc-pml');if(!box)return;const {b}=PC._perm;const df=b[3];const dcols=Array.isArray(df)?df:(df?[[df,df==='bldgPermitIssued'?'Issued':'Submitted']]:[]);const tcol=b[4]||null;const tcol2=b[6]||null;
+window.pcPermTbl=function(keepFocus){if(!PC._perm)return;const box=document.getElementById(PC._perm.el||'pc-pml');if(!box)return;const {b}=PC._perm;const df=b[3];const dcols=Array.isArray(df)?df:(df?[[df,df==='bldgPermitIssued'?'Issued':'Submitted']]:[]);const tcol=b[4]||null;const tcol2=b[6]||null;const tcol3=b[7]||null;
   const t=PC.ui.pt=PC.ui.pt||{};t.sort=t.sort||'asg';t.dir=t.dir||1;t.q=t.q||'';t.prog=t.prog||'';t.st=t.st||'';t.hold=t.hold||'hide';
   const now=Date.now();
-  const rows=b[2].map(j=>{const a=pmD(j.assignmentReceived);const dc=dcols.map(([f])=>pmD(j[f]));return{dc,tx:tcol?String(j[tcol[0]]||''):'',tx2:tcol2?String(j[tcol2[0]]||''):'',j,addr:String(j.address||''),pre:String(j.projectNumber||''),prog:pmProg(j),st:String(j.jobStatus||''),hold:pmHold(j),asg:a,days:a?Math.floor((now-a.getTime())/864e5):null,pd};});
+  const rows=b[2].map(j=>{const a=pmD(j.assignmentReceived);const dc=dcols.map(([f])=>pmD(j[f]));return{dc,tx:tcol?String(j[tcol[0]]||''):'',tx2:tcol2?String(j[tcol2[0]]||''):'',tx3:tcol3?String(j[tcol3[0]]||''):'',j,addr:String(j.address||''),pre:String(j.projectNumber||''),prog:pmProg(j),st:String(j.jobStatus||''),hold:pmHold(j),asg:a,days:a?Math.floor((now-a.getTime())/864e5):null,pd};});
   const progs=[...new Set(rows.map(r=>r.prog))].sort(),sts=[...new Set(rows.map(r=>r.st))].sort((x,y)=>x.localeCompare(y,undefined,{numeric:true}));
   const q=t.q.trim().toLowerCase();
   let f=rows.filter(r=>(!q||r.addr.toLowerCase().includes(q)||r.pre.toLowerCase().includes(q))&&(!t.prog||r.prog===t.prog)&&(!t.st||r.st===t.st)&&(t.hold==='all'||(t.hold==='only'?r.hold:!r.hold)));
-  const key={addr:r=>r.addr.toLowerCase(),prog:r=>r.prog,st:r=>r.st,asg:r=>r.asg?r.asg.getTime():null,days:r=>r.days,tx:r=>r.tx,tx2:r=>r.tx2}[t.sort]||(/^d\d$/.test(t.sort)?(r=>{const d=r.dc[+t.sort[1]];return d?d.getTime():null;}):(r=>r.asg?r.asg.getTime():null));
+  const key={addr:r=>r.addr.toLowerCase(),prog:r=>r.prog,st:r=>r.st,asg:r=>r.asg?r.asg.getTime():null,days:r=>r.days,tx:r=>r.tx,tx2:r=>r.tx2,tx3:r=>r.tx3}[t.sort]||(/^d\d$/.test(t.sort)?(r=>{const d=r.dc[+t.sort[1]];return d?d.getTime():null;}):(r=>r.asg?r.asg.getTime():null));
   f.sort((x,y)=>{const a=key(x),c=key(y);if(a==null&&c==null)return 0;if(a==null)return 1;if(c==null)return -1;return(a<c?-1:a>c?1:0)*t.dir;});
   const blanks=rows.filter(r=>!r.asg).length;
   const th=(k,l,cls)=>'<th class="'+(cls||'')+(t.sort===k?' on':'')+'"><button onclick="pcPermSet(\'sort\',\''+k+'\')">'+l+'<i>'+(t.sort===k?(t.dir>0?'▲':'▼'):'↕')+'</i></button></th>';
@@ -195,8 +195,8 @@ window.pcPermTbl=function(keepFocus){if(!PC._perm)return;const box=document.getE
     '<label>Status<select onchange="pcPermSet(\'st\',this.value)">'+opt(sts,t.st,'All statuses')+'</select></label>'+
     '<label>On Hold<div class="pc-ptseg">'+[['all','All'],['hide','Hide on hold'],['only','On hold only']].map(([v,l])=>'<button class="'+(t.hold===v?'on':'')+'" onclick="pcPermSet(\'hold\',\''+v+'\')">'+l+'</button>').join('')+'</div></label>'+
     '<div class="pc-fpa"><button class="pc-fclr" onclick="pcPermSet(\'clear\',1)">Clear</button><button class="pc-fdone" onclick="pcPermSet(\'fo\',0)">Done</button></div></div>':'')+
-    (f.length?'<div class="pc-ptw"><table class="pc-ptab"><thead><tr>'+th('addr','Address','pc-ptsa')+th('prog','Program')+th('st','Status')+(tcol?th('tx',tcol[1]):'')+(tcol2?th('tx2',tcol2[1]):'')+th('asg','Assigned')+th('days','Days')+dcols.map((c,i)=>th('d'+i,c[1])).join('')+'</tr></thead><tbody>'+
-    f.map(r=>'<tr><td class="pc-ptsa" data-l="Address"><b>'+es(r.addr)+'</b>'+(r.hold?' <em class="pc-hold">On Hold</em>':'')+(r.pre?'<small>'+es(r.pre)+'</small>':'')+'</td><td data-l="Program"><span class="pc-prog">'+es(r.prog)+'</span></td><td data-l="Status" class="pc-ptst">'+es(r.st)+'</td>'+(tcol?'<td data-l="'+tcol[1]+'" class="pc-ptst">'+(es(r.tx)||'—')+'</td>':'')+(tcol2?'<td data-l="'+tcol2[1]+'" class="pc-ptst">'+(es(r.tx2)||'—')+'</td>':'')+'<td data-l="Assigned" class="pc-nw">'+pmFmt(r.asg)+'</td><td data-l="Days" class="pc-nw">'+(r.days==null?'—':r.days+'d')+'</td>'+dcols.map((c,i)=>'<td data-l="'+c[1]+'" class="pc-nw">'+pmFmt(r.dc[i])+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>':'<div class="pc-none">No jobs match these filters.</div>');
+    (f.length?'<div class="pc-ptw"><table class="pc-ptab"><thead><tr>'+th('addr','Address','pc-ptsa')+th('prog','Program')+th('st','Status')+(tcol?th('tx',tcol[1]):'')+(tcol2?th('tx2',tcol2[1]):'')+(tcol3?th('tx3',tcol3[1]):'')+th('asg','Assigned')+th('days','Days')+dcols.map((c,i)=>th('d'+i,c[1])).join('')+'</tr></thead><tbody>'+
+    f.map(r=>'<tr><td class="pc-ptsa" data-l="Address"><b>'+es(r.addr)+'</b>'+(r.hold?' <em class="pc-hold">On Hold</em>':'')+(r.pre?'<small>'+es(r.pre)+'</small>':'')+'</td><td data-l="Program"><span class="pc-prog">'+es(r.prog)+'</span></td><td data-l="Status" class="pc-ptst">'+es(r.st)+'</td>'+(tcol?'<td data-l="'+tcol[1]+'" class="pc-ptst">'+(es(r.tx)||'—')+'</td>':'')+(tcol2?'<td data-l="'+tcol2[1]+'" class="pc-ptst">'+(es(r.tx2)||'—')+'</td>':'')+(tcol3?'<td data-l="'+tcol3[1]+'" class="pc-ptst">'+(es(r.tx3)||'—')+'</td>':'')+'<td data-l="Assigned" class="pc-nw">'+pmFmt(r.asg)+'</td><td data-l="Days" class="pc-nw">'+(r.days==null?'—':r.days+'d')+'</td>'+dcols.map((c,i)=>'<td data-l="'+c[1]+'" class="pc-nw">'+pmFmt(r.dc[i])+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>':'<div class="pc-none">No jobs match these filters.</div>');
   if(keepFocus){const i=document.getElementById('pc-ptq');if(i){i.focus();i.setSelectionRange(i.value.length,i.value.length);}}};
 window.pcCell=(p,pr)=>{PC.f.p=p?[p]:[];PC.f.pr=pr?[pr]:[];writeHash();renderPrecon();document.getElementById('pc-queue')?.scrollIntoView({behavior:'smooth'});};
 window.pcClear=()=>{PC.f={p:[],pr:[],st:[],who:'',q:''};writeHash();renderPrecon();};
@@ -313,24 +313,29 @@ window.renderPrecon=function(){
   // Construction-readiness groups built from the tracker's Presale list (withdrawn excluded)
   const pres=((typeof proj!=='undefined'&&Array.isArray(proj)&&proj.length)?proj:btJobs()).filter(j=>String(j.constructionStage||'').toUpperCase()==='PRESALE'&&!isWithdrawn(j));
   // Georgia HRRP: program status '04c. Pending Notice to Proceed' counts as NTP-P (Collin: these can start once the permit is issued)
-  // Ready-to-start signals (Collin): BT NTP-P, GA 04c, GA PCC Pending Questionnaire, pre-con meeting completed, SRQ Pre-Construction, Pasco Ready for Construction
-  const SIG=new Map();const sk=j=>String(j.projectNumber||j.address||'');const addSig=(j,s)=>{const k=sk(j);if(!SIG.has(k))SIG.set(k,[]);if(!SIG.get(k).includes(s))SIG.get(k).push(s);};
-  const gaNtp=new Map();
-  res.queue.forEach(x=>{if(!x.bt)return;const rec=PC.pulls[x.program]&&PC.pulls[x.program].records.find(r=>String(r.ID)===x.record_id);if(!rec)return;const st=String(rec.Status||'').trim();
-    if(x.program==='GA'){if(/^04c\b/i.test(st)){addSig(x.bt,'GA 04c Pending NTP');gaNtp.set(x.bt,st);}if(/Pending Questionnaire/i.test(String(rec['PreCon - PCC Substatus']||'')))addSig(x.bt,'GA PCC Pending Questionnaire');}
-    if(x.program==='SRQ'&&st==='Pre-Construction')addSig(x.bt,'SRQ Pre-Construction');
-    if(x.program==='PAS'&&st==='Ready for Construction')addSig(x.bt,'Pasco Ready for Construction');
-    if((x.program==='RFL'||x.program==='OC')&&pmD(rec['Pre-Construction Meeting Completed Date']))addSig(x.bt,'Pre-con meeting completed');});
-  // generic program-status signals (any program): NTP issued / ready for construction
-  res.queue.forEach(x=>{if(!x.bt||x.program==='BT')return;const rec=PC.pulls[x.program]&&PC.pulls[x.program].records.find(r=>String(r.ID)===x.record_id);if(!rec)return;
-    Object.keys(rec).forEach(k=>{if(!/status|substatus|stage/i.test(k)||/date|updated|export/i.test(k))return;const v=String(rec[k]||'');if(/\bNTP Issued\b|Notice to Proceed Issued|Ready for Construction/i.test(v))addSig(x.bt,pn(x.program)+' '+v.trim());});});
-  // BT / tracker (primary, covers every program)
-  pres.forEach(j=>{if(pmD(j.ntpP))addSig(j,'BT NTP-P');if(pmD(j.preConMeetingCompleted))addSig(j,'BT pre-con meeting completed');
-    const js=String(j.jobStatus||'').trim();if(/^19\.\d/.test(js)||/^20\b/.test(js))addSig(j,'BT '+js.split(' - ')[0]+' '+(js.split(' - ')[1]||''));});
-  const hasNtpP=j=>!!pmD(j.ntpP)||gaNtp.has(j);
-  const readyAll=pres.filter(j=>SIG.has(sk(j))).map(j=>Object.assign({},j,{_sig:SIG.get(sk(j)).join(', ')}));
-  const pushC=readyAll.filter(j=>pmD(j.bldgPermitIssued));
-  const readyNP=readyAll.filter(j=>!pmD(j.bldgPermitIssued));
+  // Strict per-program construction rules (Collin, Oct 21): BT/tracker first, program export fallback
+  const REC=new Map();res.queue.forEach(x=>{if(!x.bt||x.program==='BT')return;const rec=PC.pulls[x.program]&&PC.pulls[x.program].records.find(r=>String(r.ID)===x.record_id);if(rec)REC.set(String(x.bt.projectNumber||x.bt.address),{p:x.program,rec});});
+  const gaNtp=new Map();const dt=v=>pmD(v)?pmFmt(pmD(v)):'';
+  const jsN=j=>{const m=String(j.jobStatus||'').match(/^(\d+(?:\.\d+)?)/);return m?parseFloat(m[1]):null;};
+  const ceOk=(j,R)=>{if(dt(j.costEstimateApproved))return'BT '+dt(j.costEstimateApproved);const n=jsN(j);if(n!=null&&n>=8&&n<30)return'BT status '+String(j.jobStatus).split(' - ')[0];
+    if(!R)return'';const r=R.rec;
+    if(R.p==='LC'&&/^Approved$/i.test(String(r['CE - Most Advanced Status Export']||'').trim()))return'LC CE Approved';
+    if(R.p==='OC'&&/Cost Estimate Approved/i.test(String(r['CE - Most Advanced Status Export']||'')))return'OC CE Approved';
+    if(R.p==='PIN'&&dt(r['Cost Estimate Approved by Client Date']))return'PIN '+dt(r['Cost Estimate Approved by Client Date']);
+    if(R.p==='RFL'&&/^(NTP Issued|NTC Issued|Pending SS TANF Contractor Signature)$/i.test(String(r['Preconstruction Status']||'').trim()))return'RFL '+r['Preconstruction Status'];
+    if(R.p==='PAS'&&/NTP Issued/i.test(String(r['Post-SWE / Pre-Construction Status']||'')))return'PAS '+r['Post-SWE / Pre-Construction Status'];return'';};
+  const pcmOk=(j,R)=>{if(dt(j.preConMeetingCompleted))return'BT '+dt(j.preConMeetingCompleted);if(!R)return'';const r=R.rec;
+    const c=r['Pre-Construction Meeting Completed Date'];if(dt(c))return pn(R.p)+' '+dt(c);
+    const st=String((R.p==='PIN'?r['Construction Status']:r.Status)||'');if(/^(LC|OC|PIN)$/.test(R.p)&&/Pending Request For NTP/i.test(st))return pn(R.p)+' '+st;return'';};
+  const PROGK={'HORNE - FL Lee Cares':'pc','HORNE - FL Orange County':'pc','HORNE - FL Pinellas':'pc','BDO - Rebuild FL':'pc','IEM - Pasco Better Future':'pc','DSW - FL Resilient SRQ':'srq','LEMOINE - Georgia HRRP':'ga'};
+  const evalC=j=>{const k=PROGK[j.program];if(!k)return null;const R=REC.get(String(j.projectNumber||j.address));const nr=/^(N\/A|Not Needed|Not Required)$/i.test(String(j.bldgPermitIssued||'').trim())||/^(Not Needed|Not Required|N\/A)$/i.test(String(j.bldgPermitStatus||'').trim());const o={_perm:dt(j.bldgPermitIssued)||(nr?'Not required':''),_nr:nr,_ce:'',_c2:''};
+    if(k==='pc'){o._ce=ceOk(j,R);o._c2=pcmOk(j,R);o._ok=!!(o._ce&&o._c2);}
+    else if(k==='srq'){o._ce='n/a';o._c2=dt(j.ntpP)?'NTP-P '+dt(j.ntpP):'';o._ok=!!o._c2;}
+    else{const r=R&&R.p==='GA'?R.rec:null;const st=r?String(r.Status||'').trim():'',sub=r?String(r['PreCon - PCC Substatus']||'').trim():'';o._ce='n/a';o._c2=st?st+(sub?' · '+sub:''):'';o._ok=/^04c\b/i.test(st)&&/Pending Contractor Request/i.test(sub);if(/^04c\b/i.test(st))gaNtp.set(j,st);}
+    return o;};
+  const allC=pres.map(j=>{const c=evalC(j);return c?Object.assign({},j,c):null;}).filter(Boolean);
+  PC._cons=allC;const pushC=allC.filter(j=>j._ok&&j._perm);
+  const readyNP=allC.filter(j=>j._ok&&!j._perm);
   const today0=new Date(new Date().toLocaleDateString('en-CA',{timeZone:'America/New_York'})+'T00:00:00');
   const PAPER={RFL:{s:'Pre-Construction Meeting Scheduled Date',c:'Pre-Construction Meeting Completed Date',st:'Preconstruction Status'},OC:{s:'PreCon - Pre-Construction Meeting Scheduled Date',c:'Pre-Construction Meeting Completed Date',st:'PreCon - Most Advanced Status Export'}};
   const presSet=new Set(pres);const mtgIdx=PCE.PRECON_STAGES.indexOf('Pre-Con Meeting');const RX=PCE.prepRules(PC.rules);
@@ -345,7 +350,7 @@ window.renderPrecon=function(){
   const trussNeed=rfiNeed.filter(j=>!pmD(j.trussReceived));
   const energyKnown=pres.some(j=>'energyCalcsReceived' in j);
   const energyNeed=rfiNeed.filter(j=>!pmD(j.energyCalcsReceived));
-  const SPEC={'§energy':['Energy calc needed'+(energyKnown?'':' (energy calc dates not imported yet)'),'#eab308',energyNeed,[['energyCalcsOrdered','Energy ordered'],['energyCalcsReceived','Energy received']],['_jt','Type']],'§truss':['Truss layout needed'+(trussKnown?'':' (truss dates not imported yet)'),'#f97316',trussNeed,[['trussOrdered','Truss ordered'],['trussReceived','Truss received']],['_jt','Type']],'§rfi':['RFI needed'+(rfiKnown?'':' (RFI dates not imported yet)'),'#ef4444',rfiNeed,[['rfiRequested','RFI requested']],['_jt','Type']],'§push':['Push into construction','#10b981',pushC,[['bldgPermitSubmitted','Permit submitted'],['bldgPermitIssued','Permit issued'],['ntpP','NTP-P']],['_sig','Ready signal(s)']],'§readynp':['Ready once permit issued','#14b8a6',readyNP,[['bldgPermitSubmitted','Permit submitted'],['bldgPermitIssued','Permit issued'],['ntpP','NTP-P']],['_sig','Ready signal(s)']],'§paper':['Upload pre-construction paperwork','#8b5cf6',paper,[['_mS','Meeting'],['_mC','Completed']],['_pst','Program status']]};
+  const SPEC={'§energy':['Energy calc needed'+(energyKnown?'':' (energy calc dates not imported yet)'),'#eab308',energyNeed,[['energyCalcsOrdered','Energy ordered'],['energyCalcsReceived','Energy received']],['_jt','Type']],'§truss':['Truss layout needed'+(trussKnown?'':' (truss dates not imported yet)'),'#f97316',trussNeed,[['trussOrdered','Truss ordered'],['trussReceived','Truss received']],['_jt','Type']],'§rfi':['RFI needed'+(rfiKnown?'':' (RFI dates not imported yet)'),'#ef4444',rfiNeed,[['rfiRequested','RFI requested']],['_jt','Type']],'§push':['Push into construction','#10b981',pushC,[],['_ce','CE approved'],'',['_c2','Pre-con mtg / NTP-P / GA status'],['_perm','Permit issued']],'§readynp':['Ready once permit issued','#14b8a6',readyNP,[],['_ce','CE approved'],'',['_c2','Pre-con mtg / NTP-P / GA status'],['_perm','Permit issued']],'§paper':['Upload pre-construction paperwork','#8b5cf6',paper,[['_mS','Meeting'],['_mC','Completed']],['_pst','Program status']]};
   let sel=PC.ui.act.bar;if(!sel||(!groups[sel]&&!SPEC[sel]))sel=order[0];
   const am=Math.max(1,...order.map(a=>groups[a].p1.length+groups[a].p2.length));
   const DV=(c,t)=>'<div class="pc-hdv"><i style="background:'+c+'"></i>'+t+'</div>';const gb=a=>(()=>{const g=groups[a];const nt=(()=>{const r=(PC.rules||[]).find(r=>r.Action===a&&r.Notes&&!/verify wording/i.test(r.Notes));return r?r.Notes:'';})();return'<button class="pc-hr'+(a===sel?' on':'')+'"'+(nt?' title="'+es(nt)+'"':'')+' onclick="pcAct(\'bar\',\''+es(a).replace(/'/g,"\\'")+'\')"><span class="pc-hl">'+es(a)+'</span><span class="pc-ht"><span style="width:'+(g.p1.length/am*100)+'%;background:'+COL['1']+'"></span><span style="width:'+(g.p2.length/am*100)+'%;background:'+COL['2']+'"></span></span><b>'+(g.p1.length+g.p2.length)+'</b></button>';})();;const sb=k=>{const v=SPEC[k];return'<button class="pc-hr'+(k===sel?' on':'')+'" onclick="pcAct(\'bar\',\''+k+'\')"><span class="pc-hl">'+es(v[0])+'</span><span class="pc-ht"><span style="width:'+Math.min(100,v[2].length/am*100)+'%;background:'+v[1]+'"></span></span><b>'+v[2].length+'</b></button>';};const p1o=order.filter(a=>groups[a].p1.length),p2o=order.filter(a=>!groups[a].p1.length);const bars=ours.length?'<div class="pc-hb">'+DV(COL['1'],'P1 · Needs action now')+p1o.map(gb).join('')+['§rfi','§truss','§energy'].map(sb).join('')+DV(COL['2'],'P2 · Pre-con → NTP')+p2o.map(gb).join('')+sb('§paper')+DV('#10b981','Construction readiness')+sb('§push')+sb('§readynp')+'</div>':empty('&#10003; Nothing in our court with these filters.');
