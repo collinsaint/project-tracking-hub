@@ -1044,6 +1044,7 @@ body.mob .pc-f{min-height:36px;padding:8px 12px}
 body.mob #dclose{min-width:44px;min-height:44px}
 body.mob .dhdr-coq-btn,body.mob #dhdr-coq-btn{min-height:36px}
 body.mob .mob-mbtn{min-height:48px}
+@media (max-width:767px){#mob-desk-btn,.mob-msep{display:none!important}html,body{max-width:100%}}
 /* JQ program summary cards: use full width */
 body.mob .jq-prog-cards{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 10px;box-sizing:border-box}
 body.mob .jq-pc{min-width:0;padding:8px 6px}
@@ -5495,17 +5496,22 @@ function setMob(on){
   if(on){mobileNavSet('tracker');requestAnimationFrame(updateMobSticky);}
 }
 function toggleMobView(){
+  if(isPhone()&&document.body.classList.contains('mob'))return;
   const on=!document.body.classList.contains('mob');
   setMob(on);localStorage.setItem('pic_mob',on?'1':'0');
 }
 function initMobView(){
   const stored=localStorage.getItem('pic_mob');
   let useMob;
-  if(stored!==null){useMob=stored==='1';}
-  else{useMob=('ontouchstart' in window)||navigator.maxTouchPoints>0||window.innerWidth<768;}
+  // Phones ALWAYS get the mobile layout: a stale "Switch to Desktop" choice (pic_mob='0')
+  // in localStorage used to force the desktop table/toolbar onto a 412px screen.
+  if(isPhone()){useMob=true;}
+  else if(stored!==null){useMob=stored==='1';}
+  else{useMob=('ontouchstart' in window)||navigator.maxTouchPoints>0;}
   if(useMob)setMob(true);
 }
-window.addEventListener('resize',updateMobSticky);
+function isPhone(){return window.innerWidth<768||Math.min(screen.width||9999,screen.height||9999)<768;}
+window.addEventListener('resize',function(){if(isPhone()&&!document.body.classList.contains('mob'))setMob(true);updateMobSticky();});
 </script>
 
 <div id="mob-menu" onclick="if(event.target===this)closeMobMenu()">
@@ -5522,7 +5528,7 @@ window.addEventListener('resize',updateMobSticky);
     <button class="mob-mbtn" onclick="exportCSV();closeMobMenu()"><span class="mob-mico">&#8681;</span>Export CSV</button>
     <button class="mob-mbtn" id="mob-edit-btn" onclick="toggleEditMode();closeMobMenu()"><span class="mob-mico">&#9998;</span>Edit Mode</button>
     <div class="mob-msep"></div>
-    <button class="mob-mbtn mob-mbtn-blue" onclick="setMob(false);localStorage.setItem('pic_mob','0');closeMobMenu()"><span class="mob-mico">&#128421;</span>Switch to Desktop</button>
+    <button class="mob-mbtn mob-mbtn-blue" id="mob-desk-btn" onclick="setMob(false);localStorage.setItem('pic_mob','0');closeMobMenu()"><span class="mob-mico">&#128421;</span>Switch to Desktop</button>
   </div>
 </div>
 
