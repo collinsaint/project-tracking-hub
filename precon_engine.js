@@ -3,7 +3,7 @@
 // change-diff logic. No DOM, no network.
 (function(root){
 const PROGRAMS=['LC','OC','PIN','RFL','SRQ','PAS','GA'];
-const PROGRAM_NAMES={LC:'Lee Cares',OC:'Orange County',PIN:'Pinellas',RFL:'Rebuild FL',SRQ:'ResilientSRQ',PAS:'Pasco',GA:'Georgia HRRP'};
+const PROGRAM_NAMES={LC:'Lee Cares',OC:'Orange County',PIN:'Pinellas Recovers',RFL:'RebuildFL',SRQ:'ResilientSRQ',PAS:'Pasco Better Future',GA:'Georgia HRRP',BT:'BT-only'};
 const GROUPS={LC:'HORNE - FL Lee Cares',OC:'HORNE - FL Orange County',PIN:'HORNE - FL Pinellas',RFL:'BDO - Rebuild FL',SRQ:'DSW - FL Resilient SRQ',PAS:'IEM - Pasco Better Future',GA:'LEMOINE - Georgia HRRP'};
 const SCOPE={LC:'Status',OC:'Status',PIN:'Construction Status',RFL:'Status',SRQ:'Status',PAS:'Construction Stage',GA:'Status'};
 const PRECON_STAGES=['Assignment','Site Visit','Cost Estimate','Work Order','RFI','Permitting','Septic','Pre-Con Meeting','NTP','Pending Start','Pre-Con (phase)'];
