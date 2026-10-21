@@ -12,6 +12,8 @@ const isMissing=e=>e&&(e.code==='42P01'||e.code==='PGRST205'||/does not exist|co
 const fmtET=d=>{if(!d)return'—';const x=d instanceof Date?d:new Date(d);if(isNaN(x))return'—';return x.toLocaleString('en-US',{timeZone:'America/New_York',month:'numeric',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'})+' ET';};
 const fmtDate=d=>{const x=new Date(d);return isNaN(x)?'':x.toLocaleDateString('en-US',{timeZone:'America/New_York',month:'2-digit',day:'2-digit',year:'numeric'});};
 const PRI_LABEL={'1':'P1','2':'P2','Watch':'Watch','none':'Not ours'};
+// Withdrawn jobs (00A status, any 'withdrawn' status, or a '(withdrawn)' program) never count anywhere.
+const isWithdrawn=j=>/withdrawn/i.test(String(j&&j.jobStatus||''))||/withdrawn/i.test(String(j&&j.program||''));
 function btJobs(){const a=window._btAllJobs;return(Array.isArray(a)&&a.length)?a:(typeof proj!=='undefined'?proj:[]);}
 function btActive(){return typeof proj!=='undefined'?proj:[];}
 
@@ -74,8 +76,8 @@ function uploadAnalysis(u){
   else if(cur&&cur.records.length&&u.rows.length<0.8*cur.records.length)block='Only '+u.rows.length+' records vs '+cur.records.length+' in the last pull (under 80%). Skipped to avoid logging mass removals.';
   if(cur&&new Date(cur.meta.pull_at)>=u.pullAt&&!block)block='Older than or same as the current pull ('+fmtET(cur.meta.pull_at)+').';
   // matching + queue impact
-  const one={};one[p]=pull;const after=PCE.evaluate(Object.assign({},PC.pulls,one),btJobs(),PC.rules,{phase4:PC.opts.phase4});
-  const before=cur?PCE.evaluate(PC.pulls,btJobs(),PC.rules,{phase4:PC.opts.phase4}):null;
+  const one={};one[p]=pull;const after=PCE.evaluate(Object.assign({},PC.pulls,one),btJobs(),PC.rules,{excludeJob:isWithdrawn,phase4:PC.opts.phase4});
+  const before=cur?PCE.evaluate(PC.pulls,btJobs(),PC.rules,{excludeJob:isWithdrawn,phase4:PC.opts.phase4}):null;
   const cnt=res=>{const c={'1':0,'2':0,'Watch':0,'none':0};if(res)res.queue.filter(q=>q.program===p).forEach(q=>c[q.priority]++);return c;};
   const changes=block?[]:PCE.diffPulls(p,cur||null,pull,(cur?cur.meta.file_name+' -> ':'')+u.name);
   return{pull,missLead,ruleF,newCols,goneCols,block,stats:after.stats[p],before:cnt(before),after:cnt(after),changes};
@@ -189,7 +191,7 @@ function businessDaysSince(d){let n=0;const x=new Date(d);const now=new Date();w
 window.renderPrecon=function(){
   const body=document.getElementById('pc-body');if(!body)return;
   const R=PCE.prepRules(PC.rules);
-  let res;try{res=PCE.evaluate(PC.pulls,btJobs(),PC.rules,{phase4:PC.opts.phase4,showHold:PC.opts.showHold,changes:PC.changes,activeFilter:true});}catch(e){reportFail('Pre-Con dashboard',e);return;}
+  let res;try{res=PCE.evaluate(PC.pulls,btJobs(),PC.rules,{excludeJob:isWithdrawn,phase4:PC.opts.phase4,showHold:PC.opts.showHold,changes:PC.changes,activeFilter:true});}catch(e){reportFail('Pre-Con dashboard',e);return;}
   // BT-only jobs must still be active in the hub (no withdrawn / Volusia)
   const act=new Set(btActive().map(j=>j.address));res.queue=res.queue.filter(x=>x.program!=='BT'||act.has(x.address));
   PC.result=res;const now=Date.now();
