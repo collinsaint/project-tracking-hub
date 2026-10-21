@@ -157,6 +157,7 @@ function writeHash(){const sp=new URLSearchParams();if(PC.f.p.length)sp.set('p',
 window.openPrecon=async function(){
   const _h=location.hash;
   if(typeof goToTracker==='function'&&!PC._opening){PC._opening=true;try{goToTracker();}finally{PC._opening=false;}}
+  try{mobileNavSet('precon');}catch(e){}
   history.replaceState(null,'',_h&&_h.startsWith('#precon')?_h:'#precon');readHash();const v=document.getElementById('pc-view');v.classList.add('open');writeHash();
   document.getElementById('pc-view-btn')?.classList.add('active-view');document.getElementById('tracker-home-btn')?.classList.remove('active-view');
   if(!PC.loaded){document.getElementById('pc-body').innerHTML='<div class="pc-muted" style="padding:30px">Loading pre-con data…</div>';if(!PC._loading)PC._loading=dbLoad();await PC._loading;PC.loaded=true;}
