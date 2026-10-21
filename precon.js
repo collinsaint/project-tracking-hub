@@ -355,7 +355,7 @@ window.renderPrecon=function(){
      '<div class="pc-pmtiles">'+tile('iss')+tile('sub')+tile('ns')+'</div><div class="pc-pmna">'+tile('na')+'<small>excluded from the split</small></div>'+list+'</section>';}
   // calendar
   // Milestones for the tracker's Presale list (withdrawn excluded). BT first, program export fallback.
-  const EV=[['asg','Assignment received','#64748b'],['svs','Site visit scheduled','#06b6d4'],['svc','Site visit completed','#0e7490'],['pcm','Pre-con meeting','#8b5cf6'],['ces','Cost estimate submitted','#3b82f6'],['bps','Permit submitted','#f59e0b'],['bpi','Permit issued','#84cc16'],['ntpp','NTP-P','#10b981']];
+  const EV=[['asg','Assignment received','#64748b'],['svs','ISV scheduled','#06b6d4'],['svc','ISV completed','#0e7490'],['pcm','Pre-con meeting','#8b5cf6'],['ces','Cost estimate submitted','#3b82f6'],['bps','Permit submitted','#f59e0b'],['bpi','Permit issued','#84cc16'],['ntpp','NTP-P','#10b981']];
   const PF={svs:{LC:'CE - Site Visit Scheduled Date',OC:'Site Visit Scheduled Date',PIN:'Cost Estimate Site Visit Scheduled Date'},svc:{LC:'CE - Site Visit Completed Date',OC:'Site Visit Completed Date',PIN:'Cost Estimate Site Visit Completed Date'},pcm:{RFL:'Pre-Construction Meeting Scheduled Date',OC:'PreCon - Pre-Construction Meeting Scheduled Date'},ces:{RFL:'Cost Estimate Submitted By Contractor Date'}};
   const BF={asg:'assignmentReceived',svc:'isvCompleted',pcm:'preConMeetingScheduled',ces:'costEstimateSubmitted',bps:'bldgPermitSubmitted',bpi:'bldgPermitIssued',ntpp:'ntpP'};
   PC.ui.calOff=PC.ui.calOff||{};
