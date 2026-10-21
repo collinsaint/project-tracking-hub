@@ -109,7 +109,7 @@ function evaluate(pulls,projects,rules,opts){
     const allFlds=[...new Set(R.all.filter(r=>r.Program===p).map(r=>r.Field)).add(SCOPE[p])];
     const upd=updatedPairs(cols);
     recs.forEach(rec=>{
-      const m=matchRecord(p,rec,bt);st[m.method]++;if(m.job)matchedJobs.add(m.job);
+      const m=matchRecord(p,rec,bt);if(m.job&&opts.excludeJob&&opts.excludeJob(m.job)){st.withdrawn=(st.withdrawn||0)+1;return;}st[m.method]++;if(m.job)matchedJobs.add(m.job);
       if(m.method==='none')gaps.unmatched.push({program:p,id:rec.ID,address:rec.Address,applicant:rec.Applicant});
       if(m.method==='ambiguous')gaps.ambiguous.push({program:p,id:rec.ID,address:rec.Address});
       allFlds.forEach(f=>{if(colset.has(f)&&has(rec[f])&&!matchRules(R.idx[p+'|'+f],rec[f]).length){const k=p+'|'+f+'|'+String(rec[f]).trim();gaps.unmapped[k]=(gaps.unmapped[k]||0)+1;}});
@@ -136,7 +136,7 @@ function evaluate(pulls,projects,rules,opts){
   });
   // BT-only jobs: not matched to any program record, Job Status 01–19.x (00B only with showHold)
   projects.forEach(j=>{if(matchedJobs.has(j))return;const c=jsCode(j.jobStatus);if(!c)return;
-    const hold=/^00B/i.test(String(j.jobStatus));if(hold&&!opts.showHold)return;if(!hold&&(c.n<1||c.n>=20))return;
+    if(opts.excludeJob&&opts.excludeJob(j))return;const hold=/^00B/i.test(String(j.jobStatus));if(hold&&!opts.showHold)return;if(!hold&&(c.n<1||c.n>=20))return;
     const rk=rankHits(btHits(R,j,opts.phase4));const top=rk.hits[0];let days=null,basis='';
     if(top&&top.field==='DERIVED'&&DERIVED_DATE[top.value]){const d=parseETDate(j[DERIVED_DATE[top.value]]);if(d){days=Math.floor((now-d)/86400000);basis=DERIVED_DATE[top.value];}}
     queue.push({job_key:'BT:'+addrKey(j.address),program:'BT',bt_group:j.program||'',record_id:j.projectNumber||'',address:j.address,applicant:[j.firstName,j.lastName].filter(Boolean).join(' '),bt:j,match:'bt-only',
