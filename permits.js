@@ -88,7 +88,7 @@ function renderPerm(){
   const pre=base.filter(p=>{
     if(permDash.program&&p.program!==permDash.program)return false;
     if(permDash.jur&&p.permittingJurisdiction!==permDash.jur)return false;
-    if(fs){const hay=[pname(p),p.firstName,p.lastName,p.projectNumber,p.bldgPermitNumber].join(' ').toLowerCase();if(!hay.includes(fs))return false;}
+    if(fs){const hay=[pname(p),p.address,p.city,p.firstName,p.lastName,p.projectNumber,p.jobPrefix,p.prefix,p.appId,p.bldgPermitNumber,p.permittingJurisdiction,p.jobType,p.jobStatus,p.bldgPermitStatus,p.permitStatus,p.program,p.groups,p.jobGroups,pdOwner(p)].filter(Boolean).join(' ').toLowerCase();if(!hay.includes(fs))return false;}
     return true;
   });
   const byOwner=pre.filter(p=>!permDash.owner||(permDash.owner==='__none'?!pdOwner(p):pdOwner(p)===permDash.owner));
@@ -117,7 +117,7 @@ function renderPerm(){
   let h='<div class="pc-top"><div class="pc-top-t"><h2>Permitting</h2><p>Permit status, owners and paperwork for every active job'+(ownerLbl?' · <b>'+es(ownerLbl)+'</b>':'')+'</p></div>'+
     '<div class="pc-top-act"><button class="btn pc-ol" onclick="openPermUpdView()">Permitting Updates sheet</button></div></div>';
   h+='<div class="pc-cards pd-cards">'+PD_STAGES.map(([k,l,s,c])=>'<button class="pc-card '+c+(permDash.stage===k?' on':'')+'" onclick="pdSet(\'stage\',\''+k+'\')"><span class="pc-cl">'+l+'</span><b>'+cnt[k]+'</b><span class="pc-cs">'+s+'</span></button>').join('')+'</div>';
-  h+='<div class="pd-filt"><div class="pd-frow"><div class="pc-search pd-search"><span>&#9906;</span><input id="pd-search" placeholder="Search job, homeowner, prefix, permit #" value="'+es(permDash.search)+'" oninput="permDash.search=this.value;clearTimeout(window._pdT);window._pdT=setTimeout(renderPerm,200)"></div>'+
+  h+='<div class="pd-filt"><div class="pd-frow"><div class="pc-search pd-search"><span>&#9906;</span><input id="pd-search" placeholder="Search job, address, homeowner, ID, permit #, jurisdiction, type, status, program, owner" value="'+es(permDash.search)+'" oninput="permDash.search=this.value;clearTimeout(window._pdT);window._pdT=setTimeout(renderPerm,200)"></div>'+
     '<select class="pd-sel" onchange="pdSet(\'program\',this.value)" title="Program">'+opts(base.map(p=>p.program),permDash.program).replace('>All<','>All programs<')+'</select>'+
     '<select class="pd-sel" onchange="pdSet(\'jur\',this.value)" title="Jurisdiction">'+opts(base.map(p=>p.permittingJurisdiction),permDash.jur).replace('>All<','>All jurisdictions<')+'</select>'+
     '<button class="pd-tog'+(permDash.stage==='all'?' on':'')+'" onclick="pdSet(\'stage\',\''+(permDash.stage==='all'?'open':'all')+'\')">Include issued</button>'+
