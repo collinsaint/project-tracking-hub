@@ -1,5 +1,5 @@
 // ===== Permit dashboard (replaces the old Permitting queue; Permitting Updates sheet is separate) =====
-let permDash={owner:'',stage:'open',search:'',program:'',jur:'',sort:'',dir:1};
+let permDash={owner:'',stage:'open',search:'',program:'',jur:'',paper:'',sort:'',dir:1};
 const PD_STAGES=[
   ['open','Open permits','Not yet issued','pc-cw'],
   ['ready','Ready — pending permit','Only permit left','pd-cg'],
@@ -50,7 +50,7 @@ function _pdWriteHash(){
   const s=sp.toString();history.replaceState(null,'','#perm'+(s?'?'+s:''));
 }
 function pdSet(k,v){permDash[k]=v;renderPerm();}
-function pdClear(){permDash={...permDash,owner:'',stage:'open',search:'',program:'',jur:''};const s=document.getElementById('pd-search');if(s)s.value='';renderPerm();}
+function pdClear(){permDash={...permDash,owner:'',stage:'open',search:'',program:'',jur:'',paper:''};const s=document.getElementById('pd-search');if(s)s.value='';renderPerm();}
 function pdSort(k){if(permDash.sort===k)permDash.dir*=-1;else{permDash.sort=k;permDash.dir=1;}renderPerm();}
 function _pdD(v){return _pdHas(v)?(v==='N/A'?'N/A':fd2(v)):'';}
 function _pdPair(o,r){
@@ -86,6 +86,10 @@ function _pdOut(p){const na=_pdNaMap(p),o=[],nr=v=>!(_pdHas(v)&&v!=='N/A');
   if(!na.svy&&nr(p.surveyReceived))o.push('Survey/EC');if(!na.plans&&nr(p.plansReceived))o.push('Plans');
   if(!na.truss&&nr(p.trussReceived))o.push('Truss');if(!na.energy&&nr(p.energyCalcsReceived))o.push('Energy');
   if(_pdYes(p.rfiNeeded)&&nr(p.rfiReceived))o.push('RFI');if(_pdYes(p.addlRfiNeeded)&&nr(p.addlRfiReceived))o.push("Add'l RFI");return o;}
+function _pdOutSt(p){const na=_pdNaMap(p),o=[],h=v=>_pdHas(v)&&v!=='N/A',ad=(k,O,R)=>{if(!h(R))o.push([k,h(O)?'pend':'need']);};
+  if(!na.svy)ad('Survey/EC',p.surveyOrdered,p.surveyReceived);if(!na.plans)ad('Plans',p.plansOrdered,p.plansReceived);
+  if(!na.truss)ad('Truss',p.trussOrdered,p.trussReceived);if(!na.energy)ad('Energy',p.energyCalcsOrdered,p.energyCalcsReceived);
+  if(_pdYes(p.rfiNeeded))ad('RFI',p.rfiRequested,p.rfiReceived);if(_pdYes(p.addlRfiNeeded))ad("Add'l RFI",p.addlRfiRequested,p.addlRfiReceived);return o;}
 function _pdPaper(p){
   const ln=(l,na,O,R)=>{if(na)return'<div class="pd-pw"><i>'+l+'</i><span class="pd-pgo">N/A</span></div>';const o=_pdD(O),r=_pdD(R);return'<div class="pd-pw"><i>'+l+'</i>'+(r?'<b class="pd-pgo">'+r+'</b>':(o?'<span class="pd-pend">PENDING</span>':'<span class="pd-need">NEEDED</span>'))+' / '+(o||(r?'<span class="pd-miss">MISSING</span>':'<span class="pd-mut">—</span>'))+'</div>';};
   const na=_pdNaMap(p);
@@ -98,6 +102,7 @@ function renderPerm(){
   const pre=base.filter(p=>{
     if(permDash.program&&p.program!==permDash.program)return false;
     if(permDash.jur&&p.permittingJurisdiction!==permDash.jur)return false;
+    if(permDash.paper){const [pk,ps]=permDash.paper.split('|');if(!_pdOutSt(p).some(x=>x[0]===pk&&x[1]===ps))return false;}
     if(fs){const hay=[pname(p),p.address,p.city,p.firstName,p.lastName,p.projectNumber,p.jobPrefix,p.prefix,p.appId,p.bldgPermitNumber,p.permittingJurisdiction,p.jobType,p.jobStatus,p.bldgPermitStatus,p.permitStatus,p.program,p.groups,p.jobGroups,pdOwner(p)].filter(Boolean).join(' ').toLowerCase();if(!hay.includes(fs))return false;}
     return true;
   });
@@ -122,7 +127,7 @@ function renderPerm(){
     if(av===''&&bv!=='')return 1;if(bv===''&&av!=='')return -1;return sd*String(av).localeCompare(String(bv));
   });
   const th=(k,l)=>'<th class="'+(k?'pd-s':'')+(sk===k&&k?(sd===1?' sa':' sd'):'')+'"'+(k?' onclick="pdSort(\''+k+'\')"':'')+'>'+l+'</th>';
-  const anyF=permDash.owner||permDash.search||permDash.program||permDash.jur||permDash.stage!=='open';
+  const anyF=permDash.owner||permDash.search||permDash.program||permDash.jur||permDash.paper||permDash.stage!=='open';
   const ownerLbl=permDash.owner==='__none'?'Unassigned':permDash.owner;
   let h='<div class="pc-top"><div class="pc-top-t"><h2>Permitting</h2><p>Permit status, owners and paperwork for every active job'+(ownerLbl?' · <b>'+es(ownerLbl)+'</b>':'')+'</p></div>'+
     '<div class="pc-top-act"><button class="btn pc-ol" onclick="openPermUpdView()">Permitting Updates sheet</button></div></div>';
@@ -130,10 +135,12 @@ function renderPerm(){
   {const act=base.filter(p=>!pdHold(p)),bar=(t,sub,rows,col)=>{const m=Math.max(1,...rows.map(r=>r[1]));return'<section class="pc-chart pd-ch"><h4>'+t+' <span>'+sub+'</span></h4>'+(rows.length?rows.map(r=>'<div class="pd-br"'+(r[2]?' onclick="'+r[2]+'" style="cursor:pointer"':'')+'><span class="pd-bl" title="'+es(r[0])+'">'+es(r[0])+'</span><span class="pd-bt"><span style="width:'+(r[1]/m*100)+'%;background:'+col+'"></span></span><b>'+r[1]+'</b></div>').join(''):'<div class="pd-mut">None</div>')+'</section>';},
    grp=(f)=>{const o={};act.forEach(p=>{const k=f(p)||'—';o[k]=(o[k]||0)+1;});return Object.entries(o).sort((x,y)=>y[1]-x[1]).slice(0,8);};
    const stg=PD_STAGES.filter(x=>!['all','open','ready','hold'].includes(x[0])).map(([k,l])=>[l,act.filter(p=>pdStage(p)===k).length,"pdSet('stage','"+k+"')"]).filter(r=>r[1]);
-   const oc={};act.filter(p=>pdStage(p)!=='issued').forEach(p=>_pdOut(p).forEach(k=>oc[k]=(oc[k]||0)+1));
-   const SK=[['none','Not submitted','#94a3b8'],['review','In review','#f59e0b'],['kicked','Kicked back','#dc2626'],['issued','Issued','#16a34a']];
+   const oc={};act.filter(p=>pdStage(p)!=='issued').forEach(p=>_pdOutSt(p).forEach(([k,st])=>{const e=oc[k]||(oc[k]={pend:0,need:0});e[st]++;}));
+   const SK=[['none','Not submitted','#dc2626'],['review','In review','#eab308'],['kicked','Kicked back','#f97316'],['issued','Issued','#16a34a']];
    const stk=(T,kf,fk)=>{const pr=grp(kf),m=Math.max(1,...pr.map(r=>r[1]));return'<section class="pc-chart pd-ch"><h4>'+T+' <span>permit status · click a segment</span></h4><div class="pd-lg">'+SK.map(k=>'<span><i style="background:'+k[2]+'"></i>'+k[1]+'</span>').join('')+'</div>'+pr.map(([g,n])=>{const q=g==='—'?(fk==='owner'?'__none':''):String(g).replace(/'/g,"\\'");return'<div class="pd-br"><span class="pd-bl" title="'+es(g)+'">'+es(g)+'</span><span class="pd-bt pd-stk"><span style="width:'+(n/m*100)+'%;display:flex;background:none">'+SK.map(k=>{const c=act.filter(p=>(kf(p)||'—')===g&&pdStage(p)===k[0]).length;return c?'<span title="'+es(g)+' · '+k[1]+': '+c+'" style="flex:'+c+';background:'+k[2]+';cursor:pointer;border-radius:0" onclick="permDash.'+fk+'=\''+q+'\';permDash.stage=\''+k[0]+'\';renderPerm()"></span>':'';}).join('')+'</span></span><b>'+n+'</b></div>';}).join('')+'</section>';};
-   h+='<div class="pd-charts">'+bar('By stage','active jobs · click to filter',stg,'#0d3b6e')+stk('By owner',pdOwner,'owner')+stk('By program',p=>p.program,'program')+bar('Outstanding paperwork','needed, not received · not yet issued',Object.entries(oc).sort((x,y)=>y[1]-x[1]),'#dc2626')+'</div>';}
+   const PK=[['pend','PENDING (ordered)','#facc15'],['need','NEEDED (not ordered)','#dc2626']];
+   const ppr=()=>{const pr=Object.entries(oc).map(([k,e])=>[k,e,e.pend+e.need]).sort((x,y)=>y[2]-x[2]),m=Math.max(1,...pr.map(r=>r[2]));return'<section class="pc-chart pd-ch"><h4>Outstanding paperwork <span>not yet issued · click a segment</span></h4><div class="pd-lg">'+PK.map(k=>'<span><i style="background:'+k[2]+'"></i>'+k[1]+'</span>').join('')+(permDash.paper?' <a href="#" onclick="permDash.paper=\'\';renderPerm();return false">clear</a>':'')+'</div>'+(pr.length?pr.map(([g,e,n])=>'<div class="pd-br"><span class="pd-bl" title="'+es(g)+'">'+es(g)+'</span><span class="pd-bt pd-stk"><span style="width:'+(n/m*100)+'%;display:flex;background:none">'+PK.map(k=>e[k[0]]?'<span title="'+es(g)+' · '+k[1]+': '+e[k[0]]+'" style="flex:'+e[k[0]]+';background:'+k[2]+';cursor:pointer;border-radius:0'+(permDash.paper===g+'|'+k[0]?';outline:2px solid #0d3b6e':'')+'" onclick="permDash.paper=\''+g.replace(/'/g,"\\'")+'|'+k[0]+'\';if(permDash.stage===\'issued\')permDash.stage=\'open\';renderPerm()"></span>':'').join('')+'</span></span><b>'+n+'</b></div>').join(''):'<div class="pd-mut">None</div>')+'</section>';};
+   h+='<div class="pd-charts">'+bar('By stage','active jobs · click to filter',stg,'#0d3b6e')+stk('By owner',pdOwner,'owner')+stk('By program',p=>p.program,'program')+ppr()+'</div>';}
   h+='<div class="pd-filt"><div class="pd-frow"><div class="pc-search pd-search"><span>&#9906;</span><input id="pd-search" placeholder="Search job, address, homeowner, ID, permit #, jurisdiction, type, status, program, owner" value="'+es(permDash.search)+'" oninput="permDash.search=this.value;clearTimeout(window._pdT);window._pdT=setTimeout(renderPerm,200)"></div>'+
     '<select class="pd-sel" onchange="pdSet(\'program\',this.value)" title="Program">'+opts(base.map(p=>p.program),permDash.program).replace('>All<','>All programs<')+'</select>'+
     '<select class="pd-sel" onchange="pdSet(\'jur\',this.value)" title="Jurisdiction">'+opts(base.map(p=>p.permittingJurisdiction),permDash.jur).replace('>All<','>All jurisdictions<')+'</select>'+
