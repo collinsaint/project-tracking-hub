@@ -77,7 +77,7 @@ function _pdSeptic(p){
 }
 function _pdMhu(p){return /mhu|replace/i.test(p.jobType||'');}
 function _pdPaper(p){
-  const ln=(l,na,O,R)=>{if(na)return'<div class="pd-pw"><i>'+l+'</i>'+_pdNA()+'</div>';const o=_pdD(O),r=_pdD(R);return'<div class="pd-pw"><i>'+l+'</i>'+(o||'<span class="pd-mut">—</span>')+' / '+(r?'<b class="pd-ok">'+r+'</b>':(o?'<span class="pd-wait">wait</span>':'<span class="pd-mut">—</span>'))+'</div>';};
+  const ln=(l,na,O,R)=>{if(na)return'<div class="pd-pw"><i>'+l+'</i>'+_pdNA()+'</div>';const o=_pdD(O),r=_pdD(R);return'<div class="pd-pw"><i>'+l+'</i>'+(o||(r?'<span class="pd-miss">MISSING</span>':'<span class="pd-mut">—</span>'))+' / '+(r?'<b class="pd-ok">'+r+'</b>':(o?'<span class="pd-wait">wait</span>':'<span class="pd-mut">—</span>'))+'</div>';};
   const rh=_pdRehab(p),np=_pdProgNoPlans(p);
   return ln('Svy/EC',!(_pdRecon(p)&&!np),p.surveyOrdered,p.surveyReceived)+ln('Plans',rh||np,p.plansOrdered,p.plansReceived)+ln('Truss',rh||_pdMhu(p),p.trussOrdered,p.trussReceived)+ln('Energy',rh||_pdMhu(p),p.energyCalcsOrdered,p.energyCalcsReceived);
 }
