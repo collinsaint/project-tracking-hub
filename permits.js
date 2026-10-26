@@ -75,6 +75,11 @@ function _pdSeptic(p){
   if(!st.length&&!iss)return'<span class="pd-mut">—</span>';
   return'<div class="pd-pair">'+(st.length?'<span>'+st.map(es).join(' · ')+'</span>':'')+'<span><i>Prm</i>'+(iss?'<b class="pd-ok">'+iss+'</b>':'<span class="pd-mut">—</span>')+'</span></div>';
 }
+function _pdPaper(p){
+  const ln=(l,na,O,R)=>{if(na)return'<div class="pd-pw"><i>'+l+'</i>'+_pdNA()+'</div>';const o=_pdD(O),r=_pdD(R);return'<div class="pd-pw"><i>'+l+'</i>'+(o||'<span class="pd-mut">—</span>')+' / '+(r?'<b class="pd-ok">'+r+'</b>':(o?'<span class="pd-wait">wait</span>':'<span class="pd-mut">—</span>'))+'</div>';};
+  const rh=_pdRehab(p),np=_pdProgNoPlans(p);
+  return ln('Svy/EC',!(_pdRecon(p)&&!np),p.surveyOrdered,p.surveyReceived)+ln('Plans',rh||np,p.plansOrdered,p.plansReceived)+ln('Truss',rh,p.trussOrdered,p.trussReceived)+ln('Energy',rh,p.energyCalcsOrdered,p.energyCalcsReceived);
+}
 function renderPerm(){
   const root=document.getElementById('pd-root');if(!root)return;
   const base=pdBase();
@@ -120,7 +125,7 @@ function renderPerm(){
   h+='<section class="pc-panel"><header><h3>Permit queue</h3><span class="pc-count">'+rows.length+'</span><span class="pc-hsub">Click a job to open it. Dates come from the Buildertrend import.</span></header>';
   if(!rows.length)h+='<div class="pc-none">No jobs match these filters.</div>';
   else{
-    h+='<div class="pc-tw pd-tw"><table class="pc-q pd-q"><thead><tr>'+th('job','Job')+th('jobType','Type')+th('owner','Owner')+th('','Status')+th('bldgPermitSubmitted','Subm.')+th('bldgPermitIssued','Issued')+th('days','Days')+th('permitKickedBack','KB / Resub')+th('septicPermitIssued','Septic')+th('','RFI')+th('surveyOrdered','Survey/EC')+th('plansOrdered','Plans')+th('trussOrdered','Truss')+th('energyCalcsOrdered','Energy')+'</tr></thead><tbody>';
+    h+='<div class="pc-tw pd-tw"><table class="pc-q pd-q"><thead><tr>'+th('job','Job')+th('jobType','Type')+th('owner','Owner')+th('','Status')+th('bldgPermitSubmitted','Subm.')+th('bldgPermitIssued','Issued')+th('days','Days')+th('permitKickedBack','KB / Resub')+th('septicPermitIssued','Septic')+th('','RFI')+th('','Paperwork <span class="pd-mut">O / R</span>')+'</tr></thead><tbody>';
     rows.forEach(p=>{
       const idx=proj.indexOf(p),st=pdStage(p),o=pdOwner(p),d=_pdDays(p),pu=(typeof puData!=='undefined'&&puData[p.address])||{};
       const hm=((p.firstName||'')+' '+(p.lastName||'')).trim();
@@ -135,9 +140,8 @@ function renderPerm(){
         '<td class="pc-nw">'+(_pdHas(p.permitKickedBack)||_pdHas(p.permitResubmitted)?'<div class="pd-pair"><span><i>KB</i>'+(_pdD(p.permitKickedBack)||'—')+'</span><span><i>Resub</i>'+(_pdD(p.permitResubmitted)||'<span class="pd-wait">wait</span>')+'</span></div>':'<span class="pd-mut">—</span>')+(p.permitKickbackNotes?'<div class="pc-sub pd-tr" title="'+es(p.permitKickbackNotes)+'">'+es(p.permitKickbackNotes)+'</div>':'')+'</td>'+
         '<td>'+_pdSeptic(p)+'</td>'+
         '<td>'+_pdRfi(p)+'</td>'+
-        '<td>'+((_pdRecon(p)&&!_pdProgNoPlans(p))?_pdPair(p.surveyOrdered,p.surveyReceived):_pdNA())+'</td>'+
-        '<td>'+((_pdRehab(p)||_pdProgNoPlans(p))?_pdNA():_pdPair(p.plansOrdered,p.plansReceived))+'</td><td>'+(_pdRehab(p)?_pdNA():_pdPair(p.trussOrdered,p.trussReceived))+'</td><td>'+(_pdRehab(p)?_pdNA():_pdPair(p.energyCalcsOrdered,p.energyCalcsReceived))+'</td>'+
-        '</tr>'+(pu.thisWeek?'<tr class="pd-note" onclick="od('+idx+')"><td colspan="14" id="pdn-'+idx+'"><span class="pd-nl">This week</span>'+es(pu.thisWeek)+' <button class="pd-nb" onclick="event.stopPropagation();pdEditNote('+idx+')">&#9998; Edit</button></td></tr>':'<tr class="pd-note pd-note0" id="pdr-'+idx+'" style="display:none"><td colspan="14" id="pdn-'+idx+'"></td></tr>');
+        '<td>'+_pdPaper(p)+'</td>'+
+        '</tr>'+(pu.thisWeek?'<tr class="pd-note" onclick="od('+idx+')"><td colspan="11" id="pdn-'+idx+'"><span class="pd-nl">This week'+(pu.thisWeekSavedAt?' · '+(_pdD(pu.thisWeekSavedAt)||es(pu.thisWeekSavedAt)):'')+'</span>'+es(pu.thisWeek)+' <button class="pd-nb" onclick="event.stopPropagation();pdEditNote('+idx+')">&#9998; Edit</button></td></tr>':'<tr class="pd-note pd-note0" id="pdr-'+idx+'" style="display:none"><td colspan="11" id="pdn-'+idx+'"></td></tr>');
     });
     h+='</tbody></table></div>';
   }
