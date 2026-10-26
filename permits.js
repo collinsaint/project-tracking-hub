@@ -79,8 +79,12 @@ function _pdSeptic(p){
   return'<div class="pd-pair">'+(st.length?'<span>'+st.map(es).join(' · ')+'</span>':'')+'<span><i>Prm</i>'+(iss?'<b class="pd-ok">'+iss+'</b>':'<span class="pd-mut">—</span>')+'</span></div>';
 }
 function _pdMhu(p){return /mhu|replace/i.test(p.jobType||'');}
+function _pdOut(p){const rh=_pdRehab(p),np=_pdProgNoPlans(p),o=[],nr=v=>!(_pdHas(v)&&v!=='N/A');
+  if(!(!(_pdRecon(p)&&!np))&&nr(p.surveyReceived))o.push('Survey/EC');if(!(rh||np)&&nr(p.plansReceived))o.push('Plans');
+  if(!(rh||_pdMhu(p))&&nr(p.trussReceived))o.push('Truss');if(!(rh||_pdMhu(p))&&nr(p.energyCalcsReceived))o.push('Energy');
+  if(_pdYes(p.rfiNeeded)&&nr(p.rfiReceived))o.push('RFI');if(_pdYes(p.addlRfiNeeded)&&nr(p.addlRfiReceived))o.push("Add'l RFI");return o;}
 function _pdPaper(p){
-  const ln=(l,na,O,R)=>{if(na)return'<div class="pd-pw"><i>'+l+'</i>'+_pdNA()+'</div>';const o=_pdD(O),r=_pdD(R);return'<div class="pd-pw"><i>'+l+'</i>'+(o||(r?'<span class="pd-miss">MISSING</span>':'<span class="pd-mut">—</span>'))+' / '+(r?'<b class="pd-ok">'+r+'</b>':(o?'<span class="pd-wait">wait</span>':'<span class="pd-mut">—</span>'))+'</div>';};
+  const ln=(l,na,O,R)=>{if(na)return'<div class="pd-pw"><i>'+l+'</i>'+_pdNA()+'</div>';const o=_pdD(O),r=_pdD(R);return'<div class="pd-pw"><i>'+l+'</i>'+(o||(r?'<span class="pd-miss">MISSING</span>':'<span class="pd-mut">—</span>'))+' / '+(r?'<b class="pd-ok">'+r+'</b>':(o?'<span class="pd-wait">wait</span>':'<span class="pd-need">NEEDED</span>'))+'</div>';};
   const rh=_pdRehab(p),np=_pdProgNoPlans(p);
   return ln('Svy/EC',!(_pdRecon(p)&&!np),p.surveyOrdered,p.surveyReceived)+ln('Plans',rh||np,p.plansOrdered,p.plansReceived)+ln('Truss',rh||_pdMhu(p),p.trussOrdered,p.trussReceived)+ln('Energy',rh||_pdMhu(p),p.energyCalcsOrdered,p.energyCalcsReceived);
 }
@@ -120,6 +124,11 @@ function renderPerm(){
   let h='<div class="pc-top"><div class="pc-top-t"><h2>Permitting</h2><p>Permit status, owners and paperwork for every active job'+(ownerLbl?' · <b>'+es(ownerLbl)+'</b>':'')+'</p></div>'+
     '<div class="pc-top-act"><button class="btn pc-ol" onclick="openPermUpdView()">Permitting Updates sheet</button></div></div>';
   h+='<div class="pc-cards pd-cards">'+PD_STAGES.map(([k,l,s,c])=>'<button class="pc-card '+c+(permDash.stage===k?' on':'')+'" onclick="pdSet(\'stage\',\''+k+'\')"><span class="pc-cl">'+l+'</span><b>'+cnt[k]+'</b><span class="pc-cs">'+s+'</span></button>').join('')+'</div>';
+  {const act=base.filter(p=>!pdHold(p)),bar=(t,sub,rows,col)=>{const m=Math.max(1,...rows.map(r=>r[1]));return'<section class="pc-chart pd-ch"><h4>'+t+' <span>'+sub+'</span></h4>'+(rows.length?rows.map(r=>'<div class="pd-br"'+(r[2]?' onclick="'+r[2]+'" style="cursor:pointer"':'')+'><span class="pd-bl" title="'+es(r[0])+'">'+es(r[0])+'</span><span class="pd-bt"><span style="width:'+(r[1]/m*100)+'%;background:'+col+'"></span></span><b>'+r[1]+'</b></div>').join(''):'<div class="pd-mut">None</div>')+'</section>';},
+   grp=(f)=>{const o={};act.forEach(p=>{const k=f(p)||'—';o[k]=(o[k]||0)+1;});return Object.entries(o).sort((x,y)=>y[1]-x[1]).slice(0,8);};
+   const stg=PD_STAGES.filter(x=>!['all','open','ready','hold'].includes(x[0])).map(([k,l])=>[l,act.filter(p=>pdStage(p)===k).length,"pdSet('stage','"+k+"')"]).filter(r=>r[1]);
+   const oc={};act.filter(p=>pdStage(p)!=='issued').forEach(p=>_pdOut(p).forEach(k=>oc[k]=(oc[k]||0)+1));
+   h+='<div class="pd-charts">'+bar('By stage','active jobs · click to filter',stg,'#0d3b6e')+bar('By owner','active jobs',grp(pdOwner),'#2563eb')+bar('By program','active jobs',grp(p=>p.program).map(r=>[r[0],r[1],r[0]!=='—'?"pdSet('program','"+String(r[0]).replace(/'/g,"\\'")+"')":'']),'#0891b2')+bar('Outstanding paperwork','needed, not received · not yet issued',Object.entries(oc).sort((x,y)=>y[1]-x[1]),'#dc2626')+'</div>';}
   h+='<div class="pd-filt"><div class="pd-frow"><div class="pc-search pd-search"><span>&#9906;</span><input id="pd-search" placeholder="Search job, address, homeowner, ID, permit #, jurisdiction, type, status, program, owner" value="'+es(permDash.search)+'" oninput="permDash.search=this.value;clearTimeout(window._pdT);window._pdT=setTimeout(renderPerm,200)"></div>'+
     '<select class="pd-sel" onchange="pdSet(\'program\',this.value)" title="Program">'+opts(base.map(p=>p.program),permDash.program).replace('>All<','>All programs<')+'</select>'+
     '<select class="pd-sel" onchange="pdSet(\'jur\',this.value)" title="Jurisdiction">'+opts(base.map(p=>p.permittingJurisdiction),permDash.jur).replace('>All<','>All jurisdictions<')+'</select>'+
@@ -134,8 +143,8 @@ function renderPerm(){
       const idx=proj.indexOf(p),st=pdStage(p),o=pdOwner(p),d=_pdDays(p),pu=(typeof puData!=='undefined'&&puData[p.address])||{};
       const hm=((p.firstName||'')+' '+(p.lastName||'')).trim();
       const stat=[p.bldgPermitStatus,p.permitStatus].filter(Boolean).filter((v,i,a)=>a.indexOf(v)===i);
-      h+='<tbody class="pd-grp"><tr class="'+(pu.thisWeek?'pd-hasn':'')+'" onclick="od('+idx+')" style="cursor:pointer">'+
-        '<td><div class="pc-job">'+es(pname(p)||'No address')+'</div><div class="pc-sub">'+es([p.projectNumber,p.city,hm].filter(Boolean).join(' · '))+'</div>'+(p.permittingJurisdiction?'<div class="pc-sub pd-jur" title="Jurisdiction">&#9873; '+es(p.permittingJurisdiction)+'</div>':'')+(pu.thisWeek?'':'<button class="pd-nb" onclick="event.stopPropagation();pdEditNote('+idx+')">+ Week note</button>')+'<div style="margin-top:4px">'+(p.program?'<span class="pc-prog">'+es(p.program)+'</span>':'')+'</div></td>'+
+      const _o=_pdOut(p);h+='<tbody class="pd-grp'+(_o.length?' pd-out':'')+'" title="'+(_o.length?'Outstanding: '+_o.join(', '):'')+'"><tr class="'+(pu.thisWeek?'pd-hasn':'')+'" onclick="od('+idx+')" style="cursor:pointer">'+
+        '<td><div class="pc-job">'+es(pname(p)||'No address')+'</div>'+(_o.length?'<div class="pd-outc">Needs: '+es(_o.join(', '))+'</div>':'')+'<div class="pc-sub">'+es([p.projectNumber,p.city,hm].filter(Boolean).join(' · '))+'</div>'+(p.permittingJurisdiction?'<div class="pc-sub pd-jur" title="Jurisdiction">&#9873; '+es(p.permittingJurisdiction)+'</div>':'')+(pu.thisWeek?'':'<button class="pd-nb" onclick="event.stopPropagation();pdEditNote('+idx+')">+ Week note</button>')+'<div style="margin-top:4px">'+(p.program?'<span class="pc-prog">'+es(p.program)+'</span>':'')+'</div></td>'+
         '<td class="pd-tr" style="max-width:90px" title="'+es(p.jobType||'')+'">'+(p.jobType?es(p.jobType):'<span class="pd-mut">—</span>')+'</td>'+'<td class="pc-nw">'+(o?'<span class="pd-own">'+es(o)+'</span>':'<span class="pd-mut">Unassigned</span>')+'</td>'+
         '<td>'+(pdReady(p)?'<span class="pc-chip pd-rdy">Ready — pending permit</span> ':'')+_pdStageChip(st)+(pu.needsAttention?' <span class="pc-chip pc-p1">Needs attention</span>':'')+(stat.length?'<div class="pc-sub pd-tr" style="margin-top:4px" title="'+es(stat.join(' · '))+'">'+stat.map(es).join(' · ')+'</div>':'')+(p.jobStatus?'<div class="pc-sub pd-tr" title="'+es(p.jobStatus)+'">'+es(p.jobStatus)+'</div>':'')+'</td>'+
                 '<td class="pc-nw">'+(_pdD(p.bldgPermitSubmitted)||'<span class="pd-mut">—</span>')+(p.bldgPermitNumber?'<div class="pc-sub">#'+es(p.bldgPermitNumber)+'</div>':'')+'</td>'+
