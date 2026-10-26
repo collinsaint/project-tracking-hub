@@ -126,12 +126,12 @@ function renderPerm(){
   h+='<section class="pc-panel"><header><h3>Permit queue</h3><span class="pc-count">'+rows.length+'</span><span class="pc-hsub">Click a job to open it. Dates come from the Buildertrend import.</span></header>';
   if(!rows.length)h+='<div class="pc-none">No jobs match these filters.</div>';
   else{
-    h+='<div class="pc-tw pd-tw"><table class="pc-q pd-q"><thead><tr>'+th('job','Job')+th('jobType','Type')+th('owner','Owner')+th('','Status')+th('bldgPermitSubmitted','Subm.')+th('bldgPermitIssued','Issued')+th('days','Days')+th('permitKickedBack','KB / Resub')+th('septicPermitIssued','Septic')+th('','RFI')+th('','Paperwork <span class="pd-mut">O / R</span>')+'</tr></thead><tbody>';
+    h+='<div class="pc-tw pd-tw"><table class="pc-q pd-q"><thead><tr>'+th('job','Job')+th('jobType','Type')+th('owner','Owner')+th('','Status')+th('bldgPermitSubmitted','Subm.')+th('bldgPermitIssued','Issued')+th('days','Days')+th('permitKickedBack','KB / Resub')+th('septicPermitIssued','Septic')+th('','RFI')+th('','Paperwork <span class="pd-mut">O / R</span>')+'</tr></thead>';
     rows.forEach(p=>{
       const idx=proj.indexOf(p),st=pdStage(p),o=pdOwner(p),d=_pdDays(p),pu=(typeof puData!=='undefined'&&puData[p.address])||{};
       const hm=((p.firstName||'')+' '+(p.lastName||'')).trim();
       const stat=[p.bldgPermitStatus,p.permitStatus].filter(Boolean).filter((v,i,a)=>a.indexOf(v)===i);
-      h+='<tr class="'+(pu.thisWeek?'pd-hasn':'')+'" onclick="od('+idx+')" style="cursor:pointer">'+
+      h+='<tbody class="pd-grp"><tr class="'+(pu.thisWeek?'pd-hasn':'')+'" onclick="od('+idx+')" style="cursor:pointer">'+
         '<td><div class="pc-job">'+es(pname(p)||'No address')+'</div><div class="pc-sub">'+es([p.projectNumber,p.city,hm].filter(Boolean).join(' · '))+'</div>'+(p.permittingJurisdiction?'<div class="pc-sub pd-jur" title="Jurisdiction">&#9873; '+es(p.permittingJurisdiction)+'</div>':'')+(pu.thisWeek?'':'<button class="pd-nb" onclick="event.stopPropagation();pdEditNote('+idx+')">+ Week note</button>')+'<div style="margin-top:4px">'+(p.program?'<span class="pc-prog">'+es(p.program)+'</span>':'')+'</div></td>'+
         '<td class="pd-tr" style="max-width:90px" title="'+es(p.jobType||'')+'">'+(p.jobType?es(p.jobType):'<span class="pd-mut">—</span>')+'</td>'+'<td class="pc-nw">'+(o?'<span class="pd-own">'+es(o)+'</span>':'<span class="pd-mut">Unassigned</span>')+'</td>'+
         '<td>'+(pdReady(p)?'<span class="pc-chip pd-rdy">Ready — pending permit</span> ':'')+_pdStageChip(st)+(pu.needsAttention?' <span class="pc-chip pc-p1">Needs attention</span>':'')+(stat.length?'<div class="pc-sub pd-tr" style="margin-top:4px" title="'+es(stat.join(' · '))+'">'+stat.map(es).join(' · ')+'</div>':'')+(p.jobStatus?'<div class="pc-sub pd-tr" title="'+es(p.jobStatus)+'">'+es(p.jobStatus)+'</div>':'')+'</td>'+
@@ -142,9 +142,9 @@ function renderPerm(){
         '<td>'+_pdSeptic(p)+'</td>'+
         '<td>'+_pdRfi(p)+'</td>'+
         '<td>'+_pdPaper(p)+'</td>'+
-        '</tr>'+(pu.thisWeek?'<tr class="pd-note" onclick="od('+idx+')"><td colspan="11" id="pdn-'+idx+'"><span class="pd-nl">This week'+(pu.thisWeekSavedAt?' · '+(_pdD(pu.thisWeekSavedAt)||es(pu.thisWeekSavedAt)):'')+'</span>'+es(pu.thisWeek)+' <button class="pd-nb" onclick="event.stopPropagation();pdEditNote('+idx+')">&#9998; Edit</button></td></tr>':'<tr class="pd-note pd-note0" id="pdr-'+idx+'" style="display:none"><td colspan="11" id="pdn-'+idx+'"></td></tr>');
+        '</tr>'+(pu.thisWeek?'<tr class="pd-note" onclick="od('+idx+')"><td colspan="11" id="pdn-'+idx+'"><span class="pd-nl">This week'+(pu.thisWeekSavedAt?' · '+(_pdD(pu.thisWeekSavedAt)||es(pu.thisWeekSavedAt)):'')+'</span>'+es(pu.thisWeek)+' <button class="pd-nb" onclick="event.stopPropagation();pdEditNote('+idx+')">&#9998; Edit</button></td></tr>':'<tr class="pd-note pd-note0" id="pdr-'+idx+'" style="display:none"><td colspan="11" id="pdn-'+idx+'"></td></tr>')+'</tbody>';
     });
-    h+='</tbody></table></div>';
+    h+='</table></div>';
   }
   h+='</section>';
   root.innerHTML=h;
