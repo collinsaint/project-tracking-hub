@@ -2,12 +2,12 @@
 let permDash={owner:'',stage:'open',search:'',program:'',jur:'',sort:'',dir:1};
 const PD_STAGES=[
   ['open','Open permits','Not yet issued','pc-cw'],
-  ['ready','Ready — pending permit','Ready to start, only permit left','pc-c1'],
+  ['ready','Ready — pending permit','Only permit left','pd-cg'],
   ['none','Not submitted','Waiting on submittal','pc-c2'],
   ['review','In review','Submitted / resubmitted','pc-cw'],
   ['kicked','Kicked back','Awaiting resubmittal','pc-c1'],
-  ['issued','Issued','Building permit issued','pc-cn'],
-  ['hold','On hold','Job on hold — not in counts above','pc-c2']
+  ['issued','Issued','Building permit issued','pd-ct'],
+  ['hold','On hold','Not counted above','pc-cn']
 ];
 function pdHold(p){return /hold/i.test(p.jobStatus||'');}
 function pdStageOk(p){const h=pdHold(p);if(permDash.stage==='hold')return h;if(h)return false;const s=pdStage(p);return permDash.stage==='all'||(permDash.stage==='ready'?pdReady(p):permDash.stage==='open'?s!=='issued':s===permDash.stage);}
@@ -111,12 +111,12 @@ function renderPerm(){
   let h='<div class="pc-top"><div class="pc-top-t"><h2>Permitting</h2><p>Permit status, owners and paperwork for every active job'+(ownerLbl?' · <b>'+es(ownerLbl)+'</b>':'')+'</p></div>'+
     '<div class="pc-top-act"><button class="btn pc-ol" onclick="openPermUpdView()">Permitting Updates sheet</button></div></div>';
   h+='<div class="pc-cards pd-cards">'+PD_STAGES.map(([k,l,s,c])=>'<button class="pc-card '+c+(permDash.stage===k?' on':'')+'" onclick="pdSet(\'stage\',\''+k+'\')"><span class="pc-cl">'+l+'</span><b>'+cnt[k]+'</b><span class="pc-cs">'+s+'</span></button>').join('')+'</div>';
-  h+='<div class="pc-filters"><div class="pc-frow"><span class="pc-fl">Owner</span><div class="pc-seg">'+chip('','All',totStage)+owners.map(o=>chip(o,o,oc[o]||0)).join('')+chip('__none','Unassigned',un)+'</div></div>'+
-    '<div class="pc-frow" style="margin-top:8px"><div class="pc-search"><span>&#9906;</span><input id="pd-search" placeholder="Search job, homeowner, prefix, permit #" value="'+es(permDash.search)+'" oninput="permDash.search=this.value;clearTimeout(window._pdT);window._pdT=setTimeout(renderPerm,200)"></div>'+
-    '<select onchange="pdSet(\'program\',this.value)" title="Program">'+opts(base.map(p=>p.program),permDash.program).replace('>All<','>All programs<')+'</select>'+
-    '<select onchange="pdSet(\'jur\',this.value)" title="Jurisdiction">'+opts(base.map(p=>p.permittingJurisdiction),permDash.jur).replace('>All<','>All jurisdictions<')+'</select>'+
-    '<button class="pc-f'+(permDash.stage==='all'?' on':'')+'" style="border:1px solid var(--pc-line);background:'+(permDash.stage==='all'?'':'#fff')+'" onclick="pdSet(\'stage\',\'all\')">Include issued</button>'+
-    (anyF?'<button class="pc-clear" onclick="pdClear()">Clear</button>':'')+'</div></div>';
+  h+='<div class="pd-filt"><div class="pd-frow"><div class="pc-search pd-search"><span>&#9906;</span><input id="pd-search" placeholder="Search job, homeowner, prefix, permit #" value="'+es(permDash.search)+'" oninput="permDash.search=this.value;clearTimeout(window._pdT);window._pdT=setTimeout(renderPerm,200)"></div>'+
+    '<select class="pd-sel" onchange="pdSet(\'program\',this.value)" title="Program">'+opts(base.map(p=>p.program),permDash.program).replace('>All<','>All programs<')+'</select>'+
+    '<select class="pd-sel" onchange="pdSet(\'jur\',this.value)" title="Jurisdiction">'+opts(base.map(p=>p.permittingJurisdiction),permDash.jur).replace('>All<','>All jurisdictions<')+'</select>'+
+    '<button class="pd-tog'+(permDash.stage==='all'?' on':'')+'" onclick="pdSet(\'stage\',\''+(permDash.stage==='all'?'open':'all')+'\')">Include issued</button>'+
+    (anyF?'<button class="pc-clear" onclick="pdClear()">Clear filters</button>':'')+'</div>'+
+    '<div class="pd-frow pd-orow"><span class="pd-fl">Owner</span><div class="pd-chips">'+chip('','All',totStage)+owners.map(o=>chip(o,o,oc[o]||0)).join('')+chip('__none','Unassigned',un)+'</div></div></div>';
   h+='<section class="pc-panel"><header><h3>Permit queue</h3><span class="pc-count">'+rows.length+'</span><span class="pc-hsub">Click a job to open it. Dates come from the Buildertrend import.</span></header>';
   if(!rows.length)h+='<div class="pc-none">No jobs match these filters.</div>';
   else{
