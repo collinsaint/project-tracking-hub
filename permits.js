@@ -64,10 +64,13 @@ function _pdNA(){return'<span class="pd-na">N/A</span>';}
 function _pdProgNoPlans(p){return /rebuild\s*f(l|lorida)|pinellas/i.test(p.program||'');}
 function _pdRehab(p){return /rehab/i.test(p.jobType||'');}
 function _pdRecon(p){return /recon|mhu|replace/i.test(p.jobType||'');}
+function _pdYes(v){return v===true||/^(y|yes|true|x|checked|1)$/i.test(String(v==null?'':v).trim());}
 function _pdRfi(p){
-  const one=(n,rq,rc,lbl)=>{if(_pdHas(rc))return'<div><span class="pc-chip pd-pi">'+lbl+' received</span> <span class="pc-sub">'+_pdD(rc)+'</span></div>';if(_pdHas(rq))return'<div><span class="pc-chip pc-p2">'+lbl+' requested</span> <span class="pc-sub">'+_pdD(rq)+'</span></div>';if(/^y/i.test(n||''))return'<div><span class="pc-chip pc-p1">'+lbl+' needed</span></div>';return'';};
-  const h=one(p.rfiNeeded,p.rfiRequested,p.rfiReceived,'RFI')+one(p.addlRfiNeeded,p.addlRfiRequested,p.addlRfiReceived,'Add\'l RFI');
-  return h||'<span class="pd-mut">None</span>';
+  const one=(n,rq,rc,lbl,main)=>{const y=_pdYes(n),q=_pdHas(rq)&&rq!=='N/A',c=_pdHas(rc)&&rc!=='N/A';
+    if(!y&&!q&&!c)return main?'<div><span class="pd-mut">'+lbl+' not needed</span></div>':'';
+    let h='<div><span class="pc-chip '+(c?'pd-pi':q?'pc-p2':'pc-p1')+'">'+lbl+(c?' received':q?' requested':' needed')+'</span></div>';
+    if(q)h+='<div class="pd-pw"><i>Req</i>'+_pdD(rq)+'</div>';if(c)h+='<div class="pd-pw"><i>Rcvd</i><b class="pd-ok">'+_pdD(rc)+'</b></div>';return h;};
+  return one(p.rfiNeeded,p.rfiRequested,p.rfiReceived,'RFI',1)+one(p.addlRfiNeeded,p.addlRfiRequested,p.addlRfiReceived,'Add\'l RFI',0);
 }
 function _pdSeptic(p){
   const st=[p.septic].filter(v=>v&&!/^unknown$/i.test(v)).filter((v,i,a)=>a.indexOf(v)===i);
