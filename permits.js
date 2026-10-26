@@ -3,14 +3,15 @@ let permDash={owner:'',stage:'open',search:'',program:'',jur:'',sort:'',dir:1};
 const PD_STAGES=[
   ['open','Open permits','Not yet issued','pc-cw'],
   ['ready','Ready — pending permit','Only permit left','pd-cg'],
-  ['none','Not submitted','Waiting on submittal','pc-c2'],
+  ['readySub','Ready for submission','Not submitted · all docs in','pd-cg'],
+  ['docsNeeded','Documents needed','Not submitted · docs out','pc-c2'],
   ['review','In review','Submitted / resubmitted','pc-cw'],
   ['kicked','Kicked back','Awaiting resubmittal','pc-c1'],
   ['issued','Issued','Building permit issued','pd-ct'],
   ['hold','On hold','Not counted above','pc-cn']
 ];
 function pdHold(p){return /hold/i.test(p.jobStatus||'');}
-function pdStageOk(p){const h=pdHold(p);if(permDash.stage==='hold')return h;if(h)return false;const s=pdStage(p);return permDash.stage==='all'||(permDash.stage==='ready'?pdReady(p):permDash.stage==='open'?s!=='issued':s===permDash.stage);}
+function pdStageOk(p){const h=pdHold(p);if(permDash.stage==='hold')return h;if(h)return false;const s=pdStage(p);return permDash.stage==='all'||(permDash.stage==='ready'?pdReady(p):permDash.stage==='open'?s!=='issued':permDash.stage==='readySub'?(s==='none'&&_pdOut(p).length===0):permDash.stage==='docsNeeded'?(s==='none'&&_pdOut(p).length>0):s===permDash.stage);}
 function _pdHas(v){return !!v&&v!=='0';}
 function pdStage(p){
   const s=p.bldgPermitSubmitted||'',i=p.bldgPermitIssued||'';
@@ -99,8 +100,8 @@ function renderPerm(){
     return true;
   });
   const byOwner=pre.filter(p=>!permDash.owner||(permDash.owner==='__none'?!pdOwner(p):pdOwner(p)===permDash.owner));
-  const cnt={ready:0,open:0,none:0,review:0,kicked:0,issued:0,hold:0};
-  byOwner.forEach(p=>{if(pdHold(p)){cnt.hold++;return;}const s=pdStage(p);cnt[s]++;if(s!=='issued')cnt.open++;if(pdReady(p))cnt.ready++;});
+  const cnt={readySub:0,docsNeeded:0,ready:0,open:0,none:0,review:0,kicked:0,issued:0,hold:0};
+  byOwner.forEach(p=>{if(pdHold(p)){cnt.hold++;return;}const s=pdStage(p);cnt[s]++;if(s==='none'){if(_pdOut(p).length)cnt.docsNeeded++;else cnt.readySub++;}if(s!=='issued')cnt.open++;if(pdReady(p))cnt.ready++;});
   let rows=byOwner.filter(pdStageOk);
   // owner chips (counts within current stage + other filters)
   const stageOk=pdStageOk;
@@ -126,7 +127,7 @@ function renderPerm(){
   h+='<div class="pc-cards pd-cards">'+PD_STAGES.map(([k,l,s,c])=>'<button class="pc-card '+c+(permDash.stage===k?' on':'')+'" onclick="pdSet(\'stage\',\''+k+'\')"><span class="pc-cl">'+l+'</span><b>'+cnt[k]+'</b><span class="pc-cs">'+s+'</span></button>').join('')+'</div>';
   {const act=base.filter(p=>!pdHold(p)),bar=(t,sub,rows,col)=>{const m=Math.max(1,...rows.map(r=>r[1]));return'<section class="pc-chart pd-ch"><h4>'+t+' <span>'+sub+'</span></h4>'+(rows.length?rows.map(r=>'<div class="pd-br"'+(r[2]?' onclick="'+r[2]+'" style="cursor:pointer"':'')+'><span class="pd-bl" title="'+es(r[0])+'">'+es(r[0])+'</span><span class="pd-bt"><span style="width:'+(r[1]/m*100)+'%;background:'+col+'"></span></span><b>'+r[1]+'</b></div>').join(''):'<div class="pd-mut">None</div>')+'</section>';},
    grp=(f)=>{const o={};act.forEach(p=>{const k=f(p)||'—';o[k]=(o[k]||0)+1;});return Object.entries(o).sort((x,y)=>y[1]-x[1]).slice(0,8);};
-   const stg=PD_STAGES.filter(x=>!['all','open','ready','hold'].includes(x[0])).map(([k,l])=>[l,act.filter(p=>pdStage(p)===k).length,"pdSet('stage','"+k+"')"]).filter(r=>r[1]);
+   const stg=[['none','Not submitted']].concat(PD_STAGES.filter(x=>!['all','open','ready','hold','readySub','docsNeeded'].includes(x[0]))).map(([k,l])=>[l,act.filter(p=>pdStage(p)===k).length,"pdSet('stage','"+k+"')"]).filter(r=>r[1]);
    const oc={};act.filter(p=>pdStage(p)!=='issued').forEach(p=>_pdOut(p).forEach(k=>oc[k]=(oc[k]||0)+1));
    const SK=[['none','Not submitted','#94a3b8'],['review','In review','#f59e0b'],['kicked','Kicked back','#dc2626'],['issued','Issued','#16a34a']];
    const stk=(T,kf,fk)=>{const pr=grp(kf),m=Math.max(1,...pr.map(r=>r[1]));return'<section class="pc-chart pd-ch"><h4>'+T+' <span>permit status · click a segment</span></h4><div class="pd-lg">'+SK.map(k=>'<span><i style="background:'+k[2]+'"></i>'+k[1]+'</span>').join('')+'</div>'+pr.map(([g,n])=>{const q=g==='—'?(fk==='owner'?'__none':''):String(g).replace(/'/g,"\\'");return'<div class="pd-br"><span class="pd-bl" title="'+es(g)+'">'+es(g)+'</span><span class="pd-bt pd-stk"><span style="width:'+(n/m*100)+'%;display:flex;background:none">'+SK.map(k=>{const c=act.filter(p=>(kf(p)||'—')===g&&pdStage(p)===k[0]).length;return c?'<span title="'+es(g)+' · '+k[1]+': '+c+'" style="flex:'+c+';background:'+k[2]+';cursor:pointer;border-radius:0" onclick="permDash.'+fk+'=\''+q+'\';permDash.stage=\''+k[0]+'\';renderPerm()"></span>':'';}).join('')+'</span></span><b>'+n+'</b></div>';}).join('')+'</section>';};
