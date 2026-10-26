@@ -6,8 +6,11 @@ const PD_STAGES=[
   ['none','Not submitted','Waiting on submittal','pc-c2'],
   ['review','In review','Submitted / resubmitted','pc-cw'],
   ['kicked','Kicked back','Awaiting resubmittal','pc-c1'],
-  ['issued','Issued','Building permit issued','pc-cn']
+  ['issued','Issued','Building permit issued','pc-cn'],
+  ['hold','On hold','Job on hold — not in counts above','pc-c2']
 ];
+function pdHold(p){return /hold/i.test(p.jobStatus||'');}
+function pdStageOk(p){const h=pdHold(p);if(permDash.stage==='hold')return h;if(h)return false;const s=pdStage(p);return permDash.stage==='all'||(permDash.stage==='ready'?pdReady(p):permDash.stage==='open'?s!=='issued':s===permDash.stage);}
 function _pdHas(v){return !!v&&v!=='0';}
 function pdStage(p){
   const s=p.bldgPermitSubmitted||'',i=p.bldgPermitIssued||'';
@@ -83,11 +86,11 @@ function renderPerm(){
     return true;
   });
   const byOwner=pre.filter(p=>!permDash.owner||(permDash.owner==='__none'?!pdOwner(p):pdOwner(p)===permDash.owner));
-  const cnt={ready:0,open:0,none:0,review:0,kicked:0,issued:0};
-  byOwner.forEach(p=>{const s=pdStage(p);cnt[s]++;if(s!=='issued')cnt.open++;if(pdReady(p))cnt.ready++;});
-  let rows=byOwner.filter(p=>{const s=pdStage(p);return permDash.stage==='all'||(permDash.stage==='ready'?pdReady(p):permDash.stage==='open'?s!=='issued':s===permDash.stage);});
+  const cnt={ready:0,open:0,none:0,review:0,kicked:0,issued:0,hold:0};
+  byOwner.forEach(p=>{if(pdHold(p)){cnt.hold++;return;}const s=pdStage(p);cnt[s]++;if(s!=='issued')cnt.open++;if(pdReady(p))cnt.ready++;});
+  let rows=byOwner.filter(pdStageOk);
   // owner chips (counts within current stage + other filters)
-  const stageOk=p=>{const s=pdStage(p);return permDash.stage==='all'||(permDash.stage==='ready'?pdReady(p):permDash.stage==='open'?s!=='issued':s===permDash.stage);};
+  const stageOk=pdStageOk;
   const oc={};let un=0;pre.filter(stageOk).forEach(p=>{const o=pdOwner(p);if(o)oc[o]=(oc[o]||0)+1;else un++;});
   const owners=[...new Set(base.map(pdOwner).filter(Boolean))].sort();
   const totStage=pre.filter(stageOk).length;
