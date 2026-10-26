@@ -87,7 +87,7 @@ function _pdOut(p){const na=_pdNaMap(p),o=[],nr=v=>!(_pdHas(v)&&v!=='N/A');
   if(!na.truss&&nr(p.trussReceived))o.push('Truss');if(!na.energy&&nr(p.energyCalcsReceived))o.push('Energy');
   if(_pdYes(p.rfiNeeded)&&nr(p.rfiReceived))o.push('RFI');if(_pdYes(p.addlRfiNeeded)&&nr(p.addlRfiReceived))o.push("Add'l RFI");return o;}
 function _pdPaper(p){
-  const ln=(l,na,O,R)=>{if(na)return'<div class="pd-pw"><i>'+l+'</i><span class="pd-pgo">N/A</span></div>';const o=_pdD(O),r=_pdD(R);return'<div class="pd-pw"><i>'+l+'</i>'+(o||(r?'<span class="pd-miss">MISSING</span>':'<span class="pd-mut">—</span>'))+' / '+(r?'<b class="pd-pgo">'+r+'</b>':(o?'<span class="pd-need">PENDING</span>':'<span class="pd-need">NEEDED</span>'))+'</div>';};
+  const ln=(l,na,O,R)=>{if(na)return'<div class="pd-pw"><i>'+l+'</i><span class="pd-pgo">N/A</span></div>';const o=_pdD(O),r=_pdD(R);return'<div class="pd-pw"><i>'+l+'</i>'+(r?'<b class="pd-pgo">'+r+'</b>':(o?'<span class="pd-pend">PENDING</span>':'<span class="pd-need">NEEDED</span>'))+' / '+(o||(r?'<span class="pd-miss">MISSING</span>':'<span class="pd-mut">—</span>'))+'</div>';};
   const na=_pdNaMap(p);
   return ln('Svy/EC',na.svy,p.surveyOrdered,p.surveyReceived)+ln('Plans',na.plans,p.plansOrdered,p.plansReceived)+ln('Truss',na.truss,p.trussOrdered,p.trussReceived)+ln('Energy',na.energy,p.energyCalcsOrdered,p.energyCalcsReceived);
 }
@@ -143,7 +143,7 @@ function renderPerm(){
   h+='<section class="pc-panel"><header><h3>Permit queue</h3><span class="pc-count">'+rows.length+'</span><span class="pc-hsub">Click a job to open it. Dates come from the Buildertrend import.</span></header>';
   if(!rows.length)h+='<div class="pc-none">No jobs match these filters.</div>';
   else{
-    h+='<div class="pc-tw pd-tw"><table class="pc-q pd-q"><thead><tr>'+th('job','Job')+th('jobType','Type')+th('owner','Owner')+th('','Status')+th('bldgPermitSubmitted','Subm.')+th('bldgPermitIssued','Issued')+th('days','Days')+th('permitKickedBack','KB / Resub')+th('septicPermitIssued','Septic')+th('','RFI')+th('','Paperwork <span class="pd-mut">O / R</span>')+'</tr></thead>';
+    h+='<div class="pc-tw pd-tw"><table class="pc-q pd-q"><thead><tr>'+th('job','Job')+th('jobType','Type')+th('owner','Owner')+th('','Status')+th('bldgPermitSubmitted','Subm.')+th('bldgPermitIssued','Issued')+th('days','Days')+th('permitKickedBack','KB / Resub')+th('septicPermitIssued','Septic')+th('','RFI')+th('','Paperwork <span class="pd-mut">R / O</span>')+'</tr></thead>';
     rows.forEach(p=>{
       const idx=proj.indexOf(p),st=pdStage(p),o=pdOwner(p),d=_pdDays(p),pu=(typeof puData!=='undefined'&&puData[p.address])||{};
       const hm=((p.firstName||'')+' '+(p.lastName||'')).trim();
