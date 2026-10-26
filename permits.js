@@ -79,7 +79,7 @@ function _pdSeptic(p){
   return'<div class="pd-pair">'+(st.length?'<span>'+st.map(es).join(' · ')+'</span>':'')+'<span><i>Prm</i>'+(iss?'<b class="pd-ok">'+iss+'</b>':'<span class="pd-mut">—</span>')+'</span></div>';
 }
 function _pdMhu(p){return /mhu|replace/i.test(p.jobType||'');}
-function _pdNoTrussJur(p){return /sarasota|\blee\b|pasco/i.test([p.permittingJurisdiction,p.county,p.city].filter(Boolean).join(' '));}
+function _pdNoTrussJur(p){var g=function(v){return Array.isArray(v)?v.join(' '):(v&&typeof v==='object'?Object.values(v).join(' '):v);};return /lee\s*cares|lee\s*county|sarasota|pasco|\blee\b/i.test([p.permittingJurisdiction,p.county,p.city,p.program,g(p.groups),g(p.jobGroups)].filter(Boolean).join(' '));}
 function _pdNaMap(p){const rh=_pdRehab(p),np=_pdProgNoPlans(p),mhu=_pdMhu(p),rc=/recon/i.test(p.jobType||'');
   return{svy:mhu?false:!(_pdRecon(p)&&!np),plans:mhu?false:(rh||np),truss:rh||mhu||(rc&&_pdNoTrussJur(p)),energy:rh||mhu};}
 function _pdOut(p){const na=_pdNaMap(p),o=[],nr=v=>!(_pdHas(v)&&v!=='N/A');
