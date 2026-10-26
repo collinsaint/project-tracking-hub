@@ -126,7 +126,7 @@ function renderPerm(){
       const hm=((p.firstName||'')+' '+(p.lastName||'')).trim();
       const stat=[p.bldgPermitStatus,p.permitStatus].filter(Boolean).filter((v,i,a)=>a.indexOf(v)===i);
       h+='<tr class="'+(pu.thisWeek?'pd-hasn':'')+'" onclick="od('+idx+')" style="cursor:pointer">'+
-        '<td><div class="pc-job">'+es(pname(p)||'No address')+'</div><div class="pc-sub">'+es([p.projectNumber,p.city,hm].filter(Boolean).join(' · '))+'</div>'+(p.permittingJurisdiction?'<div class="pc-sub pd-jur" title="Jurisdiction">&#9873; '+es(p.permittingJurisdiction)+'</div>':'')+'<div style="margin-top:4px">'+(p.program?'<span class="pc-prog">'+es(p.program)+'</span>':'')+'</div></td>'+
+        '<td><div class="pc-job">'+es(pname(p)||'No address')+'</div><div class="pc-sub">'+es([p.projectNumber,p.city,hm].filter(Boolean).join(' · '))+'</div>'+(p.permittingJurisdiction?'<div class="pc-sub pd-jur" title="Jurisdiction">&#9873; '+es(p.permittingJurisdiction)+'</div>':'')+(pu.thisWeek?'':'<button class="pd-nb" onclick="event.stopPropagation();pdEditNote('+idx+')">+ Week note</button>')+'<div style="margin-top:4px">'+(p.program?'<span class="pc-prog">'+es(p.program)+'</span>':'')+'</div></td>'+
         '<td class="pd-tr" style="max-width:90px" title="'+es(p.jobType||'')+'">'+(p.jobType?es(p.jobType):'<span class="pd-mut">—</span>')+'</td>'+'<td class="pc-nw">'+(o?'<span class="pd-own">'+es(o)+'</span>':'<span class="pd-mut">Unassigned</span>')+'</td>'+
         '<td>'+(pdReady(p)?'<span class="pc-chip pd-rdy">Ready — pending permit</span> ':'')+_pdStageChip(st)+(pu.needsAttention?' <span class="pc-chip pc-p1">Needs attention</span>':'')+(stat.length?'<div class="pc-sub pd-tr" style="margin-top:4px" title="'+es(stat.join(' · '))+'">'+stat.map(es).join(' · ')+'</div>':'')+(p.jobStatus?'<div class="pc-sub pd-tr" title="'+es(p.jobStatus)+'">'+es(p.jobStatus)+'</div>':'')+'</td>'+
                 '<td class="pc-nw">'+(_pdD(p.bldgPermitSubmitted)||'<span class="pd-mut">—</span>')+(p.bldgPermitNumber?'<div class="pc-sub">#'+es(p.bldgPermitNumber)+'</div>':'')+'</td>'+
@@ -137,7 +137,7 @@ function renderPerm(){
         '<td>'+_pdRfi(p)+'</td>'+
         '<td>'+((_pdRecon(p)&&!_pdProgNoPlans(p))?_pdPair(p.surveyOrdered,p.surveyReceived):_pdNA())+'</td>'+
         '<td>'+((_pdRehab(p)||_pdProgNoPlans(p))?_pdNA():_pdPair(p.plansOrdered,p.plansReceived))+'</td><td>'+(_pdRehab(p)?_pdNA():_pdPair(p.trussOrdered,p.trussReceived))+'</td><td>'+(_pdRehab(p)?_pdNA():_pdPair(p.energyCalcsOrdered,p.energyCalcsReceived))+'</td>'+
-        '</tr>'+(pu.thisWeek?'<tr class="pd-note" onclick="od('+idx+')"><td colspan="14"><span class="pd-nl">This week</span>'+es(pu.thisWeek)+'</td></tr>':'');
+        '</tr>'+(pu.thisWeek?'<tr class="pd-note" onclick="od('+idx+')"><td colspan="14" id="pdn-'+idx+'"><span class="pd-nl">This week</span>'+es(pu.thisWeek)+' <button class="pd-nb" onclick="event.stopPropagation();pdEditNote('+idx+')">&#9998; Edit</button></td></tr>':'<tr class="pd-note pd-note0" id="pdr-'+idx+'" style="display:none"><td colspan="14" id="pdn-'+idx+'"></td></tr>');
     });
     h+='</tbody></table></div>';
   }
@@ -145,4 +145,21 @@ function renderPerm(){
   root.innerHTML=h;
   const si=document.getElementById('pd-search');if(si&&document.activeElement!==si&&window._pdFocus){si.focus();}
   _pdWriteHash();
+}
+
+function pdEditNote(idx){
+  const p=proj[idx];if(!p)return;const addr=p.address;
+  const td=document.getElementById('pdn-'+idx);if(!td)return;
+  const r=document.getElementById('pdr-'+idx);if(r)r.style.display='';
+  const cur=((typeof puData!=='undefined'&&puData[addr])||{}).thisWeek||'';
+  const sun=puGetSunday(0);
+  td.onclick=e=>e.stopPropagation();
+  td.innerHTML='<span class="pd-nl">Week ending '+es(puSundayLabel(sun))+'</span><textarea class="pd-nta" placeholder="Enter permit update for this week...">'+es(cur)+'</textarea><div class="pd-nact"><button class="pd-nb pd-nsv">Save</button><button class="pd-nb">Cancel</button></div>';
+  const ta=td.querySelector('textarea'),[sv,cn]=td.querySelectorAll('.pd-nact button');
+  ta.focus();
+  cn.onclick=e=>{e.stopPropagation();renderPerm();};
+  sv.onclick=async e=>{e.stopPropagation();sv.disabled=true;sv.textContent='Saving…';
+    await savePuUpdate(addr,'puThisWeek',ta.value.trim(),puSundayKey(sun));
+    if(typeof renderPuTable==='function'){try{renderPuTable();}catch(_){}}
+    renderPerm();};
 }
