@@ -5,20 +5,28 @@ const PD_STAGES=[
   ['none','Not submitted','Waiting on submittal','pc-c2'],
   ['review','In review','Submitted / resubmitted','pc-cw'],
   ['kicked','Kicked back','Awaiting resubmittal','pc-c1'],
-  ['issued','Issued','Permit issued or N/A','pc-cn']
+  ['issued','Issued','Building permit issued','pc-cn']
 ];
 function _pdHas(v){return !!v&&v!=='0';}
 function pdStage(p){
   const s=p.bldgPermitSubmitted||'',i=p.bldgPermitIssued||'';
   if(i==='N/A'||s==='N/A'||_pdHas(i))return'issued';
+  if(/^issued$/i.test(String(p.bldgPermitStatus||'').trim())||/^issued$/i.test(String(p.permitStatus||'').trim()))return'issued';
   const kb=p.permitKickedBack||'',rs=p.permitResubmitted||'';
   if(_pdHas(kb)&&!(_pdHas(rs)&&rs>=kb))return'kicked';
   if(_pdHas(s)||_pdHas(rs))return'review';
   return'none';
 }
 function pdOwner(p){return String(p.permitAssigned||'').trim();}
+function pdNeedsPermit(p){
+  const lc=v=>String(v||'').trim().toLowerCase();
+  if(lc(p.bldgPermitStatus)==='not needed'||lc(p.permitStatus)==='not required')return false;
+  if(lc(p.bldgPermitSubmitted)==='n/a'||lc(p.bldgPermitIssued)==='n/a')return false;
+  return true;
+}
 function pdBase(){
   return proj.filter(p=>{
+    if(!pdNeedsPermit(p))return false;
     if((p.jobStatus||'').toUpperCase()==='COMPLETE')return false;
     if(p.constructionStage==='PRESALE')return true;
     return pdStage(p)!=='issued'&&p.constructionStage!=='CLOSED'&&p.constructionStage!=='WARRANTY';
