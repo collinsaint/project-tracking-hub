@@ -2,6 +2,7 @@
 let permDash={owner:'',stage:'open',search:'',program:'',jur:'',sort:'',dir:1};
 const PD_STAGES=[
   ['open','Open permits','Not yet issued','pc-cw'],
+  ['ready','Ready — pending permit','Ready to start, only permit left','pc-c1'],
   ['none','Not submitted','Waiting on submittal','pc-c2'],
   ['review','In review','Submitted / resubmitted','pc-cw'],
   ['kicked','Kicked back','Awaiting resubmittal','pc-c1'],
@@ -17,9 +18,11 @@ function pdStage(p){
   if(_pdHas(s)||_pdHas(rs))return'review';
   return'none';
 }
+function pdReady(p){if(pdStage(p)==='issued')return false;const js=p.jobStatus||'';return /pending permit|pending start \(permitting|^20\b|pending construction start/i.test(js)||_pdHas(p.ntp);}
 function pdOwner(p){return String(p.permitAssigned||'').trim();}
 function pdNeedsPermit(p){
   const lc=v=>String(v||'').trim().toLowerCase();
+  if(lc(p.readyToStart)==='no permits needed')return false;
   if(lc(p.bldgPermitStatus)==='not needed'||lc(p.permitStatus)==='not required')return false;
   if(lc(p.bldgPermitSubmitted)==='n/a'||lc(p.bldgPermitIssued)==='n/a')return false;
   return true;
@@ -63,6 +66,12 @@ function _pdRfi(p){
   const h=one(p.rfiNeeded,p.rfiRequested,p.rfiReceived,'RFI')+one(p.addlRfiNeeded,p.addlRfiRequested,p.addlRfiReceived,'Add\'l RFI');
   return h||'<span class="pd-mut">None</span>';
 }
+function _pdSeptic(p){
+  const st=[p.sewerType,p.septic].filter(v=>v&&!/^unknown$/i.test(v)).filter((v,i,a)=>a.indexOf(v)===i);
+  const iss=_pdD(p.septicPermitIssued);
+  if(!st.length&&!iss)return'<span class="pd-mut">—</span>';
+  return'<div class="pd-pair">'+(st.length?'<span>'+st.map(es).join(' · ')+'</span>':'')+'<span><i>Permit</i>'+(iss?'<b class="pd-ok">'+iss+'</b>':'<span class="pd-mut">—</span>')+'</span></div>';
+}
 function renderPerm(){
   const root=document.getElementById('pd-root');if(!root)return;
   const base=pdBase();
@@ -74,11 +83,11 @@ function renderPerm(){
     return true;
   });
   const byOwner=pre.filter(p=>!permDash.owner||(permDash.owner==='__none'?!pdOwner(p):pdOwner(p)===permDash.owner));
-  const cnt={open:0,none:0,review:0,kicked:0,issued:0};
-  byOwner.forEach(p=>{const s=pdStage(p);cnt[s]++;if(s!=='issued')cnt.open++;});
-  let rows=byOwner.filter(p=>{const s=pdStage(p);return permDash.stage==='all'||(permDash.stage==='open'?s!=='issued':s===permDash.stage);});
+  const cnt={ready:0,open:0,none:0,review:0,kicked:0,issued:0};
+  byOwner.forEach(p=>{const s=pdStage(p);cnt[s]++;if(s!=='issued')cnt.open++;if(pdReady(p))cnt.ready++;});
+  let rows=byOwner.filter(p=>{const s=pdStage(p);return permDash.stage==='all'||(permDash.stage==='ready'?pdReady(p):permDash.stage==='open'?s!=='issued':s===permDash.stage);});
   // owner chips (counts within current stage + other filters)
-  const stageOk=p=>{const s=pdStage(p);return permDash.stage==='all'||(permDash.stage==='open'?s!=='issued':s===permDash.stage);};
+  const stageOk=p=>{const s=pdStage(p);return permDash.stage==='all'||(permDash.stage==='ready'?pdReady(p):permDash.stage==='open'?s!=='issued':s===permDash.stage);};
   const oc={};let un=0;pre.filter(stageOk).forEach(p=>{const o=pdOwner(p);if(o)oc[o]=(oc[o]||0)+1;else un++;});
   const owners=[...new Set(base.map(pdOwner).filter(Boolean))].sort();
   const totStage=pre.filter(stageOk).length;
@@ -89,7 +98,7 @@ function renderPerm(){
   const sv=p=>sk==='job'?pname(p):sk==='owner'?(pdOwner(p)||'\uffff'):sk==='days'?(_pdDays(p)??-1):sk?(p[sk]||''):null;
   const ord={kicked:0,none:1,review:2,issued:3};
   rows=[...rows].sort((a,b)=>{
-    if(!sk){const c=ord[pdStage(a)]-ord[pdStage(b)];if(c)return c;return (_pdDays(b)??-1)-(_pdDays(a)??-1);}
+    if(!sk){const r=(pdReady(b)?1:0)-(pdReady(a)?1:0);if(r)return r;const c=ord[pdStage(a)]-ord[pdStage(b)];if(c)return c;return (_pdDays(b)??-1)-(_pdDays(a)??-1);}
     const av=sv(a),bv=sv(b);if(typeof av==='number')return sd*(av-bv);
     if(av===''&&bv!=='')return 1;if(bv===''&&av!=='')return -1;return sd*String(av).localeCompare(String(bv));
   });
@@ -108,7 +117,7 @@ function renderPerm(){
   h+='<section class="pc-panel"><header><h3>Permit queue</h3><span class="pc-count">'+rows.length+'</span><span class="pc-hsub">Click a job to open it. Dates come from the Buildertrend import.</span></header>';
   if(!rows.length)h+='<div class="pc-none">No jobs match these filters.</div>';
   else{
-    h+='<div class="pc-tw pd-tw"><table class="pc-q pd-q"><thead><tr>'+th('job','Job')+th('owner','Permit owner')+th('','Status')+th('permittingJurisdiction','Jurisdiction')+th('bldgPermitSubmitted','Submitted')+th('bldgPermitIssued','Issued')+th('days','Days')+th('permitKickedBack','Kickback / Resub')+th('','RFI')+th('surveyOrdered','Survey/EC')+th('plansOrdered','Plans')+th('trussOrdered','Truss plans')+th('energyCalcsOrdered','Energy calcs')+th('','This week')+'</tr></thead><tbody>';
+    h+='<div class="pc-tw pd-tw"><table class="pc-q pd-q"><thead><tr>'+th('job','Job')+th('owner','Permit owner')+th('','Status')+th('permittingJurisdiction','Jurisdiction')+th('bldgPermitSubmitted','Submitted')+th('bldgPermitIssued','Issued')+th('days','Days')+th('permitKickedBack','Kickback / Resub')+th('septicPermitIssued','Septic')+th('','RFI')+th('surveyOrdered','Survey/EC')+th('plansOrdered','Plans')+th('trussOrdered','Truss plans')+th('energyCalcsOrdered','Energy calcs')+th('','This week')+'</tr></thead><tbody>';
     rows.forEach(p=>{
       const idx=proj.indexOf(p),st=pdStage(p),o=pdOwner(p),d=_pdDays(p),pu=(typeof puData!=='undefined'&&puData[p.address])||{};
       const hm=((p.firstName||'')+' '+(p.lastName||'')).trim();
@@ -116,12 +125,13 @@ function renderPerm(){
       h+='<tr onclick="od('+idx+')" style="cursor:pointer">'+
         '<td><div class="pc-job">'+es(pname(p)||'No address')+'</div><div class="pc-sub">'+es([p.projectNumber,p.city,hm].filter(Boolean).join(' · '))+'</div><div style="margin-top:4px">'+(p.program?'<span class="pc-prog">'+es(p.program)+'</span>':'')+'</div></td>'+
         '<td class="pc-nw">'+(o?'<span class="pd-own">'+es(o)+'</span>':'<span class="pd-mut">Unassigned</span>')+'</td>'+
-        '<td>'+_pdStageChip(st)+(pu.needsAttention?' <span class="pc-chip pc-p1">Needs attention</span>':'')+(stat.length?'<div class="pc-sub" style="margin-top:4px">'+stat.map(es).join(' · ')+'</div>':'')+(p.jobStatus?'<div class="pc-sub">'+es(p.jobStatus)+'</div>':'')+'</td>'+
+        '<td>'+(pdReady(p)?'<span class="pc-chip pd-rdy">Ready — pending permit</span> ':'')+_pdStageChip(st)+(pu.needsAttention?' <span class="pc-chip pc-p1">Needs attention</span>':'')+(stat.length?'<div class="pc-sub" style="margin-top:4px">'+stat.map(es).join(' · ')+'</div>':'')+(p.jobStatus?'<div class="pc-sub">'+es(p.jobStatus)+'</div>':'')+'</td>'+
         '<td>'+(es(p.permittingJurisdiction)||'<span class="pd-mut">—</span>')+'</td>'+
         '<td class="pc-nw">'+(_pdD(p.bldgPermitSubmitted)||'<span class="pd-mut">—</span>')+(p.bldgPermitNumber?'<div class="pc-sub">#'+es(p.bldgPermitNumber)+'</div>':'')+'</td>'+
         '<td class="pc-nw">'+(_pdD(p.bldgPermitIssued)?'<b class="pd-ok">'+_pdD(p.bldgPermitIssued)+'</b>':'<span class="pd-mut">—</span>')+'</td>'+
         '<td class="pc-nw">'+(d===null||st==='issued'?'<span class="pd-mut">—</span>':'<b style="color:'+(d>60?'#dc2626':d>30?'#d97706':'#16a34a')+'">'+d+'d</b>')+'</td>'+
         '<td class="pc-nw">'+(_pdHas(p.permitKickedBack)||_pdHas(p.permitResubmitted)?'<div class="pd-pair"><span><i>KB</i>'+(_pdD(p.permitKickedBack)||'—')+'</span><span><i>Resub</i>'+(_pdD(p.permitResubmitted)||'<span class="pd-wait">waiting</span>')+'</span></div>':'<span class="pd-mut">—</span>')+(p.permitKickbackNotes?'<div class="pc-sub" style="max-width:200px">'+es(p.permitKickbackNotes)+'</div>':'')+'</td>'+
+        '<td>'+_pdSeptic(p)+'</td>'+
         '<td>'+_pdRfi(p)+'</td>'+
         '<td>'+((_pdRecon(p)&&!_pdProgNoPlans(p))?_pdPair(p.surveyOrdered,p.surveyReceived):_pdNA())+'</td>'+
         '<td>'+((_pdRehab(p)||_pdProgNoPlans(p))?_pdNA():_pdPair(p.plansOrdered,p.plansReceived))+'</td><td>'+(_pdRehab(p)?_pdNA():_pdPair(p.trussOrdered,p.trussReceived))+'</td><td>'+(_pdRehab(p)?_pdNA():_pdPair(p.energyCalcsOrdered,p.energyCalcsReceived))+'</td>'+
