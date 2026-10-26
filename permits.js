@@ -54,6 +54,15 @@ function _pdPair(o,r){
 }
 function _pdStageChip(st){const m={none:['Not submitted','pc-p2'],review:['In review','pc-pw'],kicked:['Kicked back','pc-p1'],issued:['Issued','pd-pi']};const x=m[st];return'<span class="pc-chip '+x[1]+'">'+x[0]+'</span>';}
 function _pdDays(p){const src=p.permitResubmitted&&_pdHas(p.permitResubmitted)?p.permitResubmitted:p.bldgPermitSubmitted;if(!_pdHas(src)||src==='N/A')return null;const d=Math.floor((Date.now()-new Date(src))/86400000);return d>=0?d:null;}
+function _pdNA(){return'<span class="pd-na">N/A</span>';}
+function _pdProgNoPlans(p){return /rebuild\s*f(l|lorida)|pinellas/i.test(p.program||'');}
+function _pdRehab(p){return /rehab/i.test(p.jobType||'');}
+function _pdRecon(p){return /recon|mhu|replace/i.test(p.jobType||'');}
+function _pdRfi(p){
+  const one=(n,rq,rc,lbl)=>{if(_pdHas(rc))return'<div><span class="pc-chip pd-pi">'+lbl+' received</span> <span class="pc-sub">'+_pdD(rc)+'</span></div>';if(_pdHas(rq))return'<div><span class="pc-chip pc-p2">'+lbl+' requested</span> <span class="pc-sub">'+_pdD(rq)+'</span></div>';if(/^y/i.test(n||''))return'<div><span class="pc-chip pc-p1">'+lbl+' needed</span></div>';return'';};
+  const h=one(p.rfiNeeded,p.rfiRequested,p.rfiReceived,'RFI')+one(p.addlRfiNeeded,p.addlRfiRequested,p.addlRfiReceived,'Add\'l RFI');
+  return h||'<span class="pd-mut">None</span>';
+}
 function renderPerm(){
   const root=document.getElementById('pd-root');if(!root)return;
   const base=pdBase();
@@ -99,7 +108,7 @@ function renderPerm(){
   h+='<section class="pc-panel"><header><h3>Permit queue</h3><span class="pc-count">'+rows.length+'</span><span class="pc-hsub">Click a job to open it. Dates come from the Buildertrend import.</span></header>';
   if(!rows.length)h+='<div class="pc-none">No jobs match these filters.</div>';
   else{
-    h+='<div class="pc-tw pd-tw"><table class="pc-q pd-q"><thead><tr>'+th('job','Job')+th('owner','Permit owner')+th('','Status')+th('permittingJurisdiction','Jurisdiction')+th('bldgPermitSubmitted','Submitted')+th('days','Days')+th('permitKickedBack','Kickback / Resub')+th('bldgPermitIssued','Issued')+th('plansOrdered','Plans')+th('trussOrdered','Truss plans')+th('energyCalcsOrdered','Energy calcs')+th('','This week')+'</tr></thead><tbody>';
+    h+='<div class="pc-tw pd-tw"><table class="pc-q pd-q"><thead><tr>'+th('job','Job')+th('owner','Permit owner')+th('','Status')+th('permittingJurisdiction','Jurisdiction')+th('bldgPermitSubmitted','Submitted')+th('bldgPermitIssued','Issued')+th('days','Days')+th('permitKickedBack','Kickback / Resub')+th('','RFI')+th('surveyOrdered','Survey/EC')+th('plansOrdered','Plans')+th('trussOrdered','Truss plans')+th('energyCalcsOrdered','Energy calcs')+th('','This week')+'</tr></thead><tbody>';
     rows.forEach(p=>{
       const idx=proj.indexOf(p),st=pdStage(p),o=pdOwner(p),d=_pdDays(p),pu=(typeof puData!=='undefined'&&puData[p.address])||{};
       const hm=((p.firstName||'')+' '+(p.lastName||'')).trim();
@@ -110,10 +119,12 @@ function renderPerm(){
         '<td>'+_pdStageChip(st)+(pu.needsAttention?' <span class="pc-chip pc-p1">Needs attention</span>':'')+(stat.length?'<div class="pc-sub" style="margin-top:4px">'+stat.map(es).join(' · ')+'</div>':'')+(p.jobStatus?'<div class="pc-sub">'+es(p.jobStatus)+'</div>':'')+'</td>'+
         '<td>'+(es(p.permittingJurisdiction)||'<span class="pd-mut">—</span>')+'</td>'+
         '<td class="pc-nw">'+(_pdD(p.bldgPermitSubmitted)||'<span class="pd-mut">—</span>')+(p.bldgPermitNumber?'<div class="pc-sub">#'+es(p.bldgPermitNumber)+'</div>':'')+'</td>'+
+        '<td class="pc-nw">'+(_pdD(p.bldgPermitIssued)?'<b class="pd-ok">'+_pdD(p.bldgPermitIssued)+'</b>':'<span class="pd-mut">—</span>')+'</td>'+
         '<td class="pc-nw">'+(d===null||st==='issued'?'<span class="pd-mut">—</span>':'<b style="color:'+(d>60?'#dc2626':d>30?'#d97706':'#16a34a')+'">'+d+'d</b>')+'</td>'+
         '<td class="pc-nw">'+(_pdHas(p.permitKickedBack)||_pdHas(p.permitResubmitted)?'<div class="pd-pair"><span><i>KB</i>'+(_pdD(p.permitKickedBack)||'—')+'</span><span><i>Resub</i>'+(_pdD(p.permitResubmitted)||'<span class="pd-wait">waiting</span>')+'</span></div>':'<span class="pd-mut">—</span>')+(p.permitKickbackNotes?'<div class="pc-sub" style="max-width:200px">'+es(p.permitKickbackNotes)+'</div>':'')+'</td>'+
-        '<td class="pc-nw">'+(_pdD(p.bldgPermitIssued)?'<b class="pd-ok">'+_pdD(p.bldgPermitIssued)+'</b>':'<span class="pd-mut">—</span>')+'</td>'+
-        '<td>'+_pdPair(p.plansOrdered,p.plansReceived)+'</td><td>'+_pdPair(p.trussOrdered,p.trussReceived)+'</td><td>'+_pdPair(p.energyCalcsOrdered,p.energyCalcsReceived)+'</td>'+
+        '<td>'+_pdRfi(p)+'</td>'+
+        '<td>'+((_pdRecon(p)&&!_pdProgNoPlans(p))?_pdPair(p.surveyOrdered,p.surveyReceived):_pdNA())+'</td>'+
+        '<td>'+((_pdRehab(p)||_pdProgNoPlans(p))?_pdNA():_pdPair(p.plansOrdered,p.plansReceived))+'</td><td>'+(_pdRehab(p)?_pdNA():_pdPair(p.trussOrdered,p.trussReceived))+'</td><td>'+(_pdRehab(p)?_pdNA():_pdPair(p.energyCalcsOrdered,p.energyCalcsReceived))+'</td>'+
         '<td style="min-width:160px;font-size:12px">'+(pu.thisWeek?es(pu.thisWeek):'<span class="pd-mut">—</span>')+'</td></tr>';
     });
     h+='</tbody></table></div>';
