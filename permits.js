@@ -87,7 +87,7 @@ function _pdOut(p){const na=_pdNaMap(p),o=[],nr=v=>!(_pdHas(v)&&v!=='N/A');
   if(!na.truss&&nr(p.trussReceived))o.push('Truss');if(!na.energy&&nr(p.energyCalcsReceived))o.push('Energy');
   if(_pdYes(p.rfiNeeded)&&nr(p.rfiReceived))o.push('RFI');if(_pdYes(p.addlRfiNeeded)&&nr(p.addlRfiReceived))o.push("Add'l RFI");return o;}
 function _pdPaper(p){
-  const ln=(l,na,O,R)=>{if(na)return'<div class="pd-pw"><i>'+l+'</i>'+_pdNA()+'</div>';const o=_pdD(O),r=_pdD(R);return'<div class="pd-pw"><i>'+l+'</i>'+(o||(r?'<span class="pd-miss">MISSING</span>':'<span class="pd-mut">—</span>'))+' / '+(r?'<b class="pd-ok">'+r+'</b>':(o?'<span class="pd-wait">wait</span>':'<span class="pd-need">NEEDED</span>'))+'</div>';};
+  const ln=(l,na,O,R)=>{if(na)return'<div class="pd-pw"><i>'+l+'</i><span class="pd-pgo">N/A</span></div>';const o=_pdD(O),r=_pdD(R);return'<div class="pd-pw"><i>'+l+'</i>'+(o||(r?'<span class="pd-miss">MISSING</span>':'<span class="pd-mut">—</span>'))+' / '+(r?'<b class="pd-pgo">'+r+'</b>':(o?'<span class="pd-need">PENDING</span>':'<span class="pd-need">NEEDED</span>'))+'</div>';};
   const na=_pdNaMap(p);
   return ln('Svy/EC',na.svy,p.surveyOrdered,p.surveyReceived)+ln('Plans',na.plans,p.plansOrdered,p.plansReceived)+ln('Truss',na.truss,p.trussOrdered,p.trussReceived)+ln('Energy',na.energy,p.energyCalcsOrdered,p.energyCalcsReceived);
 }
