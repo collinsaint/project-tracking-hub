@@ -286,7 +286,10 @@ window.renderPrecon=function(){
   const sec=(cls,title,sub,n,body)=>'<section class="pc-panel '+cls+'"><header><h3>'+title+'</h3><span class="pc-count">'+n+'</span><span class="pc-hsub">'+sub+'</span></header>'+body+'</section>';
   // ---- grouped P1 / P2 sections (display only) ----
   PC.ui=PC.ui||{act:{},open:{}};
-  const actOf=x=>x.primary?x.primary.rule.Action:'No action rule';
+  // Georgia (Collin): already has a CE submitted date but still in a 'submit cost estimate' status -> needs resubmitting
+  const GA_RESUB='Cost estimate needs to be resubmitted';
+  const gaFix=(x,a)=>(a==='Submit cost estimate'&&x&&(x.program==='GA'||/Georgia HRRP/i.test(String(x.bt&&x.bt.program||'')))&&x.bt&&pmD(x.bt.costEstimateSubmitted))?GA_RESUB:a;
+  const actOf=x=>gaFix(x,x.primary?x.primary.rule.Action:'No action rule');
   const fdt=v=>{if(v==null||v==='')return'';const s=String(v);if(/^\d{4}-\d{2}-\d{2}/.test(s)||/\d{1,2}\/\d{1,2}\/\d{2,4}/.test(s)){const d=PCE.parseETDate(s)||new Date(s);if(d&&!isNaN(d))return new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',month:'numeric',day:'numeric',year:'numeric'}).format(d);}return s;};
   const kv=(l,v)=>(v==null||String(v).trim()==='')?'':'<div class="pc-kv"><span>'+l+'</span><b>'+es(String(v))+'</b></div>';
   const detail=x=>{const j=x.bt||{};const rec=(PC.pulls[x.program]&&PC.pulls[x.program].records.find(r=>String(r.ID)===x.record_id))||null;
@@ -321,7 +324,7 @@ window.renderPrecon=function(){
   // actions bar chart
   const isPermAct=a=>/permit/i.test(a||'')||a==='Push to pre-con / NTP'||a==='Submit NTP request';
   const isPermHit=h=>isPermAct(h.rule.Action)||/permit/i.test(String(h.field||'')+' '+String(h.value||'')+' '+String(h.rule.Value||''));
-  const actNP=x=>{const hs=(x.hits||[]).filter(h=>(h.rule.Priority==='1'||h.rule.Priority==='2')&&!isPermHit(h));return hs.length?hs[0].rule.Action:null;};
+  const actNP=x=>{const hs=(x.hits||[]).filter(h=>(h.rule.Priority==='1'||h.rule.Priority==='2')&&!isPermHit(h));return hs.length?gaFix(x,hs[0].rule.Action):null;};
   const groups={};ours.forEach(x=>{const a=actNP(x);if(!a)return;(groups[a]=groups[a]||{p1:[],p2:[]})[x.priority==='1'?'p1':'p2'].push(x);});
   const order=Object.keys(groups).sort((a,b)=>(groups[b].p1.length-groups[a].p1.length)||((groups[b].p1.length+groups[b].p2.length)-(groups[a].p1.length+groups[a].p2.length))||a.localeCompare(b));
   // Construction-readiness groups built from the tracker's Presale list (withdrawn excluded)
