@@ -134,7 +134,7 @@ function renderPerm(){
   h+='<div class="pc-cards pd-cards">'+PD_STAGES.map(([k,l,s,c])=>'<button class="pc-card '+c+(permDash.stage===k?' on':'')+'" onclick="pdSet(\'stage\',\''+k+'\')"><span class="pc-cl">'+l+'</span><b>'+cnt[k]+'</b><span class="pc-cs">'+s+'</span></button>').join('')+'</div>';
   {const act=base.filter(p=>!pdHold(p)),bar=(t,sub,rows,col)=>{const m=Math.max(1,...rows.map(r=>r[1]));return'<section class="pc-chart pd-ch"><h4>'+t+' <span>'+sub+'</span></h4>'+(rows.length?rows.map(r=>'<div class="pd-br"'+(r[2]?' onclick="'+r[2]+'" style="cursor:pointer"':'')+'><span class="pd-bl" title="'+es(r[0])+'">'+es(r[0])+'</span><span class="pd-bt"><span style="width:'+(r[1]/m*100)+'%;background:'+(r[3]||col)+'"></span></span><b>'+r[1]+'</b></div>').join(''):'<div class="pd-mut">None</div>')+'</section>';},
    grp=(f)=>{const o={};act.forEach(p=>{const k=f(p)||'—';o[k]=(o[k]||0)+1;});return Object.entries(o).sort((x,y)=>y[1]-x[1]).slice(0,8);};
-   const SKC={none:'#dc2626',review:'#7dd3fc',kicked:'#f97316',issued:'#16a34a'};
+   const SKC={none:'#dc2626',review:'#facc15',kicked:'#f97316',issued:'#16a34a'};
    const stg=PD_STAGES.filter(x=>!['all','open','ready','hold'].includes(x[0])).map(([k,l])=>[l,act.filter(p=>pdStage(p)===k).length,"pdSet('stage','"+k+"')",SKC[k]]).filter(r=>r[1]);
    const oc={};act.filter(p=>pdStage(p)!=='issued').forEach(p=>_pdOutSt(p).forEach(([k,st])=>{const e=oc[k]||(oc[k]={pend:0,need:0});e[st]++;}));
    const SK=[['none','Not submitted','#dc2626'],['review','In review','#7dd3fc'],['kicked','Kicked back','#f97316'],['issued','Issued','#16a34a']];
