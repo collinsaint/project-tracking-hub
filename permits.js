@@ -67,7 +67,7 @@ function _pdRfi(p){
   return h||'<span class="pd-mut">None</span>';
 }
 function _pdSeptic(p){
-  const st=[p.sewerType,p.septic].filter(v=>v&&!/^unknown$/i.test(v)).filter((v,i,a)=>a.indexOf(v)===i);
+  const st=[p.septic].filter(v=>v&&!/^unknown$/i.test(v)).filter((v,i,a)=>a.indexOf(v)===i);
   const iss=_pdD(p.septicPermitIssued);
   if(!st.length&&!iss)return'<span class="pd-mut">—</span>';
   return'<div class="pd-pair">'+(st.length?'<span>'+st.map(es).join(' · ')+'</span>':'')+'<span><i>Permit</i>'+(iss?'<b class="pd-ok">'+iss+'</b>':'<span class="pd-mut">—</span>')+'</span></div>';
