@@ -148,7 +148,7 @@ function renderPerm(){
     '<button class="pd-tog'+(permDash.stage==='all'?' on':'')+'" onclick="pdSet(\'stage\',\''+(permDash.stage==='all'?'open':'all')+'\')">Include issued</button>'+
     (anyF?'<button class="pc-clear" onclick="pdClear()">Clear filters</button>':'')+'</div>'+
     '<div class="pd-frow pd-orow"><span class="pd-fl">Owner</span><div class="pd-chips">'+chip('','All',totStage)+owners.map(o=>chip(o,o,oc[o]||0)).join('')+chip('__none','Unassigned',un)+'</div></div></div>';
-  h+='<section class="pc-panel"><header><h3>Permit queue</h3><span class="pc-count">'+rows.length+'</span><span class="pc-hsub">Click a job to open it. Dates come from the Buildertrend import.</span></header>';
+  h+='<section class="pc-panel pd-qp"><header><h3>Permit queue</h3><span class="pc-count">'+rows.length+'</span><span class="pc-hsub">Click a job to open it. Dates come from the Buildertrend import.</span></header>';
   if(!rows.length)h+='<div class="pc-none">No jobs match these filters.</div>';
   else{
     h+='<div class="pc-tw pd-tw"><table class="pc-q pd-q"><thead><tr>'+th('job','Job')+th('jobType','Type')+th('owner','Owner')+th('','Status')+th('bldgPermitSubmitted','Subm.')+th('bldgPermitIssued','Issued')+th('days','Days')+th('permitKickedBack','KB / Resub')+th('septicPermitIssued','Septic')+th('','RFI')+th('','Paperwork <span class="pd-mut">R / O</span>')+'</tr></thead>';
@@ -173,6 +173,7 @@ function renderPerm(){
   }
   h+='</section>';
   root.innerHTML=h;
+  (function(){const hd=root.querySelector('.pd-qp>header'),tb=document.getElementById('hdr');const t=tb?tb.offsetHeight:56;root.style.setProperty('--pd-top',t+'px');if(hd)root.style.setProperty('--pd-hh',hd.offsetHeight+'px');})();
   const si=document.getElementById('pd-search');if(si&&document.activeElement!==si&&window._pdFocus){si.focus();}
   _pdWriteHash();
 }
