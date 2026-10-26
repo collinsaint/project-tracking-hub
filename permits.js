@@ -120,14 +120,14 @@ function renderPerm(){
   h+='<section class="pc-panel"><header><h3>Permit queue</h3><span class="pc-count">'+rows.length+'</span><span class="pc-hsub">Click a job to open it. Dates come from the Buildertrend import.</span></header>';
   if(!rows.length)h+='<div class="pc-none">No jobs match these filters.</div>';
   else{
-    h+='<div class="pc-tw pd-tw"><table class="pc-q pd-q"><thead><tr>'+th('job','Job')+th('jobType','Type')+th('owner','Owner')+th('','Status')+th('bldgPermitSubmitted','Subm.')+th('bldgPermitIssued','Issued')+th('days','Days')+th('permitKickedBack','KB / Resub')+th('septicPermitIssued','Septic')+th('','RFI')+th('surveyOrdered','Survey/EC')+th('plansOrdered','Plans')+th('trussOrdered','Truss')+th('energyCalcsOrdered','Energy')+th('','This wk')+'</tr></thead><tbody>';
+    h+='<div class="pc-tw pd-tw"><table class="pc-q pd-q"><thead><tr>'+th('job','Job')+th('jobType','Type')+th('owner','Owner')+th('','Status')+th('bldgPermitSubmitted','Subm.')+th('bldgPermitIssued','Issued')+th('days','Days')+th('permitKickedBack','KB / Resub')+th('septicPermitIssued','Septic')+th('','RFI')+th('surveyOrdered','Survey/EC')+th('plansOrdered','Plans')+th('trussOrdered','Truss')+th('energyCalcsOrdered','Energy')+'</tr></thead><tbody>';
     rows.forEach(p=>{
       const idx=proj.indexOf(p),st=pdStage(p),o=pdOwner(p),d=_pdDays(p),pu=(typeof puData!=='undefined'&&puData[p.address])||{};
       const hm=((p.firstName||'')+' '+(p.lastName||'')).trim();
       const stat=[p.bldgPermitStatus,p.permitStatus].filter(Boolean).filter((v,i,a)=>a.indexOf(v)===i);
-      h+='<tr onclick="od('+idx+')" style="cursor:pointer">'+
+      h+='<tr class="'+(pu.thisWeek?'pd-hasn':'')+'" onclick="od('+idx+')" style="cursor:pointer">'+
         '<td><div class="pc-job">'+es(pname(p)||'No address')+'</div><div class="pc-sub">'+es([p.projectNumber,p.city,hm].filter(Boolean).join(' · '))+'</div>'+(p.permittingJurisdiction?'<div class="pc-sub pd-jur" title="Jurisdiction">&#9873; '+es(p.permittingJurisdiction)+'</div>':'')+'<div style="margin-top:4px">'+(p.program?'<span class="pc-prog">'+es(p.program)+'</span>':'')+'</div></td>'+
-        '<td class="pd-tr" style="max-width:110px" title="'+es(p.jobType||'')+'">'+(p.jobType?es(p.jobType):'<span class="pd-mut">—</span>')+'</td>'+'<td class="pc-nw">'+(o?'<span class="pd-own">'+es(o)+'</span>':'<span class="pd-mut">Unassigned</span>')+'</td>'+
+        '<td class="pd-tr" style="max-width:90px" title="'+es(p.jobType||'')+'">'+(p.jobType?es(p.jobType):'<span class="pd-mut">—</span>')+'</td>'+'<td class="pc-nw">'+(o?'<span class="pd-own">'+es(o)+'</span>':'<span class="pd-mut">Unassigned</span>')+'</td>'+
         '<td>'+(pdReady(p)?'<span class="pc-chip pd-rdy">Ready — pending permit</span> ':'')+_pdStageChip(st)+(pu.needsAttention?' <span class="pc-chip pc-p1">Needs attention</span>':'')+(stat.length?'<div class="pc-sub pd-tr" style="margin-top:4px" title="'+es(stat.join(' · '))+'">'+stat.map(es).join(' · ')+'</div>':'')+(p.jobStatus?'<div class="pc-sub pd-tr" title="'+es(p.jobStatus)+'">'+es(p.jobStatus)+'</div>':'')+'</td>'+
                 '<td class="pc-nw">'+(_pdD(p.bldgPermitSubmitted)||'<span class="pd-mut">—</span>')+(p.bldgPermitNumber?'<div class="pc-sub">#'+es(p.bldgPermitNumber)+'</div>':'')+'</td>'+
         '<td class="pc-nw">'+(_pdD(p.bldgPermitIssued)?'<b class="pd-ok">'+_pdD(p.bldgPermitIssued)+'</b>':'<span class="pd-mut">—</span>')+'</td>'+
@@ -137,7 +137,7 @@ function renderPerm(){
         '<td>'+_pdRfi(p)+'</td>'+
         '<td>'+((_pdRecon(p)&&!_pdProgNoPlans(p))?_pdPair(p.surveyOrdered,p.surveyReceived):_pdNA())+'</td>'+
         '<td>'+((_pdRehab(p)||_pdProgNoPlans(p))?_pdNA():_pdPair(p.plansOrdered,p.plansReceived))+'</td><td>'+(_pdRehab(p)?_pdNA():_pdPair(p.trussOrdered,p.trussReceived))+'</td><td>'+(_pdRehab(p)?_pdNA():_pdPair(p.energyCalcsOrdered,p.energyCalcsReceived))+'</td>'+
-        '<td>'+(pu.thisWeek?'<div class="pd-tr2" title="'+es(pu.thisWeek)+'">'+es(pu.thisWeek)+'</div>':'<span class="pd-mut">—</span>')+'</td></tr>';
+        '</tr>'+(pu.thisWeek?'<tr class="pd-note" onclick="od('+idx+')"><td colspan="14"><span class="pd-nl">This week</span>'+es(pu.thisWeek)+'</td></tr>':'');
     });
     h+='</tbody></table></div>';
   }
