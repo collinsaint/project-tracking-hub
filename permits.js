@@ -82,6 +82,7 @@ function _pdSeptic(p){
 function _pdMhu(p){return /mhu|replace/i.test(p.jobType||'');}
 function _pdNoTrussJur(p){var g=function(v){return Array.isArray(v)?v.join(' '):(v&&typeof v==='object'?Object.values(v).join(' '):v);};return /lee\s*cares|lee\s*county|sarasota|pasco|\blee\b/i.test([p.permittingJurisdiction,p.county,p.city,p.program,g(p.groups),g(p.jobGroups)].filter(Boolean).join(' '));}
 function _pdNaMap(p){const rh=_pdRehab(p),np=_pdProgNoPlans(p),mhu=_pdMhu(p),rc=/recon/i.test(p.jobType||'');
+  if(/georgia|hrrp|lemoine/i.test(p.program||''))return{svy:false,plans:false,truss:true,energy:false};
   return{svy:mhu?false:!(_pdRecon(p)&&!np),plans:mhu?false:(rh||np),truss:rh||mhu||(rc&&_pdNoTrussJur(p)),energy:rh||mhu};}
 function _pdOut(p){const na=_pdNaMap(p),o=[],nr=v=>!(_pdHas(v)&&v!=='N/A');
   if(!na.svy&&nr(p.surveyReceived))o.push('Survey/EC');if(!na.plans&&nr(p.plansReceived))o.push('Plans');
