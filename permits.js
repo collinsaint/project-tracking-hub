@@ -79,14 +79,17 @@ function _pdSeptic(p){
   return'<div class="pd-pair">'+(st.length?'<span>'+st.map(es).join(' · ')+'</span>':'')+'<span><i>Prm</i>'+(iss?'<b class="pd-ok">'+iss+'</b>':'<span class="pd-mut">—</span>')+'</span></div>';
 }
 function _pdMhu(p){return /mhu|replace/i.test(p.jobType||'');}
-function _pdOut(p){const rh=_pdRehab(p),np=_pdProgNoPlans(p),o=[],nr=v=>!(_pdHas(v)&&v!=='N/A');
-  if(!(!(_pdRecon(p)&&!np))&&nr(p.surveyReceived))o.push('Survey/EC');if(!(rh||np)&&nr(p.plansReceived))o.push('Plans');
-  if(!(rh||_pdMhu(p))&&nr(p.trussReceived))o.push('Truss');if(!(rh||_pdMhu(p))&&nr(p.energyCalcsReceived))o.push('Energy');
+function _pdNoTrussJur(p){return /sarasota|\blee\b|pasco/i.test([p.permittingJurisdiction,p.county,p.city].filter(Boolean).join(' '));}
+function _pdNaMap(p){const rh=_pdRehab(p),np=_pdProgNoPlans(p),mhu=_pdMhu(p),rc=/recon/i.test(p.jobType||'');
+  return{svy:mhu?false:!(_pdRecon(p)&&!np),plans:mhu?false:(rh||np),truss:rh||mhu||(rc&&_pdNoTrussJur(p)),energy:rh||mhu};}
+function _pdOut(p){const na=_pdNaMap(p),o=[],nr=v=>!(_pdHas(v)&&v!=='N/A');
+  if(!na.svy&&nr(p.surveyReceived))o.push('Survey/EC');if(!na.plans&&nr(p.plansReceived))o.push('Plans');
+  if(!na.truss&&nr(p.trussReceived))o.push('Truss');if(!na.energy&&nr(p.energyCalcsReceived))o.push('Energy');
   if(_pdYes(p.rfiNeeded)&&nr(p.rfiReceived))o.push('RFI');if(_pdYes(p.addlRfiNeeded)&&nr(p.addlRfiReceived))o.push("Add'l RFI");return o;}
 function _pdPaper(p){
   const ln=(l,na,O,R)=>{if(na)return'<div class="pd-pw"><i>'+l+'</i>'+_pdNA()+'</div>';const o=_pdD(O),r=_pdD(R);return'<div class="pd-pw"><i>'+l+'</i>'+(o||(r?'<span class="pd-miss">MISSING</span>':'<span class="pd-mut">—</span>'))+' / '+(r?'<b class="pd-ok">'+r+'</b>':(o?'<span class="pd-wait">wait</span>':'<span class="pd-need">NEEDED</span>'))+'</div>';};
-  const rh=_pdRehab(p),np=_pdProgNoPlans(p);
-  return ln('Svy/EC',!(_pdRecon(p)&&!np),p.surveyOrdered,p.surveyReceived)+ln('Plans',rh||np,p.plansOrdered,p.plansReceived)+ln('Truss',rh||_pdMhu(p),p.trussOrdered,p.trussReceived)+ln('Energy',rh||_pdMhu(p),p.energyCalcsOrdered,p.energyCalcsReceived);
+  const na=_pdNaMap(p);
+  return ln('Svy/EC',na.svy,p.surveyOrdered,p.surveyReceived)+ln('Plans',na.plans,p.plansOrdered,p.plansReceived)+ln('Truss',na.truss,p.trussOrdered,p.trussReceived)+ln('Energy',na.energy,p.energyCalcsOrdered,p.energyCalcsReceived);
 }
 function renderPerm(){
   const root=document.getElementById('pd-root');if(!root)return;
