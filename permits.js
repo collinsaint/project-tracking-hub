@@ -180,3 +180,5 @@ function pdEditNote(idx){
     if(typeof renderPuTable==='function'){try{renderPuTable();}catch(_){}}
     renderPerm();};
 }
+// keep search focus + caret across re-renders
+(function(){const _r=renderPerm;renderPerm=function(){const a=document.activeElement,f=a&&a.id==='pd-search',s=f?a.selectionStart:0,e=f?a.selectionEnd:0;_r.apply(this,arguments);if(f){const i=document.getElementById('pd-search');if(i){i.focus();try{i.setSelectionRange(s,e);}catch(_){}}}};window.renderPerm=renderPerm;})();
