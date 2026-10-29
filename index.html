@@ -1980,7 +1980,7 @@ function fd2(d){if(!d)return'';const p=d.split('-');return p.length===3?p[1]+'/'
 function calcDaysInConstruction(p){if(!p.ntp||p.ntp==='0')return'';const t=new Date();t.setHours(0,0,0,0);return String(Math.max(0,Math.round((t-new Date(p.ntp))/86400000)));}
 function calcPreConDays(p){const d=(p.ntpP&&p.ntpP!=='0')?p.ntpP:((p.costEstimateApproved&&p.costEstimateApproved!=='0')?p.costEstimateApproved:'');if(!d)return'';let end;if(p.ntp&&p.ntp!=='0'){end=new Date(p.ntp);}else{end=new Date();end.setHours(0,0,0,0);}return String(Math.max(0,Math.round((end-new Date(d))/86400000)));}
 
-const EXCLUDED_ADDRESSES=['3901 Bahia Vista St #136','3901 Bahia Vista St #112','3901 Bahia Vista St #438','3901 Bahia Vista St Lot 216','3901 Bahia Vista St Lot #438'];
+const EXCLUDED_ADDRESSES=['3901 Bahia Vista St Lot 136','3901 Bahia Vista St #112','3901 Bahia Vista St #438','3901 Bahia Vista St Lot 216','3901 Bahia Vista St Lot #438']; // #136 live (Oct 29); Lot 136 is stale address-key dupe
 function filterProj(arr){
   return arr.filter(p=>{
     const js=(p.jobStatus||'').toLowerCase();
